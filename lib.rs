@@ -15,14 +15,11 @@
 
 extern crate slog;
 extern crate slog_stream;
-extern crate isatty;
 extern crate chrono;
 extern crate thread_local;
 
 use std::{io, fmt, sync, cell};
 use std::io::Write;
-
-use isatty::{stderr_isatty, stdout_isatty};
 
 use slog::Record;
 use slog::ser;
@@ -144,9 +141,9 @@ pub type TimestampFn = Fn(&mut io::Write) -> io::Result<()> + Send + Sync;
 /// Formatting mode
 pub enum FormatMode {
     /// Compact logging format
-    Compact,
+    RFC3164,
     /// Full logging format
-    Full,
+    RFC5424,
 }
 
 /// Full formatting with optional color support
@@ -183,11 +180,11 @@ impl<D: Decorator> Format<D> {
         Ok(writer.count() > 0)
     }
 
-    fn format_full(&self,
-                   io: &mut io::Write,
-                   record: &Record,
-                   logger_values: &OwnedKeyValueList)
-                   -> io::Result<()> {
+    fn format_rfc5424(&self,
+                      io: &mut io::Write,
+                      record: &Record,
+                      logger_values: &OwnedKeyValueList)
+                      -> io::Result<()> {
 
         let r_decorator = self.decorator.decorate(record);
 
@@ -219,7 +216,7 @@ impl<D: Decorator> Format<D> {
     }
 
 
-    fn format_compact(&self,
+    fn format_rfc3164(&self,
                       io: &mut io::Write,
                       record: &Record,
                       logger_values: &OwnedKeyValueList)
@@ -543,8 +540,8 @@ impl<D: Decorator + Send + Sync> StreamFormat for Format<D> {
               logger_values: &OwnedKeyValueList)
               -> io::Result<()> {
         match self.mode {
-            FormatMode::Compact => self.format_compact(io, record, logger_values),
-            FormatMode::Full => self.format_full(io, record, logger_values),
+            FormatMode::RFC3164 => self.format_rfc3164(io, record, logger_values),
+            FormatMode::RFC5424 => self.format_rfc5424(io, record, logger_values),
         }
     }
 }
@@ -566,65 +563,31 @@ pub fn timestamp_utc(io: &mut io::Write) -> io::Result<()> {
 }
 
 /// Streamer builder
-pub struct StreamerBuilder {
-    color: Option<bool>, // None = auto
-    stdout: bool,
+pub struct SyslogStreamer {
     async: bool,
     mode: FormatMode,
     fn_timestamp: Box<TimestampFn>,
 }
 
-impl StreamerBuilder {
+impl SyslogStreamer {
     /// New `StreamerBuilder`
     pub fn new() -> Self {
-        StreamerBuilder {
-            color: None,
-            stdout: true,
+        SyslogStreamer {
             async: false,
-            mode: FormatMode::Full,
+            mode: FormatMode::RFC5424,
             fn_timestamp: Box::new(timestamp_local),
         }
     }
 
-    /// Force colored output
-    pub fn color(mut self) -> Self {
-        self.color = Some(true);
-        self
-    }
-
-    /// Force plain output
-    pub fn plain(mut self) -> Self {
-        self.color = Some(false);
-        self
-    }
-
-    /// Auto detect color (default)
-    pub fn auto_color(mut self) -> Self {
-        self.color = None;
-        self
-    }
-
-    /// Output to stderr
-    pub fn stderr(mut self) -> Self {
-        self.stdout = false;
-        self
-    }
-
-    /// Output to stdout (default)
-    pub fn stdout(mut self) -> Self {
-        self.stdout = true;
-        self
-    }
-
     /// Output using full mode
-    pub fn full(mut self) -> Self {
-        self.mode = FormatMode::Full;
+    pub fn rfc5424(mut self) -> Self {
+        self.mode = FormatMode::RFC5424;
         self
     }
 
     /// Output using compact mode (default)
-    pub fn compact(mut self) -> Self {
-        self.mode = FormatMode::Compact;
+    pub fn rfc3164(mut self) -> Self {
+        self.mode = FormatMode::RFC3164;
         self
     }
 
@@ -662,21 +625,11 @@ impl StreamerBuilder {
 
     /// Build the streamer
     pub fn build(self) -> Box<slog::Drain<Error = io::Error> + Send + Sync> {
-        let color = self.color.unwrap_or(if self.stdout {
-            stdout_isatty()
-        } else {
-            stderr_isatty()
-        });
-
         let format = Format::new(self.mode,
-                                 ColorDecorator { use_color: color },
+                                 ColorDecorator { use_color: false },
                                  self.fn_timestamp);
 
-        let io = if self.stdout {
-            Box::new(io::stdout()) as Box<io::Write + Send>
-        } else {
-            Box::new(io::stderr()) as Box<io::Write + Send>
-        };
+        let io = Box::new(io::stdout()) as Box<io::Write + Send>;
 
         if self.async {
             Box::new(async_stream(io, format))
@@ -686,14 +639,14 @@ impl StreamerBuilder {
     }
 }
 
-impl Default for StreamerBuilder {
+impl Default for SyslogStreamer {
     fn default() -> Self {
         Self::new()
     }
 }
 
 /// Build `slog_stream::Streamer`/`slog_stream::AsyncStreamer` that
-/// will output logging records to stderr/stderr.
-pub fn streamer() -> StreamerBuilder {
-    StreamerBuilder::new()
+/// will output logging records to syslog
+pub fn syslog_streamer() -> SyslogStreamer {
+    SyslogStreamer::new()
 }

@@ -1,6 +1,6 @@
 [package]
 name = "slog-syslog"
-version = "0.1"
+version = "0.0.1"
 authors = ["Alexander Goldberg <algold@gmail.com>"]
 description = "Syslog drain and formatter for slog-rs"
 keywords = ["slog", "logging", "log", "syslog"]
@@ -16,6 +16,6 @@ path = "lib.rs"
 [dependencies]
 slog = "1.5.0"
 slog-stream = "1.2"
-isatty = "0.1"
 chrono = "0.2"
+isatty = "0.1"
 thread_local = "0.3"
