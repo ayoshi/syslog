@@ -31,46 +31,30 @@ thread_local! {
     static TL_BUF: cell::RefCell<Vec<u8>> = cell::RefCell::new(Vec::with_capacity(128));
 }
 
-// Wrapper for `Write` types that counts total bytes written.
-struct CountingWriter<'a> {
-    wrapped: &'a mut io::Write,
-    count: usize,
+/// Severity
+enum SyslogSeverity {
+	Emerg = 0,
+	Alert = 1,
+	Crit  = 2,
+	Err   = 3,
+	Warn  = 4,
+	Notice = 5,
+	Info = 6,
+	Debug = 7
 }
 
-impl<'a> CountingWriter<'a> {
-    fn new(wrapped: &'a mut io::Write) -> CountingWriter {
-        CountingWriter {
-            wrapped: wrapped,
-            count: 0,
-        }
-    }
-
-    fn count(&self) -> usize {
-        self.count
-    }
-}
-
-impl<'a> Write for CountingWriter<'a> {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.wrapped.write(buf).map(|n| {
-            self.count += n;
-            n
-        })
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        self.wrapped.flush()
-    }
-
-    fn write_all(&mut self, buf: &[u8]) -> io::Result<()> {
-        self.wrapped.write_all(buf).map(|_| {
-            self.count += buf.len();
-            ()
-        })
+/// Translate from level to severity
+fn level_to_severity(level: slog::Level) -> SyslogSeverity {
+    match level {
+        Level::Critical => SyslogSeverity::Crit,
+        Level::Error => SyslogSeverity::Err,
+        Level::Warning => SyslogSeverity::Warn,
+        Level::Info => SyslogSeverity::Notice,
+        Level::Debug => SyslogSeverity::Info,
+        Level::Trace => SyslogSeverity::Debug,
     }
 }
 
-type WriterFn = Fn(&mut io::Write) -> io::Result<()>;
 
 /// Timestamp function type
 pub type TimestampFn = Fn(&mut io::Write) -> io::Result<()> + Send + Sync;
@@ -96,7 +80,6 @@ pub enum Protocol {
 /// Full formatting with optional color support
 pub struct Format {
     mode: FormatMode,
-    history: sync::Mutex<Vec<Vec<u8>>>,
     fn_timestamp: Box<TimestampFn>,
 }
 
@@ -105,7 +88,6 @@ impl Format {
     pub fn new(mode: FormatMode, fn_timestamp: Box<TimestampFn>) -> Self {
         Format {
             mode: mode,
-            history: sync::Mutex::new(vec![]),
             fn_timestamp: fn_timestamp,
         }
     }
@@ -142,10 +124,8 @@ impl Format {
                         -> io::Result<bool> {
         try!(self.fmt_timestamp(io, &*self.fn_timestamp));
         try!(self.fmt_level(io, &|io: &mut io::Write| write!(io, " {} ", record.level().as_short_str())));
-
-        let mut writer = CountingWriter::new(io);
-        try!(self.fmt_msg(&mut writer, &|io| write!(io, "{}", record.msg())));
-        Ok(writer.count() > 0)
+        try!(self.fmt_msg(io, &|io: &mut io::Write| write!(io, "{}", record.msg())));
+        Ok(true)
     }
 
     fn format_rfc5424(&self,
@@ -154,23 +134,45 @@ impl Format {
                       logger_values: &OwnedKeyValueList)
                       -> io::Result<()> {
 
-        let mut comma_needed = try!(self.print_msg_header(io,  record));
-        let mut serializer = Serializer::new(io);
+/// format RFC 5424 structured data as `([id (name="value")*])*`
+//// pub fn format_5424_structured_data(&self, data: StructuredData) -> String {
+////if data.is_empty() {
+////"-".to_string()
+////} else {
+////let mut res = String::new();
+////for (id, params) in data.iter() {
+////res = res + "["+id;
+////for (name,value) in params.iter() {
+////res = res + " " + name + "=\"" + value + "\"";
+////}
+////res = res + "]";
+////}
+////
+////res
+////}
+////}
+//
+///// format a message as a RFC 5424 log message
+//pub fn format_5424<T: fmt::Display>(&self, severity:Severity, message_id: i32, data: StructuredData, message: T) -> String {
+//let f =  format!("<{}> {} {} {} {} {} {} {} {}",
+//self.encode_priority(severity, self.facility),
+//1, // version
+//time::now_utc().rfc3339(),
+//self.hostname.as_ref().map(|x| &x[..]).unwrap_or("localhost"),
+//self.process, self.pid, message_id,
+//self.format_5424_structured_data(data), message);
+//return f;
+//}
+//
+//        let mut comma_needed = try!(self.print_msg_header(io,  record));
+let mut serializer = Serializer::new(io);
 
         for &(k, v) in record.values().iter().rev() {
-            if comma_needed {
-                try!(serializer.print_comma());
-            }
             try!(v.serialize(record, k, &mut serializer));
-            comma_needed |= true;
         }
 
         for (k, v) in logger_values.iter() {
-            if comma_needed {
-                try!(serializer.print_comma());
-            }
             try!(v.serialize(record, k, &mut serializer));
-            comma_needed |= true;
         }
 
         let mut io = serializer.finish();
@@ -186,6 +188,22 @@ impl Format {
                       record: &Record,
                       logger_values: &OwnedKeyValueList)
                       -> io::Result<()> {
+        // "<{priority}> {timestamp} {host} {tag} {msg}";
+        let format ="<{}> {} {} {} {}";
+
+//        pub fn format_3164<T: fmt::Display>(&self, severity:Severity, message: T) -> String {
+//        if let Some(ref hostname) = self.hostname {
+//        format!("<{}>{} {} {}[{}]: {}",
+//        self.encode_priority(severity, self.facility),
+//        time::now().strftime("%b %d %T").unwrap(),
+//        hostname, self.process, self.pid, message)
+//        } else {
+//        format!("<{}>{} {}[{}]: {}",
+//        self.encode_priority(severity, self.facility),
+//        time::now().strftime("%b %d %T").unwrap(),
+//        self.process, self.pid, message)
+//        }
+//        }
 
         let mut comma_needed = try!(self.print_msg_header(io,  record));
         let mut serializer = Serializer::new(io);
@@ -212,31 +230,6 @@ impl Format {
 
         Ok(())
 
-    }
-
-    fn print_indent(&self, io: &mut io::Write, indent: usize) -> io::Result<()> {
-        for _ in 0..indent {
-            try!(write!(io, "  "));
-        }
-        Ok(())
-    }
-
-    // record in the history, and check if should print
-    // given set of values
-    fn should_print(&self, line: &[u8], indent: usize) -> bool {
-        let mut history = self.history.lock().unwrap();
-        if history.len() <= indent {
-            debug_assert_eq!(history.len(), indent);
-            history.push(line.into());
-            true
-        } else {
-            let should = history[indent] != line;
-            if should {
-                history[indent] = line.into();
-                history.truncate(indent + 1);
-            }
-            should
-        }
     }
 }
 
@@ -264,7 +257,7 @@ impl<W: io::Write> Serializer<W> {
 macro_rules! s(
     ($s:expr, $k:expr, $v:expr) => {
         try!(write!($s.io, "{}", $k));
-        try!(write!($s.io, ": "));
+        try!(write!($s.io, "="));
         try!(write!($s.io, "{}", $v));
     };
 );
