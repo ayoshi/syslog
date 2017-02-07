@@ -146,6 +146,16 @@ pub enum FormatMode {
     RFC5424,
 }
 
+/// Protocol
+pub enum Protocol {
+    /// Log to Unix socket
+    UnixSocket,
+    /// Log over TCP
+    TCP,
+    /// Log over UDP
+    UDP
+}
+
 /// Full formatting with optional color support
 pub struct Format<D: Decorator> {
     mode: FormatMode,
@@ -566,6 +576,7 @@ pub fn timestamp_utc(io: &mut io::Write) -> io::Result<()> {
 pub struct SyslogStreamer {
     async: bool,
     mode: FormatMode,
+    proto: Protocol,
     fn_timestamp: Box<TimestampFn>,
 }
 
@@ -574,20 +585,39 @@ impl SyslogStreamer {
     pub fn new() -> Self {
         SyslogStreamer {
             async: false,
-            mode: FormatMode::RFC5424,
+            proto: Protocol::UnixSocket,
+            mode: FormatMode::RFC3164,
             fn_timestamp: Box::new(timestamp_local),
         }
     }
 
-    /// Output using full mode
+    /// Output using RFC5424
     pub fn rfc5424(mut self) -> Self {
         self.mode = FormatMode::RFC5424;
         self
     }
 
-    /// Output using compact mode (default)
+    /// Output using RFC3164 (default)
     pub fn rfc3164(mut self) -> Self {
         self.mode = FormatMode::RFC3164;
+        self
+    }
+
+    /// Output to UNIX socket (default)
+    pub fn unix_socket(mut self) -> Self {
+        self.proto = Protocol::UnixSocket;
+        self
+    }
+
+    /// Output over TCP
+    pub fn tcp(mut self) -> Self {
+        self.proto = Protocol::TCP;
+        self
+    }
+
+    /// Output over UDP
+    pub fn udp(mut self) -> Self {
+        self.proto = Protocol::UDP;
         self
     }
 
