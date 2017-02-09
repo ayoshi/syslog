@@ -1,4 +1,4 @@
-//! Unix terminal formatter and drain for slog-rs
+//! Syslog RFC3164 and RFC5424 formatter and drain for slog
 //!
 //! ```
 //! #[macro_use]
@@ -18,12 +18,14 @@ extern crate slog_stream;
 extern crate chrono;
 extern crate thread_local;
 
-use std::{io, fmt, sync, cell};
-use std::io::Write;
 use std::str::FromStr;
+use std::io::Write;
+use std::{io, fmt, sync, cell};
+
 use slog::Record;
 use slog::ser;
 use slog::{Level, OwnedKeyValueList};
+
 use slog_stream::Format as StreamFormat;
 use slog_stream::{stream, async_stream};
 
@@ -31,7 +33,7 @@ thread_local! {
     static TL_BUF: cell::RefCell<Vec<u8>> = cell::RefCell::new(Vec::with_capacity(128));
 }
 
-/// Syslog severity
+/// Syslog Severity
 #[allow(non_camel_case_types)]
 #[derive(Debug)]
 pub enum Severity {
@@ -76,7 +78,7 @@ impl FromStr for Severity {
     }
 }
 
-/// Syslog facility
+/// Syslog Facility
 #[allow(non_camel_case_types)]
 #[derive(Debug)]
 pub enum Facility {
@@ -102,7 +104,13 @@ pub enum Facility {
     LOG_LOCAL7 = 23,
 }
 
-
+impl Facility {
+    /// Return &str variants, for using in commandline and configuration parsing
+    pub fn variants() -> [&'static str; 19] {
+        ["kern", "user", "mail", "daemon", "auth", "syslog", "lpr", "news", "uucp", "cron", "ftp",
+         "local0", "local1", "local2", "local3", "local4", "local5", "local6", "local7"]
+    }
+}
 
 impl FromStr for Facility {
     type Err = ();
@@ -144,7 +152,6 @@ impl Priority {
         Priority(facility << 3 | severity)
     }
 }
-
 
 /// Timestamp function type
 pub type TimestampFn = Fn(&mut io::Write) -> io::Result<()> + Send + Sync;
@@ -485,7 +492,7 @@ pub struct SyslogStreamer {
     async: bool,
     mode: FormatMode,
     proto: Protocol,
-    //    hostname: &'static str,
+    hostname: Option<&'static str>,
     fn_timestamp: Box<TimestampFn>,
 }
 
@@ -496,9 +503,15 @@ impl SyslogStreamer {
             async: false,
             proto: Protocol::UnixSocket,
             mode: FormatMode::RFC3164,
-            //            hostname: &"-",
+            hostname: None,
             fn_timestamp: Box::new(timestamp_local),
         }
+    }
+
+    /// Set own hostname
+    pub fn hostname(mut self, hostname: &'static str) -> Self {
+        self.hostname = Some(hostname);
+        self
     }
 
     /// Output using RFC5424
