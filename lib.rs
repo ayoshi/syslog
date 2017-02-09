@@ -20,7 +20,7 @@ extern crate thread_local;
 
 use std::{io, fmt, sync, cell};
 use std::io::Write;
-
+use std::str::FromStr;
 use slog::Record;
 use slog::ser;
 use slog::{Level, OwnedKeyValueList};
@@ -32,73 +32,119 @@ thread_local! {
 }
 
 /// Syslog severity
+#[allow(non_camel_case_types)]
 #[derive(Debug)]
 pub enum Severity {
-    Emerg = 0,
-    Alert,
-    Crit,
-    Err,
-    Warn,
-    Notice,
-    Info,
-    Debug,
+    LOG_EMERG = 0,
+    LOG_ALERT,
+    LOG_CRIT,
+    LOG_ERR,
+    LOG_WARN,
+    LOG_NOTICE,
+    LOG_INFO,
+    LOG_DEBUG,
+}
+
+impl From<slog::Level> for Severity {
+    fn from(level: slog::Level) -> Severity {
+        match level {
+            Level::Critical => Severity::LOG_CRIT,
+            Level::Error => Severity::LOG_ERR,
+            Level::Warning => Severity::LOG_WARN,
+            Level::Info => Severity::LOG_INFO,
+            Level::Debug => Severity::LOG_DEBUG,
+            Level::Trace => Severity::LOG_DEBUG,
+        }
+    }
+}
+
+impl FromStr for Severity {
+    type Err = ();
+    fn from_str(s: &str) -> Result<Severity, ()> {
+        let result = match &s.to_lowercase()[..] {
+            "log_emerg" | "emerg" | "panic" => Severity::LOG_EMERG,
+            "log_alert" | "alert" => Severity::LOG_ALERT,
+            "log_crit" | "crit" | "critical" => Severity::LOG_CRIT,
+            "log_err" | "err" | "error" => Severity::LOG_ERR,
+            "log_warn" | "warn" | "warning" => Severity::LOG_WARN,
+            "log_notice" | "notice" => Severity::LOG_NOTICE,
+            "log_info" | "info" => Severity::LOG_INFO,
+            "log_debug" | "debug" => Severity::LOG_DEBUG,
+            _ => return Err(()),
+        };
+        Ok(result)
+    }
 }
 
 /// Syslog facility
+#[allow(non_camel_case_types)]
 #[derive(Debug)]
 pub enum Facility {
-    KERN = 0,
-    USER = 1,
-    MAIL = 2,
-    DAEMON = 3,
-    AUTH = 4,
-    SYSLOG = 5,
-    LPR = 6,
-    NEWS = 7,
-    UUCP = 8,
-    CRON = 9,
-    AUTHPRIV = 10,
-    FTP = 11,
-    LOCAL0 = 16,
-    LOCAL1 = 17,
-    LOCAL2 = 18,
-    LOCAL3 = 19,
-    LOCAL4 = 20,
-    LOCAL5 = 21,
-    LOCAL6 = 22,
-    LOCAL7 = 23,
+    LOG_KERN = 0,
+    LOG_USER = 1,
+    LOG_MAIL = 2,
+    LOG_DAEMON = 3,
+    LOG_AUTH = 4,
+    LOG_SYSLOG = 5,
+    LOG_LPR = 6,
+    LOG_NEWS = 7,
+    LOG_UUCP = 8,
+    LOG_CRON = 9,
+    LOG_AUTHPRIV = 10,
+    LOG_FTP = 11,
+    LOG_LOCAL0 = 16,
+    LOG_LOCAL1 = 17,
+    LOG_LOCAL2 = 18,
+    LOG_LOCAL3 = 19,
+    LOG_LOCAL4 = 20,
+    LOG_LOCAL5 = 21,
+    LOG_LOCAL6 = 22,
+    LOG_LOCAL7 = 23,
+}
+
+
+
+impl FromStr for Facility {
+    type Err = ();
+    fn from_str(s: &str) -> Result<Facility, ()> {
+        let result = match &s.to_lowercase()[..] {
+            "log_kern" | "kern" => Facility::LOG_KERN,
+            "log_user" | "user" => Facility::LOG_USER,
+            "log_mail" | "mail" => Facility::LOG_MAIL,
+            "log_daemon" | "daemon" => Facility::LOG_DAEMON,
+            "log_auth" | "auth" => Facility::LOG_AUTH,
+            "log_syslog" | "syslog" => Facility::LOG_SYSLOG,
+            "log_lpr" | "lpr" => Facility::LOG_LPR,
+            "log_news" | "news" => Facility::LOG_NEWS,
+            "log_uucp" | "uucp" => Facility::LOG_UUCP,
+            "log_cron" | "cron" => Facility::LOG_CRON,
+            "log_authpriv" | "authpriv" => Facility::LOG_AUTHPRIV,
+            "log_ftp" | "ftp" => Facility::LOG_FTP,
+            "log_local0" | "local0" => Facility::LOG_LOCAL0,
+            "log_local1" | "local1" => Facility::LOG_LOCAL1,
+            "log_local2" | "local2" => Facility::LOG_LOCAL2,
+            "log_local3" | "local3" => Facility::LOG_LOCAL3,
+            "log_local4" | "local4" => Facility::LOG_LOCAL4,
+            "log_local5" | "local5" => Facility::LOG_LOCAL5,
+            "log_local6" | "local6" => Facility::LOG_LOCAL6,
+            "log_local7" | "local7" => Facility::LOG_LOCAL7,
+            _ => return Err(()),
+        };
+        Ok(result)
+    }
 }
 
 #[derive(Debug)]
 pub struct Priority(u8);
 
 impl Priority {
-    pub fn new( facility: Facility, severity: Severity) -> Priority {
+    pub fn new(facility: Facility, severity: Severity) -> Priority {
         let facility = facility as u8;
         let severity = severity as u8;
         Priority(facility << 3 | severity)
     }
 }
 
-//impl<'a> Into<u8> for &'a Priority {
-//    fn into(self) -> u8 {
-//      let facility = self.facility as u8;
-//      let severity = self.severity as u8;
-//      facility << 3 | severity
-//    }
-//}
-
-/// Translate from level to severity
-fn level_to_severity(level: slog::Level) -> Severity {
-    match level {
-        Level::Critical => Severity::Crit,
-        Level::Error => Severity::Err,
-        Level::Warning => Severity::Warn,
-        Level::Info => Severity::Notice,
-        Level::Debug => Severity::Info,
-        Level::Trace => Severity::Debug,
-    }
-}
 
 /// Timestamp function type
 pub type TimestampFn = Fn(&mut io::Write) -> io::Result<()> + Send + Sync;
@@ -181,7 +227,9 @@ impl Format {
     // Returns `true` if message was not empty
     fn print_msg_header(&self, io: &mut io::Write, record: &Record) -> io::Result<bool> {
         try!(self.fmt_timestamp(io, &*self.fn_timestamp));
-        try!(self.fmt_level(io, &|io: &mut io::Write| write!(io, " {} ", record.level().as_short_str())));
+        try!(self.fmt_level(
+            io,
+            &|io: &mut io::Write| write!(io, " {} ", record.level().as_short_str())));
         try!(self.fmt_msg(io, &|io: &mut io::Write| write!(io, "{}", record.msg())));
         Ok(true)
     }
@@ -211,7 +259,11 @@ impl Format {
         /// /}
         ///
         /// // format a message as a RFC 5424 log message
-        /// pub fn format_5424<T: fmt::Display>(&self, severity:Severity, message_id: i32, data: StructuredData, message: T) -> String {
+        /// pub fn
+        /// format_5424<T: fmt::Display>(
+        /// &self, severity:Severity,
+        /// message_id: i32, data:
+        /// StructuredData, message: T) -> String {
         /// let f =  format!("<{}> {} {} {} {} {} {} {} {}",
         /// self.encode_priority(severity, self.facility),
         /// 1, // version
@@ -249,7 +301,8 @@ impl Format {
         // "<{priority}> {timestamp} {host} {tag} {msg}";
         let format = "<{}> {} {} {} {}";
 
-        //        pub fn format_3164<T: fmt::Display>(&self, severity:Severity, message: T) -> String {
+        //        pub fn
+        // format_3164<T: fmt::Display>(&self, severity:Severity, message: T) -> String {
         //        if let Some(ref hostname) = self.hostname {
         //        format!("<{}>{} {} {}[{}]: {}",
         //        self.encode_priority(severity, self.facility),
