@@ -178,13 +178,15 @@ pub enum Protocol {
 pub struct Format {
     mode: FormatMode,
     fn_timestamp: Box<TimestampFn>,
+    hostname: Option<&'static str>
 }
 
 impl Format {
-    pub fn new(mode: FormatMode, fn_timestamp: Box<TimestampFn>) -> Self {
+    pub fn new(mode: FormatMode, fn_timestamp: Box<TimestampFn>, hostname: Option<&'static str>) -> Self {
         Format {
             mode: mode,
             fn_timestamp: fn_timestamp,
+            hostname: hostname
         }
     }
 
@@ -606,7 +608,7 @@ impl SyslogStreamer {
 
     /// Build the streamer
     pub fn build(self) -> Box<slog::Drain<Error = io::Error> + Send + Sync> {
-        let format = Format::new(self.mode, self.fn_timestamp);
+        let format = Format::new(self.mode, self.fn_timestamp, self.hostname);
 
         let io = Box::new(io::stdout()) as Box<io::Write + Send>;
 
