@@ -493,6 +493,9 @@ pub struct SyslogStreamer {
     mode: FormatMode,
     proto: Protocol,
     hostname: Option<&'static str>,
+    syslog_socket: Option<&'static str>,
+    syslog_host: Option<&'static str>,
+    syslog_port: Option<u8>,
     fn_timestamp: Box<TimestampFn>,
 }
 
@@ -504,6 +507,9 @@ impl SyslogStreamer {
             proto: Protocol::UnixSocket,
             mode: FormatMode::RFC3164,
             hostname: None,
+            syslog_socket: None,
+            syslog_host: None,
+            syslog_port: None,
             fn_timestamp: Box::new(timestamp_local),
         }
     }
@@ -544,6 +550,28 @@ impl SyslogStreamer {
         self
     }
 
+    /// UNIX domain socket address
+    /// Default: will try those in order: '/dev/log', '/var/run/syslog'
+    pub fn syslog_socket(mut self, path: &'static str) -> Self {
+        self.syslog_socket = Some(path);
+        self
+    }
+
+    /// Syslog server host
+    /// Default: localhost
+    pub fn syslog_host(mut self, host: &'static str) -> Self {
+        self.syslog_host = Some(host);
+        self
+    }
+
+    /// Syslog server port
+    /// Default: 514 for UDP, 6514 for TCP
+    pub fn syslog_port(mut self, port: u8) -> Self {
+        self.syslog_port = Some(port);
+        self
+    }
+
+
     /// Use asynchronous streamer
     pub fn async(mut self) -> Self {
         self.async = true;
@@ -576,11 +604,6 @@ impl SyslogStreamer {
         self
     }
 
-    /// Specify syslog client hostname (optional)
-    //    pub fn hostname(mut self, hostname: &str) -> Self {
-    //        self.hostname = hostname;
-    //        self
-    //    }
     /// Build the streamer
     pub fn build(self) -> Box<slog::Drain<Error = io::Error> + Send + Sync> {
         let format = Format::new(self.mode, self.fn_timestamp);
