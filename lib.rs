@@ -31,30 +31,74 @@ thread_local! {
     static TL_BUF: cell::RefCell<Vec<u8>> = cell::RefCell::new(Vec::with_capacity(128));
 }
 
-/// Severity
-enum SyslogSeverity {
-	Emerg = 0,
-	Alert = 1,
-	Crit  = 2,
-	Err   = 3,
-	Warn  = 4,
-	Notice = 5,
-	Info = 6,
-	Debug = 7
+/// Syslog severity
+#[derive(Debug)]
+pub enum Severity {
+    Emerg = 0,
+    Alert,
+    Crit,
+    Err,
+    Warn,
+    Notice,
+    Info,
+    Debug,
 }
 
-/// Translate from level to severity
-fn level_to_severity(level: slog::Level) -> SyslogSeverity {
-    match level {
-        Level::Critical => SyslogSeverity::Crit,
-        Level::Error => SyslogSeverity::Err,
-        Level::Warning => SyslogSeverity::Warn,
-        Level::Info => SyslogSeverity::Notice,
-        Level::Debug => SyslogSeverity::Info,
-        Level::Trace => SyslogSeverity::Debug,
+/// Syslog facility
+#[derive(Debug)]
+pub enum Facility {
+    KERN = 0,
+    USER = 1,
+    MAIL = 2,
+    DAEMON = 3,
+    AUTH = 4,
+    SYSLOG = 5,
+    LPR = 6,
+    NEWS = 7,
+    UUCP = 8,
+    CRON = 9,
+    AUTHPRIV = 10,
+    FTP = 11,
+    LOCAL0 = 16,
+    LOCAL1 = 17,
+    LOCAL2 = 18,
+    LOCAL3 = 19,
+    LOCAL4 = 20,
+    LOCAL5 = 21,
+    LOCAL6 = 22,
+    LOCAL7 = 23,
+}
+
+#[derive(Debug)]
+pub struct Priority(u8);
+
+impl Priority {
+    pub fn new( facility: Facility, severity: Severity) -> Priority {
+        let facility = facility as u8;
+        let severity = severity as u8;
+        Priority(facility << 3 | severity)
     }
 }
 
+//impl<'a> Into<u8> for &'a Priority {
+//    fn into(self) -> u8 {
+//      let facility = self.facility as u8;
+//      let severity = self.severity as u8;
+//      facility << 3 | severity
+//    }
+//}
+
+/// Translate from level to severity
+fn level_to_severity(level: slog::Level) -> Severity {
+    match level {
+        Level::Critical => Severity::Crit,
+        Level::Error => Severity::Err,
+        Level::Warning => Severity::Warn,
+        Level::Info => Severity::Notice,
+        Level::Debug => Severity::Info,
+        Level::Trace => Severity::Debug,
+    }
+}
 
 /// Timestamp function type
 pub type TimestampFn = Fn(&mut io::Write) -> io::Result<()> + Send + Sync;
@@ -74,7 +118,7 @@ pub enum Protocol {
     /// Log over TCP
     TCP,
     /// Log over UDP
-    UDP
+    UDP,
 }
 
 /// Full formatting with optional color support
@@ -84,7 +128,6 @@ pub struct Format {
 }
 
 impl Format {
-
     pub fn new(mode: FormatMode, fn_timestamp: Box<TimestampFn>) -> Self {
         Format {
             mode: mode,
@@ -93,35 +136,50 @@ impl Format {
     }
 
     /// Format a field
-    fn fmt_msg(&self, io: &mut io::Write, f: &Fn(&mut io::Write) -> io::Result<()>) -> io::Result<()> {
+    fn fmt_msg(&self,
+               io: &mut io::Write,
+               f: &Fn(&mut io::Write) -> io::Result<()>)
+               -> io::Result<()> {
         f(io)
     }
     /// Format a key
-    fn fmt_key(&self, io: &mut io::Write, f: &Fn(&mut io::Write) -> io::Result<()>) -> io::Result<()> {
+    fn fmt_key(&self,
+               io: &mut io::Write,
+               f: &Fn(&mut io::Write) -> io::Result<()>)
+               -> io::Result<()> {
         f(io)
     }
     /// Format a separator
-    fn fmt_separator(&self, io: &mut io::Write, f: &Fn(&mut io::Write) -> io::Result<()>) -> io::Result<()> {
+    fn fmt_separator(&self,
+                     io: &mut io::Write,
+                     f: &Fn(&mut io::Write) -> io::Result<()>)
+                     -> io::Result<()> {
         f(io)
     }
     /// Format a value
-    fn fmt_value(&self, io: &mut io::Write, f: &Fn(&mut io::Write) -> io::Result<()>) -> io::Result<()> {
+    fn fmt_value(&self,
+                 io: &mut io::Write,
+                 f: &Fn(&mut io::Write) -> io::Result<()>)
+                 -> io::Result<()> {
         f(io)
     }
     /// Format a timestamp
-    fn fmt_timestamp(&self, io: &mut io::Write, f : &Fn(&mut io::Write) -> io::Result<()>) -> io::Result<()> {
+    fn fmt_timestamp(&self,
+                     io: &mut io::Write,
+                     f: &Fn(&mut io::Write) -> io::Result<()>)
+                     -> io::Result<()> {
         f(io)
     }
     /// Format a level
-    fn fmt_level(&self, io: &mut io::Write, f: &Fn(&mut io::Write) -> io::Result<()>) -> io::Result<()> {
+    fn fmt_level(&self,
+                 io: &mut io::Write,
+                 f: &Fn(&mut io::Write) -> io::Result<()>)
+                 -> io::Result<()> {
         f(io)
     }
 
     // Returns `true` if message was not empty
-    fn print_msg_header(&self,
-                        io: &mut io::Write,
-                        record: &Record)
-                        -> io::Result<bool> {
+    fn print_msg_header(&self, io: &mut io::Write, record: &Record) -> io::Result<bool> {
         try!(self.fmt_timestamp(io, &*self.fn_timestamp));
         try!(self.fmt_level(io, &|io: &mut io::Write| write!(io, " {} ", record.level().as_short_str())));
         try!(self.fmt_msg(io, &|io: &mut io::Write| write!(io, "{}", record.msg())));
@@ -134,38 +192,38 @@ impl Format {
                       logger_values: &OwnedKeyValueList)
                       -> io::Result<()> {
 
-/// format RFC 5424 structured data as `([id (name="value")*])*`
-//// pub fn format_5424_structured_data(&self, data: StructuredData) -> String {
-////if data.is_empty() {
-////"-".to_string()
-////} else {
-////let mut res = String::new();
-////for (id, params) in data.iter() {
-////res = res + "["+id;
-////for (name,value) in params.iter() {
-////res = res + " " + name + "=\"" + value + "\"";
-////}
-////res = res + "]";
-////}
-////
-////res
-////}
-////}
-//
-///// format a message as a RFC 5424 log message
-//pub fn format_5424<T: fmt::Display>(&self, severity:Severity, message_id: i32, data: StructuredData, message: T) -> String {
-//let f =  format!("<{}> {} {} {} {} {} {} {} {}",
-//self.encode_priority(severity, self.facility),
-//1, // version
-//time::now_utc().rfc3339(),
-//self.hostname.as_ref().map(|x| &x[..]).unwrap_or("localhost"),
-//self.process, self.pid, message_id,
-//self.format_5424_structured_data(data), message);
-//return f;
-//}
-//
-//        let mut comma_needed = try!(self.print_msg_header(io,  record));
-let mut serializer = Serializer::new(io);
+        /// format RFC 5424 structured data as `([id (name="value")*])*`
+        /// / pub fn format_5424_structured_data(&self, data: StructuredData) -> String {
+        /// /if data.is_empty() {
+        /// /"-".to_string()
+        /// /} else {
+        /// /let mut res = String::new();
+        /// /for (id, params) in data.iter() {
+        /// /res = res + "["+id;
+        /// /for (name,value) in params.iter() {
+        /// /res = res + " " + name + "=\"" + value + "\"";
+        /// /}
+        /// /res = res + "]";
+        /// /}
+        /// /
+        /// /res
+        /// /}
+        /// /}
+        ///
+        /// // format a message as a RFC 5424 log message
+        /// pub fn format_5424<T: fmt::Display>(&self, severity:Severity, message_id: i32, data: StructuredData, message: T) -> String {
+        /// let f =  format!("<{}> {} {} {} {} {} {} {} {}",
+        /// self.encode_priority(severity, self.facility),
+        /// 1, // version
+        /// time::now_utc().rfc3339(),
+        /// self.hostname.as_ref().map(|x| &x[..]).unwrap_or("localhost"),
+        /// self.process, self.pid, message_id,
+        /// self.format_5424_structured_data(data), message);
+        /// return f;
+        ///
+        ///
+        ///        let mut comma_needed = try!(self.print_msg_header(io,  record));
+        let mut serializer = Serializer::new(io);
 
         for &(k, v) in record.values().iter().rev() {
             try!(v.serialize(record, k, &mut serializer));
@@ -189,23 +247,23 @@ let mut serializer = Serializer::new(io);
                       logger_values: &OwnedKeyValueList)
                       -> io::Result<()> {
         // "<{priority}> {timestamp} {host} {tag} {msg}";
-        let format ="<{}> {} {} {} {}";
+        let format = "<{}> {} {} {} {}";
 
-//        pub fn format_3164<T: fmt::Display>(&self, severity:Severity, message: T) -> String {
-//        if let Some(ref hostname) = self.hostname {
-//        format!("<{}>{} {} {}[{}]: {}",
-//        self.encode_priority(severity, self.facility),
-//        time::now().strftime("%b %d %T").unwrap(),
-//        hostname, self.process, self.pid, message)
-//        } else {
-//        format!("<{}>{} {}[{}]: {}",
-//        self.encode_priority(severity, self.facility),
-//        time::now().strftime("%b %d %T").unwrap(),
-//        self.process, self.pid, message)
-//        }
-//        }
+        //        pub fn format_3164<T: fmt::Display>(&self, severity:Severity, message: T) -> String {
+        //        if let Some(ref hostname) = self.hostname {
+        //        format!("<{}>{} {} {}[{}]: {}",
+        //        self.encode_priority(severity, self.facility),
+        //        time::now().strftime("%b %d %T").unwrap(),
+        //        hostname, self.process, self.pid, message)
+        //        } else {
+        //        format!("<{}>{} {}[{}]: {}",
+        //        self.encode_priority(severity, self.facility),
+        //        time::now().strftime("%b %d %T").unwrap(),
+        //        self.process, self.pid, message)
+        //        }
+        //        }
 
-        let mut comma_needed = try!(self.print_msg_header(io,  record));
+        let mut comma_needed = try!(self.print_msg_header(io, record));
         let mut serializer = Serializer::new(io);
 
         for &(k, v) in record.values().iter().rev() {
@@ -239,9 +297,7 @@ struct Serializer<W> {
 
 impl<W: io::Write> Serializer<W> {
     fn new(io: W) -> Self {
-        Serializer {
-            io: io
-        }
+        Serializer { io: io }
     }
 
     fn print_comma(&mut self) -> io::Result<()> {
@@ -376,6 +432,7 @@ pub struct SyslogStreamer {
     async: bool,
     mode: FormatMode,
     proto: Protocol,
+    //    hostname: &'static str,
     fn_timestamp: Box<TimestampFn>,
 }
 
@@ -386,6 +443,7 @@ impl SyslogStreamer {
             async: false,
             proto: Protocol::UnixSocket,
             mode: FormatMode::RFC3164,
+            //            hostname: &"-",
             fn_timestamp: Box::new(timestamp_local),
         }
     }
@@ -452,10 +510,14 @@ impl SyslogStreamer {
         self
     }
 
+    /// Specify syslog client hostname (optional)
+    //    pub fn hostname(mut self, hostname: &str) -> Self {
+    //        self.hostname = hostname;
+    //        self
+    //    }
     /// Build the streamer
     pub fn build(self) -> Box<slog::Drain<Error = io::Error> + Send + Sync> {
-        let format = Format::new(self.mode,
-                                 self.fn_timestamp);
+        let format = Format::new(self.mode, self.fn_timestamp);
 
         let io = Box::new(io::stdout()) as Box<io::Write + Send>;
 
