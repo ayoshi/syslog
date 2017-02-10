@@ -23,8 +23,7 @@ extern crate thread_local;
 use libc::getpid;
 use std::str::FromStr;
 use std::io::Write;
-use std::{io, fmt, sync, cell};
-use std::{env,os,ffi};
+use std::{io, fmt, sync, cell, env, os, ffi};
 use std::path::Path;
 
 use slog::Record;
@@ -48,7 +47,9 @@ thread_local! {
 
 /// Get process name and pid
 fn get_process_name() -> Option<String> {
-    env::current_exe().ok().as_ref()
+    env::current_exe()
+        .ok()
+        .as_ref()
         .map(Path::new)
         .and_then(Path::file_name)
         .and_then(ffi::OsStr::to_str)
@@ -80,6 +81,7 @@ pub fn timestamp_utc(io: &mut io::Write) -> io::Result<()> {
 }
 
 /// Formatting mode
+#[derive(Debug)]
 pub enum FormatMode {
     /// Compact logging format
     RFC3164,
@@ -88,6 +90,7 @@ pub enum FormatMode {
 }
 
 /// Protocol
+#[derive(Debug)]
 pub enum Protocol {
     /// Log to Unix socket
     UnixSocket,
@@ -113,7 +116,7 @@ pub struct SyslogStreamer {
 
 impl SyslogStreamer {
     /// New `StreamerBuilder`
-    pub fn new()-> Self {
+    pub fn new() -> Self {
         SyslogStreamer {
             async: false,
             proto: Protocol::UnixSocket,
@@ -129,7 +132,8 @@ impl SyslogStreamer {
 
     /// Set own hostname
     pub fn hostname<S>(mut self, hostname: S) -> Self
-        where S: Into<String> {
+        where S: Into<String>
+    {
         self.hostname = Some(hostname.into());
         self
     }
@@ -167,7 +171,8 @@ impl SyslogStreamer {
     /// UNIX domain socket address
     /// Default: will try those in order: '/dev/log', '/var/run/syslog'
     pub fn syslog_socket<S>(mut self, path: S) -> Self
-        where S: Into<String> {
+        where S: Into<String>
+    {
         self.syslog_socket = Some(path.into());
         self
     }
@@ -175,7 +180,8 @@ impl SyslogStreamer {
     /// Syslog server host
     /// Default: localhost
     pub fn syslog_host<S>(mut self, host: S) -> Self
-        where S: Into<String> {
+        where S: Into<String>
+    {
         self.syslog_host = Some(host.into());
         self
     }
@@ -231,13 +237,12 @@ impl SyslogStreamer {
         let process_name = get_process_name().unwrap_or("".into());
         let pid = get_pid();
         let hostname = self.hostname.unwrap_or("".into());
-        let format = Format::new(
-            self.mode,
-            self.fn_timestamp,
-            hostname,
-            process_name,
-            pid,
-            self.facility);
+        let format = Format::new(self.mode,
+                                 self.fn_timestamp,
+                                 hostname,
+                                 process_name,
+                                 pid,
+                                 self.facility);
 
         let io = Box::new(io::stdout()) as Box<io::Write + Send>;
 
@@ -249,6 +254,21 @@ impl SyslogStreamer {
     }
 }
 
+impl fmt::Debug for SyslogStreamer {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,
+               "SyslogStreamer {{ async: {:?}, proto: {:?}, mode: {:?},hostname: {:?}, \
+                syslog_socket: {:?}, syslog_host: {:?}, syslog_port: {:?}, facility: {:?} }}",
+               self.async,
+               self.proto,
+               self.mode,
+               self.hostname,
+               self.syslog_socket,
+               self.syslog_host,
+               self.syslog_port,
+               self.facility)
+    }
+}
 impl Default for SyslogStreamer {
     fn default() -> Self {
         Self::new()
