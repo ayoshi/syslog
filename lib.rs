@@ -17,6 +17,7 @@ extern crate slog;
 extern crate slog_stream;
 extern crate chrono;
 extern crate libc;
+extern crate hostname;
 extern crate thread_local;
 
 use libc::getpid;
@@ -28,6 +29,8 @@ use std::{env,path,os,ffi};
 use slog::Record;
 use slog::ser;
 use slog::{Level, OwnedKeyValueList};
+
+use hostname::get_hostname;
 
 use slog_stream::Format as StreamFormat;
 use slog_stream::{stream, async_stream};
@@ -104,7 +107,7 @@ impl SyslogStreamer {
             async: false,
             proto: Protocol::UnixSocket,
             mode: FormatMode::RFC3164,
-            hostname: None,
+            hostname: get_hostname(),
             syslog_socket: None,
             syslog_host: None,
             syslog_port: None,
