@@ -1,18 +1,18 @@
 /// Full formatting with support for RFC3164 and RFC5424
-pub struct Format {
+pub struct Format<'a> {
     mode: FormatMode,
     fn_timestamp: Box<TimestampFn>,
-    hostname: Option<&'static str>,
-    process_name: String,
+    hostname: &'a str,
+    process_name: &'a str,
     pid: i32,
     facility: Facility
 }
 
-impl Format {
+impl <'a> Format<'a> {
     pub fn new(mode: FormatMode,
                fn_timestamp: Box<TimestampFn>,
-               hostname: Option<&'static str>,
-               process_name: String,
+               hostname: &'a str,
+               process_name: &'a str,
                pid: i32,
                facility: Facility)
                -> Self {
@@ -303,7 +303,7 @@ impl<W: io::Write> slog::ser::Serializer for Serializer<W> {
     }
 }
 
-impl StreamFormat for Format {
+impl <'a> StreamFormat for Format<'a> {
     fn format(&self,
               io: &mut io::Write,
               record: &Record,
