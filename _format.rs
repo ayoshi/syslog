@@ -1,26 +1,28 @@
 /// Full formatting with support for RFC3164 and RFC5424
-pub struct Format<'a> {
+pub struct Format {
     mode: FormatMode,
     fn_timestamp: Box<TimestampFn>,
-    hostname: &'a str,
-    process_name: &'a str,
+    hostname: String,
+    process_name: String,
     pid: i32,
     facility: Facility
 }
 
-impl <'a> Format<'a> {
-    pub fn new(mode: FormatMode,
+impl Format {
+    pub fn new<S>(mode: FormatMode,
                fn_timestamp: Box<TimestampFn>,
-               hostname: &'a str,
-               process_name: &'a str,
+               hostname: S,
+               process_name: S,
                pid: i32,
                facility: Facility)
-               -> Self {
+               -> Self
+    where S: Into<String>
+    {
         Format {
             mode: mode,
             fn_timestamp: fn_timestamp,
-            hostname: hostname,
-            process_name: process_name,
+            hostname: hostname.into(),
+            process_name: process_name.into(),
             pid: pid,
             facility: facility
         }
@@ -303,7 +305,7 @@ impl<W: io::Write> slog::ser::Serializer for Serializer<W> {
     }
 }
 
-impl <'a> StreamFormat for Format<'a> {
+impl StreamFormat for Format {
     fn format(&self,
               io: &mut io::Write,
               record: &Record,

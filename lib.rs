@@ -85,19 +85,19 @@ pub enum Protocol {
 
 
 /// Streamer builder
-pub struct SyslogStreamer<'a> {
+pub struct SyslogStreamer {
     async: bool,
     mode: FormatMode,
     proto: Protocol,
-    hostname: Option<&'a str>,
-    syslog_socket: Option<&'a str>,
-    syslog_host: Option<&'a str>,
+    hostname: Option<String>,
+    syslog_socket: Option<String>,
+    syslog_host: Option<String>,
     syslog_port: Option<u8>,
     facility: Facility,
     fn_timestamp: Box<TimestampFn>,
 }
 
-impl<'a> SyslogStreamer<'a> {
+impl SyslogStreamer {
     /// New `StreamerBuilder`
     pub fn new()-> Self {
         SyslogStreamer {
@@ -114,8 +114,9 @@ impl<'a> SyslogStreamer<'a> {
     }
 
     /// Set own hostname
-    pub fn hostname(mut self, hostname: &str) -> Self {
-        self.hostname = Some(hostname);
+    pub fn hostname<S>(mut self, hostname: S) -> Self
+        where S: Into<String> {
+        self.hostname = Some(hostname.into());
         self
     }
 
@@ -151,15 +152,17 @@ impl<'a> SyslogStreamer<'a> {
 
     /// UNIX domain socket address
     /// Default: will try those in order: '/dev/log', '/var/run/syslog'
-    pub fn syslog_socket(mut self, path: &str) -> Self {
-        self.syslog_socket = Some(path);
+    pub fn syslog_socket<S>(mut self, path: S) -> Self
+        where S: Into<String> {
+        self.syslog_socket = Some(path.into());
         self
     }
 
     /// Syslog server host
     /// Default: localhost
-    pub fn syslog_host(mut self, host: &str) -> Self {
-        self.syslog_host = Some(host);
+    pub fn syslog_host<S>(mut self, host: S) -> Self
+        where S: Into<String> {
+        self.syslog_host = Some(host.into());
         self
     }
 
@@ -211,9 +214,9 @@ impl<'a> SyslogStreamer<'a> {
 
     /// Build the streamer
     pub fn build(self) -> Box<slog::Drain<Error = io::Error> + Send + Sync> {
-        let process_name = get_process_name().unwrap_or("".into()).as_str();
+        let process_name = get_process_name().unwrap_or("".into());
         let pid = get_pid();
-        let hostname = self.hostname.unwrap_or("");
+        let hostname = self.hostname.unwrap_or("".into());
         let format = Format::new(
             self.mode,
             self.fn_timestamp,
@@ -232,7 +235,7 @@ impl<'a> SyslogStreamer<'a> {
     }
 }
 
-impl <'a>Default for SyslogStreamer<'a> {
+impl Default for SyslogStreamer {
     fn default() -> Self {
         Self::new()
     }
@@ -240,6 +243,6 @@ impl <'a>Default for SyslogStreamer<'a> {
 
 /// Build `slog_stream::Streamer`/`slog_stream::AsyncStreamer` that
 /// will output logging records to syslog
-pub fn syslog_streamer<'a>() -> SyslogStreamer<'a> {
+pub fn syslog_streamer() -> SyslogStreamer {
     SyslogStreamer::new()
 }
