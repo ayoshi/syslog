@@ -24,7 +24,8 @@ use libc::getpid;
 use std::str::FromStr;
 use std::io::Write;
 use std::{io, fmt, sync, cell};
-use std::{env,path,os,ffi};
+use std::{env,os,ffi};
+use std::path::Path;
 
 use slog::Record;
 use slog::ser;
@@ -38,21 +39,31 @@ use slog_stream::{stream, async_stream};
 include!("_syslog.rs");
 include!("_format.rs");
 
+/// By default the following locations are checked for sockets, in order
+pub const SYSLOG_SOCKET_LOCATIONS: &'static [&'static str] = &["/dev/log", "/var/run/syslog"];
+
 thread_local! {
     static TL_BUF: cell::RefCell<Vec<u8>> = cell::RefCell::new(Vec::with_capacity(128));
 }
 
 /// Get process name and pid
-fn get_process_name() -> Option<(String)> {
+fn get_process_name() -> Option<String> {
     env::current_exe().ok().as_ref()
-        .map(path::Path::new)
-        .and_then(path::Path::file_name)
+        .map(Path::new)
+        .and_then(Path::file_name)
         .and_then(ffi::OsStr::to_str)
         .map(String::from)
 }
 
 fn get_pid() -> i32 {
     unsafe { getpid() }
+}
+
+fn get_syslog_socket<'a>() -> Option<String> {
+    vec!["/dev/log", "/var/run/syslog"]
+        .iter()
+        .find(|s| Path::new(s).exists())
+        .map(|s| s.to_string())
 }
 
 /// Timestamp function type
