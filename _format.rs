@@ -2,27 +2,26 @@
 pub struct Format {
     mode: FormatMode,
     fn_timestamp: Box<TimestampFn>,
-    hostname: String,
-    process_name: String,
+    hostname: Option<String>,
+    process_name: Option<String>,
     pid: i32,
     facility: Facility
 }
 
 impl Format {
-    pub fn new<S>(mode: FormatMode,
+    pub fn new(mode: FormatMode,
                fn_timestamp: Box<TimestampFn>,
-               hostname: S,
-               process_name: S,
+               hostname: Option<String>,
+               process_name: Option<String>,
                pid: i32,
                facility: Facility)
                -> Self
-    where S: Into<String>
     {
         Format {
             mode: mode,
             fn_timestamp: fn_timestamp,
-            hostname: hostname.into(),
-            process_name: process_name.into(),
+            hostname: hostname,
+            process_name: process_name,
             pid: pid,
             facility: facility
         }
@@ -46,6 +45,8 @@ impl Format {
                -> io::Result<()> {
         f(io)
     }
+
+
     /// Format a key
     fn fmt_key(&self,
                io: &mut io::Write,
@@ -139,39 +140,6 @@ impl Format {
                       logger_values: &OwnedKeyValueList)
                       -> io::Result<()> {
 
-//        match self.hostname {
-//            Some(hostname) => {
-//                let msg = format!(
-//                   "{priority} {timestamp} {hostname} {tag} {msg}",
-//                    priority=Priority::new(self.facility, record.level().into()),
-//                    timestamp=self.fn_timestamp(),
-//                    hostname=hostname,
-//                    tag=" ",
-//                    msg=&record.msg()
-//                );
-//            }
-//            None => {
-//                let format = "{priority} {timestamp} {tag} {msg}>";
-//            }
-//        };
-
-        //        pub fn
-        // format_3164<T: fmt::Display>(&self, severity:Severity, message: T) -> String {
-        //        if let Some(ref hostname) = self.hostname {
-        //        format!("<{}>{} {} {}[{}]: {}",
-        //        self.encode_priority(severity, self.facility),
-        //        time::now().strftime("%b %d %T").unwrap(),
-        //        hostname, self.process, self.pid, message)
-        //        } else {
-        //        format!("<{}>{} {}[{}]: {}",
-        //        self.encode_priority(severity, self.facility),
-        //        time::now().strftime("%b %d %T").unwrap(),
-        //        self.process, self.pid, message)
-        //        }
-        //        }
-
-        //        let msg = concat!(&record.msg, );
-
         try!(self.fmt_priority(
             io,
             &|io: &mut io::Write| write!(io,"{}", Priority::new(self.facility, record.level().into())))
@@ -179,7 +147,22 @@ impl Format {
         try!(self.fmt_separator(io, &|io: &mut io::Write| write!(io, " ")));
         try!(self.fmt_timestamp(io, &*self.fn_timestamp));
         try!(self.fmt_separator(io, &|io: &mut io::Write| write!(io, " ")));
-//        try!(self.fmt_tag(io, &|io: &mut io::Write| write!(io, " ")));
+        match self.hostname {
+            Some(ref hostname) => {
+                try!(self.fmt_msg(io, &|io: &mut io::Write| write!(io, "{}", hostname)));
+                try!(self.fmt_separator(io, &|io: &mut io::Write| write!(io, " ")));
+            },
+            None => {}
+        };
+        match self.process_name {
+            Some(ref process_name) => {
+                try!(self.fmt_msg(io, &|io: &mut io::Write| write!(io, "{}[{}]:", process_name, self.pid)));
+            },
+            None => {
+                try!(self.fmt_msg(io, &|io: &mut io::Write| write!(io, "[{}]:", self.pid)));
+            }
+        };
+        try!(self.fmt_separator(io, &|io: &mut io::Write| write!(io, " ")));
         try!(self.fmt_msg(io, &|io: &mut io::Write| write!(io, "{}", record.msg())));
         try!(self.fmt_separator(io, &|io: &mut io::Write| write!(io, " ")));
 

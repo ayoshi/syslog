@@ -121,7 +121,7 @@ impl SyslogStreamer {
             async: false,
             proto: Protocol::UnixSocket,
             mode: FormatMode::RFC3164,
-            hostname: get_hostname(),
+            hostname: None,
             syslog_socket: None,
             syslog_host: None,
             syslog_port: None,
@@ -178,7 +178,7 @@ impl SyslogStreamer {
     }
 
     /// Syslog server host
-    /// Default: localhost
+    /// Default: deduce hostname, if it fails empty hostname
     pub fn syslog_host<S>(mut self, host: S) -> Self
         where S: Into<String>
     {
@@ -234,9 +234,9 @@ impl SyslogStreamer {
 
     /// Build the streamer
     pub fn build(self) -> Box<slog::Drain<Error = io::Error> + Send + Sync> {
-        let process_name = get_process_name().unwrap_or("".into());
+        let process_name = get_process_name();
         let pid = get_pid();
-        let hostname = self.hostname.unwrap_or("".into());
+        let hostname = self.hostname.or(get_hostname());
         let format = Format::new(self.mode,
                                  self.fn_timestamp,
                                  hostname,
@@ -257,7 +257,7 @@ impl SyslogStreamer {
 impl fmt::Debug for SyslogStreamer {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f,
-               "SyslogStreamer {{ async: {:?}, proto: {:?}, mode: {:?},hostname: {:?}, \
+               "SyslogStreamer {{ async: {:?}, proto: {:?}, mode: {:?}, hostname: {:?}, \
                 syslog_socket: {:?}, syslog_host: {:?}, syslog_port: {:?}, facility: {:?} }}",
                self.async,
                self.proto,
