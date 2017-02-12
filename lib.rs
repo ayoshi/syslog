@@ -227,7 +227,7 @@ pub enum TimestampMode {
 
 #[derive(PartialEq, Clone, Builder)]
 #[cfg_attr(not(feature = "release"), derive(Debug))]
-pub struct DomainSocketStreamer {
+pub struct UnixDomainSocketStreamer {
     /// Whether streamer should be synchronous or asynchronous
     async: bool,
     /// Formatting mode [FormatMode](enum.FormatMode.html)
@@ -240,8 +240,8 @@ pub struct DomainSocketStreamer {
     facility: Facility,
 }
 
-pub fn domain_socket_drain() -> DomainSocketStreamerBuilder {
-    DomainSocketStreamerBuilder::default()
+pub fn unix_domain_socket_drain() -> UnixDomainSocketStreamerBuilder {
+    UnixDomainSocketStreamerBuilder::default()
         .async(false)
         .mode(FormatMode::RFC3164)
         .facility(Facility::LOG_USER)
