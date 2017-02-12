@@ -13,11 +13,14 @@
 /////! ```
 ///// ![warn(missing_docs)]
 /////
+
 extern crate slog;
 
 use std::str::FromStr;
+use std::path::PathBuf;
 use slog::Level;
 use std::fmt;
+
 //
 // extern crate slog_stream;
 // extern crate chrono;
@@ -236,17 +239,29 @@ pub struct UnixDomainSocketStreamer {
     timestamp: TimestampMode,
     /// Optional: path to syslog socket `Option<String>`
     /// Will default to `/dev/log` on Linux and `/var/run/syslog` on MacOS
-    syslog_socket: Option<String>,
+    socket: PathBuf,
     facility: Facility,
 }
 
+impl UnixDomainSocketStreamer {
+    pub fn locate_default_uds_socket() -> Result<PathBuf, String> {
+        SYSLOG_DEFAULT_UDS_LOCATIONS.iter()
+            .map(PathBuf::from)
+            .find(|p| p.exists())
+            .ok_or(format!("Couldn't find socket file (tried {:?})",
+                           SYSLOG_DEFAULT_UDS_LOCATIONS))
+    }
+}
+
 pub fn unix_domain_socket_drain() -> UnixDomainSocketStreamerBuilder {
+
+    let socket = UnixDomainSocketStreamer::locate_default_uds_socket();
+
     UnixDomainSocketStreamerBuilder::default()
         .async(false)
         .mode(FormatMode::RFC3164)
         .facility(Facility::LOG_USER)
-        .syslog_socket(None)
+        .socket("/dev/log")
         .timestamp(TimestampMode::UTC)
         .to_owned()
 }
-

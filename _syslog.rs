@@ -1,3 +1,6 @@
+/// List of default unix domain socket locations on different OSes
+pub const SYSLOG_DEFAULT_UDS_LOCATIONS: &'static [&'static str] =
+    &["/dev/log", "/var/run/syslog", "/var/run/log"];
 
 /// Syslog Severity
 #[allow(non_camel_case_types)]
@@ -76,7 +79,7 @@ impl Facility {
     /// Return &str variants, for using in commandline and configuration parsing
     pub fn variants() -> [&'static str; 19] {
         ["kern", "user", "mail", "daemon", "auth", "syslog", "lpr", "news", "uucp", "cron", "ftp",
-            "local0", "local1", "local2", "local3", "local4", "local5", "local6", "local7"]
+         "local0", "local1", "local2", "local3", "local4", "local5", "local6", "local7"]
     }
 }
 
@@ -127,4 +130,3 @@ impl fmt::Display for Priority {
         write!(f, "{}", self.0)
     }
 }
-
