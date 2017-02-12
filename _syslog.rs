@@ -3,7 +3,6 @@
 #[allow(non_camel_case_types)]
 #[derive(PartialEq, Copy, Clone)]
 #[cfg_attr(not(feature = "release"), derive(Debug))]
-
 pub enum Severity {
     LOG_EMERG = 0,
     LOG_ALERT,
