@@ -14,6 +14,9 @@ readme = "README.md"
 path = "lib.rs"
 
 [dependencies]
+derive_builder = "*"
+custom_derive = "*"
+unix_socket ="*"
 slog = "1.5.0"
 slog-stream = "1.2"
 chrono = "0.2"

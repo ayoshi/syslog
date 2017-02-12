@@ -194,11 +194,6 @@ impl<W: io::Write> Serializer<W> {
         Serializer { io: io }
     }
 
-    fn print_comma(&mut self) -> io::Result<()> {
-        try!(write!(self.io, ", "));
-        Ok(())
-    }
-
     fn finish(self) -> W {
         self.io
     }
