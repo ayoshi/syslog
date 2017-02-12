@@ -12,6 +12,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn get_local_socket() {
         println!("{:?}",
                  UnixDomainSocketStreamer::locate_default_uds_socket());
