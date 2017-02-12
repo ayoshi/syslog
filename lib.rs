@@ -1,46 +1,46 @@
-/// /! Syslog RFC3164 and RFC5424 formatter and drain for slog
-/// /!
-/// /! ```
-/// /! #[macro_use]
-/// /! extern crate slog;
-/// /! extern crate slog_term;
-/// /!
-/// /! use slog::*;
-/// /!
-/// /! fn main() {
-/// /!     let root = Logger::root(slog_term::streamer().build().fuse(), o!("build-id" => "8dfljdf"));
-/// /! }
-/// /! ```
-/// ![warn(missing_docs)]
-///
+/////! Syslog RFC3164 and RFC5424 formatter and drain for slog
+/////!
+/////! ```
+/////! #[macro_use]
+/////! extern crate slog;
+/////! extern crate slog_term;
+/////!
+/////! use slog::*;
+/////!
+/////! fn main() {
+/////!     let root = Logger::root(slog_term::streamer().build().fuse(), o!("build-id" => "8dfljdf"));
+/////! }
+/////! ```
+///// ![warn(missing_docs)]
+/////
 extern crate slog;
 
 use std::str::FromStr;
 use slog::Level;
 use std::fmt;
+//
+// extern crate slog_stream;
+// extern crate chrono;
+// extern crate libc;
+// extern crate hostname;
+// extern crate thread_local;
+// extern crate unix_socket;
+//
+// use libc::getpid;
+// /use std::io::Write;
+// use std::{io, fmt, cell, env, ffi};
+// use std::path::Path;
+// use unix_socket::UnixDatagram;
+//
+// use slog::Record;
+// use slog::ser;
+// use slog::{Level, OwnedKeyValueList};
+//
+// use hostname::get_hostname;
+//
+// use slog_stream::Format as StreamFormat;
+// use slog_stream::{stream, async_stream};
 
-/// extern crate slog_stream;
-/// extern crate chrono;
-/// extern crate libc;
-/// extern crate hostname;
-/// extern crate thread_local;
-/// extern crate unix_socket;
-///
-/// use libc::getpid;
-/// /use std::io::Write;
-/// use std::{io, fmt, cell, env, ffi};
-/// use std::path::Path;
-/// use unix_socket::UnixDatagram;
-///
-/// use slog::Record;
-/// use slog::ser;
-/// use slog::{Level, OwnedKeyValueList};
-///
-/// use hostname::get_hostname;
-///
-/// use slog_stream::Format as StreamFormat;
-/// use slog_stream::{stream, async_stream};
-///
 #[macro_use]
 extern crate derive_builder;
 
