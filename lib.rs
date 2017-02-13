@@ -8,7 +8,8 @@
 /////! use slog::*;
 /////!
 /////! fn main() {
-/////!     let root = Logger::root(slog_term::streamer().build().fuse(), o!("build-id" => "8dfljdf"));
+/////!     let root = Logger::root(slog_term::streamer().build().fuse(),
+///// o!("build-id" => "8dfljdf"));
 /////! }
 /////! ```
 ///// ![warn(missing_docs)]
@@ -79,7 +80,7 @@ pub struct UDSStreamer {
 
 impl UDSStreamerBuilder {
     pub fn connect(self) -> Result<bool, String> {
-       Ok(true)
+        Ok(true)
     }
 }
 
@@ -87,9 +88,8 @@ impl UDSStreamerBuilder {
 #[derive(PartialEq, Clone, Builder)]
 #[cfg_attr(not(feature = "release"), derive(Debug))]
 pub struct UDPStreamer {
-    /// Syslog server host
-    ///
-    /// Should convert to [ToSocketAddrs](https://doc.rust-lang.org/std/net/trait.ToSocketAddrs.html)
+    /// Syslog server host - should convert to
+    /// [ToSocketAddrs](https://doc.rust-lang.org/std/net/trait.ToSocketAddrs.html)
     ///
     /// Default: `localhost:6514`
     server: String,
@@ -112,13 +112,18 @@ pub struct UDPStreamer {
     facility: Facility,
 }
 
+impl UDPStreamerBuilder {
+    pub fn connect(self) -> Result<bool, String> {
+        Ok(true)
+    }
+}
+
 
 #[derive(PartialEq, Clone, Builder)]
 #[cfg_attr(not(feature = "release"), derive(Debug))]
 pub struct TCPStreamer {
-    /// Syslog server host
-    ///
-    /// Should convert to [ToSocketAddrs](https://doc.rust-lang.org/std/net/trait.ToSocketAddrs.html)
+    /// Syslog server host - should convert to
+    /// [ToSocketAddrs](https://doc.rust-lang.org/std/net/trait.ToSocketAddrs.html)
     ///
     /// Default: `localhost:6514`
     server: String,
@@ -138,6 +143,12 @@ pub struct TCPStreamer {
     ///
     /// Default: `LOG_USER`
     facility: Facility,
+}
+
+impl TCPStreamerBuilder {
+    pub fn connect(self) -> Result<bool, String> {
+        Ok(true)
+    }
 }
 
 

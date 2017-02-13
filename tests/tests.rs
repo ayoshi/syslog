@@ -22,11 +22,11 @@ mod tests {
         let drain = syslog_tcp().build();
         assert!(drain.is_ok());
     }
-//    #[test]
-//    #[ignore]
-//    fn get_local_socket() {
-//        println!("{:?}",
-//                 UnixDomainSocketStreamer::locate_default_uds_socket());
-//        assert!(false);
-//    }
+    //    #[test]
+    //    #[ignore]
+    //    fn get_local_socket() {
+    //        println!("{:?}",
+    //                 UnixDomainSocketStreamer::locate_default_uds_socket());
+    //        assert!(false);
+    //    }
 }
