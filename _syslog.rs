@@ -1,4 +1,5 @@
-/// List of default unix domain socket locations on different OSes
+/// Default syslog unix domain socket locations on different
+/// operating systems
 pub const SYSLOG_DEFAULT_UDS_LOCATIONS: &'static [&'static str] =
     &["/dev/log", "/var/run/syslog", "/var/run/log"];
 
