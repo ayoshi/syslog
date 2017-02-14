@@ -207,7 +207,7 @@ impl SyslogBuilder {
             .to_owned()
     }
 
-    /// Return unix domain socket without further configuration.
+    /// Connect unix domain socket drain without further configuration.
     /// By default will use the first working detected socket on the system,
     /// RFC3164 message format, and local timestamp
     pub fn connect() -> Result<bool, String> {
