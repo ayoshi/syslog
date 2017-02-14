@@ -22,6 +22,13 @@ mod tests {
         let drain = syslog().tcp().build();
         assert!(drain.is_ok());
     }
+
+    #[test]
+    #[ignore]
+    fn connect_to_default() {
+        let drain = syslog().connect();
+        assert!(drain.is_ok())
+    }
     //    #[test]
     //    #[ignore]
     //    fn get_local_socket() {

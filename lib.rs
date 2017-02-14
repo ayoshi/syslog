@@ -210,7 +210,7 @@ impl SyslogBuilder {
     /// Connect unix domain socket drain without further configuration.
     /// By default will use the first working detected socket on the system,
     /// RFC3164 message format, and local timestamp
-    pub fn connect() -> Result<bool, String> {
+    pub fn connect(self) -> Result<bool, String> {
         Ok(true)
     }
 
