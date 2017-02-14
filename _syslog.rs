@@ -77,7 +77,7 @@ pub enum Facility {
 }
 
 impl Facility {
-    /// Return &str variants, for using in commandline and configuration parsing
+    /// Return &str variants, for using in commandline and configuration parsing.
     pub fn variants() -> [&'static str; 19] {
         ["kern", "user", "mail", "daemon", "auth", "syslog", "lpr", "news", "uucp", "cron", "ftp",
          "local0", "local1", "local2", "local3", "local4", "local5", "local6", "local7"]
@@ -116,10 +116,10 @@ impl FromStr for Facility {
 
 #[derive(PartialEq, Copy, Clone)]
 #[cfg_attr(not(feature = "release"), derive(Debug))]
-pub struct Priority(u8);
+struct Priority(u8);
 
 impl Priority {
-    pub fn new(facility: Facility, severity: Severity) -> Priority {
+    fn new(facility: Facility, severity: Severity) -> Priority {
         let facility = facility as u8;
         let severity = severity as u8;
         Priority(facility << 3 | severity)

@@ -7,19 +7,19 @@ mod tests {
 
     #[test]
     fn uds_drain_default() {
-        let drain = syslog_socket().build();
+        let drain = syslog().uds().build();
         assert!(drain.is_ok());
     }
 
     #[test]
     fn udp_drain_default() {
-        let drain = syslog_udp().build();
+        let drain = syslog().udp().build();
         assert!(drain.is_ok());
     }
 
     #[test]
     fn tcp_drain_default() {
-        let drain = syslog_tcp().build();
+        let drain = syslog().tcp().build();
         assert!(drain.is_ok());
     }
     //    #[test]
