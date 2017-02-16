@@ -6,7 +6,7 @@ extern crate chrono;
 extern crate libc;
 
 use libc::getpid;
-use std::{io, cell, env, ffi};
+use std::{io, env, ffi};
 use std::path::Path;
 
 // extern crate hostname;

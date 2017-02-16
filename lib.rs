@@ -19,15 +19,13 @@ extern crate slog;
 
 use std::str::FromStr;
 use std::path::PathBuf;
-use slog::{Level,ser, Record, OwnedKeyValueList};
+use slog::{Level};
 use std::fmt;
 
 #[macro_use]
 extern crate derive_builder;
 
 extern crate serde_json;
-extern crate slog_serde;
-use slog_serde::SerdeSerializer;
 
 include!("_syslog.rs");
 include!("_drains.rs");
@@ -70,11 +68,11 @@ pub enum TimestampMode {
 #[derive(PartialEq, Clone, Builder)]
 #[cfg_attr(not(feature = "release"), derive(Debug))]
 /// Builder to configure Unix domain socket connection to syslog server.
-pub struct UDSStreamer {
+pub struct UDSStreamerConfig {
     /// Path to syslog socket.
     ///
     /// Will default to `/dev/log` on Linux and `/var/run/syslog` on MacOS.
-    socket: PathBuf,
+    socket: Option<PathBuf>,
     /// Whether streamer should be synchronous or asynchronous.
     ///
     /// Default: `sync`.
@@ -94,7 +92,7 @@ pub struct UDSStreamer {
 }
 
 
-impl UDSStreamerBuilder {
+impl UDSStreamerConfigBuilder {
     pub fn connect(self) -> Result<bool, String> {
         Ok(true)
     }
@@ -104,12 +102,12 @@ impl UDSStreamerBuilder {
 #[derive(PartialEq, Clone, Builder)]
 #[cfg_attr(not(feature = "release"), derive(Debug))]
 /// Builder to configure UDP connection to syslog server.
-pub struct UDPStreamer {
+pub struct UDPStreamerConfig {
     /// Syslog server host - should convert to
     /// [ToSocketAddrs](https://doc.rust-lang.org/std/net/trait.ToSocketAddrs.html).
     ///
     /// Default: `localhost:6514`
-    server: String,
+    server: Option<String>,
     /// Whether streamer should be synchronous or asynchronous.
     ///
     /// Default: `sync`.
@@ -129,7 +127,7 @@ pub struct UDPStreamer {
     facility: Facility,
 }
 
-impl UDPStreamerBuilder {
+impl UDPStreamerConfigBuilder {
     pub fn connect(self) -> Result<bool, String> {
         Ok(true)
     }
@@ -139,12 +137,12 @@ impl UDPStreamerBuilder {
 #[derive(PartialEq, Clone, Builder)]
 #[cfg_attr(not(feature = "release"), derive(Debug))]
 /// Builder to configure TCP connection to syslog server.
-pub struct TCPStreamer {
+pub struct TCPStreamerConfig {
     /// Syslog server host - should convert to
     /// [ToSocketAddrs](https://doc.rust-lang.org/std/net/trait.ToSocketAddrs.html).
     ///
     /// Default: `localhost:6514`
-    server: String,
+    server: Option<String>,
     /// Whether streamer should be synchronous or asynchronous.
     ///
     /// Default: `sync`.
@@ -163,7 +161,7 @@ pub struct TCPStreamer {
     facility: Facility,
 }
 
-impl TCPStreamerBuilder {
+impl TCPStreamerConfigBuilder {
     pub fn connect(self) -> Result<bool, String> {
         Ok(true)
     }
@@ -180,9 +178,9 @@ impl SyslogBuilder {
     }
 
     /// Return Unix domain socket builder.
-    pub fn uds(self) -> UDSStreamerBuilder {
-        UDSStreamerBuilder::default()
-            .socket("/dev/log")
+    pub fn uds(self) -> UDSStreamerConfigBuilder {
+        UDSStreamerConfigBuilder::default()
+            .socket(None)
             .async(false)
             .mode(FormatMode::RFC3164)
             .facility(Facility::LOG_USER)
@@ -191,9 +189,9 @@ impl SyslogBuilder {
     }
 
     /// Return UDP socket builder.
-    pub fn udp(self) -> UDPStreamerBuilder {
-        UDPStreamerBuilder::default()
-            .server("localhost:514")
+    pub fn udp(self) -> UDPStreamerConfigBuilder {
+        UDPStreamerConfigBuilder::default()
+            .server(None)
             .async(false)
             .mode(FormatMode::RFC3164)
             .facility(Facility::LOG_USER)
@@ -202,9 +200,9 @@ impl SyslogBuilder {
     }
 
     /// Return TCP socket builder.
-    pub fn tcp(self) -> TCPStreamerBuilder {
-        TCPStreamerBuilder::default()
-            .server("localhost:6514")
+    pub fn tcp(self) -> TCPStreamerConfigBuilder {
+        TCPStreamerConfigBuilder::default()
+            .server(None)
             .async(false)
             .mode(FormatMode::RFC3164)
             .facility(Facility::LOG_USER)
@@ -214,7 +212,7 @@ impl SyslogBuilder {
 
     /// Connect unix domain socket drain without further configuration.
     /// By default will use the first working detected socket on the system,
-    /// RFC3164 message format, and local timestamp
+    /// RFC3164 message format, and a local timestamp
     pub fn connect(self) -> Result<bool, String> {
         Ok(true)
     }

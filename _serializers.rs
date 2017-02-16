@@ -1,12 +1,15 @@
-// Key Separator ValueS erializer
-pub struct KSVSerializer<W, > {
+// Key Separator Value Serializer
+pub struct KSVSerializer<W> {
     io: W,
     separator: String,
 }
 
 impl<W: io::Write> KSVSerializer<W> {
-    pub fn new(io: W, separator: String) -> Self {
-        KSVSerializer { io: io , separator: separator }
+    pub fn new(io: W, separator: &str) -> Self {
+        KSVSerializer {
+            io: io,
+            separator: separator.to_owned(),
+        }
     }
 
     pub fn finish(self) -> W {
@@ -14,103 +17,41 @@ impl<W: io::Write> KSVSerializer<W> {
     }
 }
 
-macro_rules! s(
-    ($w:expr, $k:expr, $s:expr, $v:expr) => {
-        write!($w.io, "{}{}{}", $k, $s, $v)?;
-    };
+macro_rules! ksv_emit (
+    ($func_name:ident,T $value_type:ty) => (
+        fn $func_name(&mut self, key: &str, val: $value_type) -> slog::Result {
+            write!(self.io, "{}{}{}", key, self.separator, val)?;
+            Ok(())
+        }
+    );
+    ($func_name:ident,V $value:expr) => (
+        fn $func_name(&mut self, key: &str) -> slog::Result {
+            write!(self.io, "{}{}{}", key, self.separator, $value)?;
+            Ok(())
+        }
+    );
 );
 
 impl<W: io::Write> slog::ser::Serializer for KSVSerializer<W> {
 
-    fn emit_none(&mut self, key: &str) -> ser::Result {
-        s!(self, key, self.separator, "None");
-        Ok(())
-    }
+    ksv_emit!(emit_none, V "None");
+    ksv_emit!(emit_unit, V "()");
+    ksv_emit!(emit_bool, T bool);
+    ksv_emit!(emit_char, T char);
+    ksv_emit!(emit_usize, T usize);
+    ksv_emit!(emit_isize, T isize);
+    ksv_emit!(emit_u8,  T u8);
+    ksv_emit!(emit_u16, T u16);
+    ksv_emit!(emit_i16, T i16);
+    ksv_emit!(emit_u32, T u32);
+    ksv_emit!(emit_i32, T i32);
+    ksv_emit!(emit_f32, T f32);
+    ksv_emit!(emit_u64, T u64);
+    ksv_emit!(emit_i64, T i64);
+    ksv_emit!(emit_f64, T f64);
+    ksv_emit!(emit_str, T &str);
+    ksv_emit!(emit_arguments, T &fmt::Arguments);
 
-    fn emit_unit(&mut self, key: &str) -> ser::Result {
-        s!(self, key, self.separator, "()");
-        Ok(())
-    }
-
-    fn emit_bool(&mut self, key: &str, val: bool) -> ser::Result {
-        s!(self, key, self.separator, val);
-        Ok(())
-    }
-
-    fn emit_char(&mut self, key: &str, val: char) -> ser::Result {
-        s!(self, key, self.separator, val);
-        Ok(())
-    }
-
-    fn emit_usize(&mut self, key: &str, val: usize) -> ser::Result {
-        s!(self, key, self.separator, val);
-        Ok(())
-    }
-
-    fn emit_isize(&mut self, key: &str, val: isize) -> ser::Result {
-        s!(self, key, self.separator, val);
-        Ok(())
-    }
-
-    fn emit_u8(&mut self, key: &str, val: u8) -> ser::Result {
-        s!(self, key, self.separator, val);
-        Ok(())
-    }
-
-    fn emit_i8(&mut self, key: &str, val: i8) -> ser::Result {
-        s!(self, key, self.separator, val);
-        Ok(())
-    }
-
-    fn emit_u16(&mut self, key: &str, val: u16) -> ser::Result {
-        s!(self, key, self.separator, val);
-        Ok(())
-    }
-
-    fn emit_i16(&mut self, key: &str, val: i16) -> ser::Result {
-        s!(self, key, self.separator, val);
-        Ok(())
-    }
-
-    fn emit_u32(&mut self, key: &str, val: u32) -> ser::Result {
-        s!(self, key, self.separator, val);
-        Ok(())
-    }
-
-    fn emit_i32(&mut self, key: &str, val: i32) -> ser::Result {
-        s!(self, key, self.separator, val);
-        Ok(())
-    }
-
-    fn emit_f32(&mut self, key: &str, val: f32) -> ser::Result {
-        s!(self, key, self.separator, val);
-        Ok(())
-    }
-
-    fn emit_u64(&mut self, key: &str, val: u64) -> ser::Result {
-        s!(self, key, self.separator, val);
-        Ok(())
-    }
-
-    fn emit_i64(&mut self, key: &str, val: i64) -> ser::Result {
-        s!(self, key, self.separator, val);
-        Ok(())
-    }
-
-    fn emit_f64(&mut self, key: &str, val: f64) -> ser::Result {
-        s!(self, key, self.separator, val);
-        Ok(())
-    }
-
-    fn emit_str(&mut self, key: &str, val: &str) -> ser::Result {
-        s!(self, key, self.separator, val);
-        Ok(())
-    }
-
-    fn emit_arguments(&mut self, key: &str, val: &fmt::Arguments) -> ser::Result {
-        s!(self, key, self.separator, val);
-        Ok(())
-    }
 }
 
 // struct CEESerializer<W> {

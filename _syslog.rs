@@ -116,7 +116,7 @@ impl FromStr for Facility {
 
 #[derive(PartialEq, Copy, Clone)]
 #[cfg_attr(not(feature = "release"), derive(Debug))]
-struct Priority(u8);
+pub struct Priority(u8);
 
 impl Priority {
     pub fn new(facility: Facility, severity: Severity) -> Priority {

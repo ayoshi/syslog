@@ -1,15 +1,13 @@
 extern crate slog_syslog;
 
-#[macro_use]
+// #[macro_use]
 extern crate slog;
 
 #[cfg(test)]
 mod tests {
 
     use slog_syslog::*;
-    use slog::{Record, RecordStatic};
-    use slog::Level;
-    use slog::OwnedKeyValueList;
+    // use slog::Level;
 
     #[test]
     fn uds_drain_default() {
@@ -47,43 +45,10 @@ mod tests {
     }
 
     #[test]
-    fn kv_serializer() {
-
-        let rs = RecordStatic {
-            level: Level::Info,
-            file: "filepath",
-            line: 11192,
-            column: 0,
-            function: "function",
-            module: "modulepath",
-            target: "target"
-        };
-
-        let record = record!(
-            Level::Info,
-            "message",
-            "a=b"
-        );
-        // let logger_values = OwnedKeyValueList::root(None)
-        println!("{:?}", record.values().iter().rev().collect());
-
-        let mut w = Vec::new();
-
-        let mut serializer = KVSerializer::new(&mut w);
-
-        for &(k, v) in record.values().iter().rev() {
-            v.serialize(record, k, &mut serializer).unwrap();
-        }
-
-        // for (k, v) in logger_values.iter() {
-        //     v.serialize(record, k, &mut serializer)?;
-        // }
-
-        let w = serializer.finish();
-        println!("{:?}", w);
-        assert!(false)
-
+    fn construct_priority() {
+        Priority::new(Facility::LOG_USER, Severity::LOG_WARN);
     }
+
     //    #[test]
     //    #[ignore]
     //    fn get_local_socket() {
