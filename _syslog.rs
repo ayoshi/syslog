@@ -119,7 +119,7 @@ impl FromStr for Facility {
 struct Priority(u8);
 
 impl Priority {
-    fn new(facility: Facility, severity: Severity) -> Priority {
+    pub fn new(facility: Facility, severity: Severity) -> Priority {
         let facility = facility as u8;
         let severity = severity as u8;
         Priority(facility << 3 | severity)

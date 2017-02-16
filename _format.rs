@@ -5,7 +5,7 @@ pub struct Format {
     hostname: Option<String>,
     process_name: Option<String>,
     pid: i32,
-    facility: Facility
+    facility: Facility,
 }
 
 impl Format {
@@ -15,26 +15,25 @@ impl Format {
                process_name: Option<String>,
                pid: i32,
                facility: Facility)
-               -> Self
-    {
+               -> Self {
         Format {
             mode: mode,
             fn_timestamp: fn_timestamp,
             hostname: hostname,
             process_name: process_name,
             pid: pid,
-            facility: facility
+            facility: facility,
         }
     }
 
     /// Format priority
     fn fmt_priority(&self,
-               io: &mut io::Write,
-               f: &Fn(&mut io::Write) -> io::Result<()>)
-               -> io::Result<()> {
-        try!(write!(io, "<"));
+                    io: &mut io::Write,
+                    f: &Fn(&mut io::Write) -> io::Result<()>)
+                    -> io::Result<()> {
+        write!(io, "<")?;
         f(io);
-        try!(write!(io, ">"));
+        write!(io, ">")?;
         Ok(())
     }
 
@@ -120,16 +119,16 @@ impl Format {
         let mut serializer = Serializer::new(io);
 
         for &(k, v) in record.values().iter().rev() {
-            try!(v.serialize(record, k, &mut serializer));
+            v.serialize(record, k, &mut serializer)?;
         }
 
         for (k, v) in logger_values.iter() {
-            try!(v.serialize(record, k, &mut serializer));
+            v.serialize(record, k, &mut serializer)?;
         }
 
         let mut io = serializer.finish();
 
-        try!(write!(io, "\n"));
+        write!(io, "\n")?;
 
         Ok(())
     }
@@ -140,148 +139,54 @@ impl Format {
                       logger_values: &OwnedKeyValueList)
                       -> io::Result<()> {
 
-        try!(self.fmt_priority(
-            io,
-            &|io: &mut io::Write| write!(io,"{}", Priority::new(self.facility, record.level().into())))
-        );
-        try!(self.fmt_separator(io, &|io: &mut io::Write| write!(io, " ")));
-        try!(self.fmt_timestamp(io, &*self.fn_timestamp));
-        try!(self.fmt_separator(io, &|io: &mut io::Write| write!(io, " ")));
+        self.fmt_priority(io,
+                          &|io: &mut io::Write| {
+                              write!(io,
+                                     "{}",
+                                     Priority::new(self.facility, record.level().into()))
+                          })?;
+        self.fmt_separator(io, &|io: &mut io::Write| write!(io, " "))?;
+        self.fmt_timestamp(io, &*self.fn_timestamp)?;
+        self.fmt_separator(io, &|io: &mut io::Write| write!(io, " "))?;
         match self.hostname {
             Some(ref hostname) => {
-                try!(self.fmt_msg(io, &|io: &mut io::Write| write!(io, "{}", hostname)));
-                try!(self.fmt_separator(io, &|io: &mut io::Write| write!(io, " ")));
-            },
+                self.fmt_msg(io, &|io: &mut io::Write| write!(io, "{}", hostname))?;
+                self.fmt_separator(io, &|io: &mut io::Write| write!(io, " "))?;
+            }
             None => {}
         };
         match self.process_name {
             Some(ref process_name) => {
-                try!(self.fmt_msg(io, &|io: &mut io::Write| write!(io, "{}[{}]:", process_name, self.pid)));
-            },
+                self.fmt_msg(io,
+                             &|io: &mut io::Write| write!(io, "{}[{}]:", process_name, self.pid))?;
+            }
             None => {
-                try!(self.fmt_msg(io, &|io: &mut io::Write| write!(io, "[{}]:", self.pid)));
+                self.fmt_msg(io, &|io: &mut io::Write| write!(io, "[{}]:", self.pid))?;
             }
         };
-        try!(self.fmt_separator(io, &|io: &mut io::Write| write!(io, " ")));
-        try!(self.fmt_msg(io, &|io: &mut io::Write| write!(io, "{}", record.msg())));
-        try!(self.fmt_separator(io, &|io: &mut io::Write| write!(io, " ")));
+        self.fmt_separator(io, &|io: &mut io::Write| write!(io, " "))?;
+        self.fmt_msg(io, &|io: &mut io::Write| write!(io, "{}", record.msg()))?;
+        self.fmt_separator(io, &|io: &mut io::Write| write!(io, " "))?;
 
         let mut serializer = Serializer::new(io);
 
         for &(k, v) in record.values().iter().rev() {
-            try!(v.serialize(record, k, &mut serializer));
+            v.serialize(record, k, &mut serializer)?;
         }
 
         for (k, v) in logger_values.iter() {
-            try!(v.serialize(record, k, &mut serializer));
+            v.serialize(record, k, &mut serializer)?;
         }
 
         let mut io = serializer.finish();
 
-        try!(write!(io, "\n"));
+        write!(io, "\n")?;
 
         Ok(())
 
     }
 }
 
-struct Serializer<W> {
-    io: W,
-}
-
-impl<W: io::Write> Serializer<W> {
-    fn new(io: W) -> Self {
-        Serializer { io: io }
-    }
-
-    fn finish(self) -> W {
-        self.io
-    }
-}
-
-macro_rules! s(
-    ($s:expr, $k:expr, $v:expr) => {
-        try!(write!($s.io, "{}", $k));
-        try!(write!($s.io, "="));
-        try!(write!($s.io, "{}", $v));
-    };
-);
-
-
-impl<W: io::Write> slog::ser::Serializer for Serializer<W> {
-    fn emit_none(&mut self, key: &str) -> ser::Result {
-        s!(self, key, "None");
-        Ok(())
-    }
-    fn emit_unit(&mut self, key: &str) -> ser::Result {
-        s!(self, key, "()");
-        Ok(())
-    }
-    fn emit_bool(&mut self, key: &str, val: bool) -> ser::Result {
-        s!(self, key, val);
-        Ok(())
-    }
-    fn emit_char(&mut self, key: &str, val: char) -> ser::Result {
-        s!(self, key, val);
-        Ok(())
-    }
-    fn emit_usize(&mut self, key: &str, val: usize) -> ser::Result {
-        s!(self, key, val);
-        Ok(())
-    }
-    fn emit_isize(&mut self, key: &str, val: isize) -> ser::Result {
-        s!(self, key, val);
-        Ok(())
-    }
-    fn emit_u8(&mut self, key: &str, val: u8) -> ser::Result {
-        s!(self, key, val);
-        Ok(())
-    }
-    fn emit_i8(&mut self, key: &str, val: i8) -> ser::Result {
-        s!(self, key, val);
-        Ok(())
-    }
-    fn emit_u16(&mut self, key: &str, val: u16) -> ser::Result {
-        s!(self, key, val);
-        Ok(())
-    }
-    fn emit_i16(&mut self, key: &str, val: i16) -> ser::Result {
-        s!(self, key, val);
-        Ok(())
-    }
-    fn emit_u32(&mut self, key: &str, val: u32) -> ser::Result {
-        s!(self, key, val);
-        Ok(())
-    }
-    fn emit_i32(&mut self, key: &str, val: i32) -> ser::Result {
-        s!(self, key, val);
-        Ok(())
-    }
-    fn emit_f32(&mut self, key: &str, val: f32) -> ser::Result {
-        s!(self, key, val);
-        Ok(())
-    }
-    fn emit_u64(&mut self, key: &str, val: u64) -> ser::Result {
-        s!(self, key, val);
-        Ok(())
-    }
-    fn emit_i64(&mut self, key: &str, val: i64) -> ser::Result {
-        s!(self, key, val);
-        Ok(())
-    }
-    fn emit_f64(&mut self, key: &str, val: f64) -> ser::Result {
-        s!(self, key, val);
-        Ok(())
-    }
-    fn emit_str(&mut self, key: &str, val: &str) -> ser::Result {
-        s!(self, key, val);
-        Ok(())
-    }
-    fn emit_arguments(&mut self, key: &str, val: &fmt::Arguments) -> ser::Result {
-        s!(self, key, val);
-        Ok(())
-    }
-}
 
 impl StreamFormat for Format {
     fn format(&self,
@@ -295,5 +200,3 @@ impl StreamFormat for Format {
         }
     }
 }
-
-

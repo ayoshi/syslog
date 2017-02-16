@@ -19,14 +19,19 @@ extern crate slog;
 
 use std::str::FromStr;
 use std::path::PathBuf;
-use slog::Level;
+use slog::{Level,ser, Record, OwnedKeyValueList};
 use std::fmt;
 
 #[macro_use]
 extern crate derive_builder;
 
+extern crate serde_json;
+extern crate slog_serde;
+use slog_serde::SerdeSerializer;
 
 include!("_syslog.rs");
+include!("_drains.rs");
+include!("_serializers.rs");
 
 
 #[derive(PartialEq, Clone)]
