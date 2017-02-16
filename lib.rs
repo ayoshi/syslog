@@ -72,7 +72,7 @@ pub struct UDSStreamerConfig {
     /// Path to syslog socket.
     ///
     /// Will default to `/dev/log` on Linux and `/var/run/syslog` on MacOS.
-    socket: Option<PathBuf>,
+    socket: PathBuf,
     /// Whether streamer should be synchronous or asynchronous.
     ///
     /// Default: `sync`.
@@ -107,7 +107,7 @@ pub struct UDPStreamerConfig {
     /// [ToSocketAddrs](https://doc.rust-lang.org/std/net/trait.ToSocketAddrs.html).
     ///
     /// Default: `localhost:6514`
-    server: Option<String>,
+    server: String,
     /// Whether streamer should be synchronous or asynchronous.
     ///
     /// Default: `sync`.
@@ -142,7 +142,7 @@ pub struct TCPStreamerConfig {
     /// [ToSocketAddrs](https://doc.rust-lang.org/std/net/trait.ToSocketAddrs.html).
     ///
     /// Default: `localhost:6514`
-    server: Option<String>,
+    server: String,
     /// Whether streamer should be synchronous or asynchronous.
     ///
     /// Default: `sync`.
@@ -180,7 +180,7 @@ impl SyslogBuilder {
     /// Return Unix domain socket builder.
     pub fn uds(self) -> UDSStreamerConfigBuilder {
         UDSStreamerConfigBuilder::default()
-            .socket(None)
+            .socket("/dev/log")
             .async(false)
             .mode(FormatMode::RFC3164)
             .facility(Facility::LOG_USER)
@@ -191,7 +191,7 @@ impl SyslogBuilder {
     /// Return UDP socket builder.
     pub fn udp(self) -> UDPStreamerConfigBuilder {
         UDPStreamerConfigBuilder::default()
-            .server(None)
+            .server("localhost:514")
             .async(false)
             .mode(FormatMode::RFC3164)
             .facility(Facility::LOG_USER)
@@ -202,7 +202,7 @@ impl SyslogBuilder {
     /// Return TCP socket builder.
     pub fn tcp(self) -> TCPStreamerConfigBuilder {
         TCPStreamerConfigBuilder::default()
-            .server(None)
+            .server("localhost:6514")
             .async(false)
             .mode(FormatMode::RFC3164)
             .facility(Facility::LOG_USER)

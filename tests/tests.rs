@@ -16,6 +16,12 @@ mod tests {
     }
 
     #[test]
+    fn uds_drain_with_path() {
+        let drain = syslog().uds().socket("/dev/log").build();
+        assert!(drain.is_ok());
+    }
+
+    #[test]
     fn udp_drain_default() {
         let drain = syslog().udp().build();
         assert!(drain.is_ok());
