@@ -59,10 +59,10 @@ mod tests {
             target: "target"
         };
 
-        let record = &Record::new(
-            &rs,
-            format_args!("message"),
-            o!("k1" => "v1", "k2" => "v2")
+        let record = record!(
+            Level::Info,
+            "message",
+            "a=b"
         );
         // let logger_values = OwnedKeyValueList::root(None)
         println!("{:?}", record.values().iter().rev().collect());
