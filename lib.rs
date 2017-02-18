@@ -56,12 +56,56 @@ pub enum FormatMode {
 
 #[derive(PartialEq, Clone)]
 #[cfg_attr(not(feature = "release"), derive(Debug))]
-/// Timestamp format
-pub enum TimestampMode {
-    /// Use timestamp in the local TZ.
+///  Structured data serialization format
+///
+/// All of the newer syslog servers (syslog-ng, rsyslog), and log analisys tools
+/// support for two formats of structured data serialization:
+/// key=value, and CEE (@cee: prefix in message followed by JSON)
+/// Encoding all the keys directly in the message
+///
+/// Those serialization formats can be supported both in RFC3164 and RFC5424 formats,
+/// though RFC5424 supports native way for structured data serialization
+pub enum SerializationFormat {
+    /// key=value This format is the default for RFC3164.
+    ///
+    KV,
+    /// CEE serialization format
+    ///
+    CEE,
+    /// Supported only in RFC5424 Newer format (supported by rsyslog, syslog-ng and others).
+    /// When specified for RFC3164 will fall back to key=value
+    ///
+    /// This is the default setting - will fall back to key=value for RFC3164 and
+    /// native format for RFC5424
+    Default,
+}
+
+
+#[derive(PartialEq, Clone)]
+#[cfg_attr(not(feature = "release"), derive(Debug))]
+/// Timestamp timezone
+///
+/// By default, syslog expects timestamp in the local timezone (recommended by RFC3164),
+/// Since RFC3164 timestamps don't contain timezone information
+/// Newer syslog servers support RFC 3339/ISO 8601 formats, which allow client to specify the timezone
+pub enum TimestampTZ {
+    /// Default: Use timestamp in the local TZ.
     Local,
     /// Use UTC timestamp.
     UTC,
+}
+
+
+/// Timestamp format
+///
+/// By default, syslog expects timestamp in a RFC3164 format.
+/// Newer syslog servers support RFC 3339/ISO 8601 formats,
+/// which allow client to specify the timezone and use high precision timestamps
+#[derive(PartialEq, Clone)]
+#[cfg_attr(not(feature = "release"), derive(Debug))]
+pub enum TimestampFormat {
+    RFC3164,
+    ISO8601
 }
 
 
@@ -81,10 +125,14 @@ pub struct UDSStreamerConfig {
     ///
     /// Default: `RFC3164`.
     mode: FormatMode,
-    /// Timestamp mode: [TimestampMode](enum.TimestampMode.html).
+    /// Timestamp format: [TimestampFormat](enum.TimestampFormat.html).
+    ///
+    /// Default: `RFC3164`.
+    timestamp: TimestampFormat,
+    /// Timezone format: [TimestampTZ](enum.TimestampTZ.html).
     ///
     /// Default: `Local`.
-    timestamp: TimestampMode,
+    timezone: TimestampTZ,
     /// Syslog facility [Facility](enum.Facility.html).
     ///
     /// Default: `LOG_USER`.
@@ -116,10 +164,14 @@ pub struct UDPStreamerConfig {
     ///
     /// Default: `RFC3164`
     mode: FormatMode,
-    /// Timestamp mode: [TimestampMode](enum.TimestampMode.html).
+    /// Timestamp format: [TimestampFormat](enum.TimestampFormat.html).
+    ///
+    /// Default: `RFC3164`.
+    timestamp: TimestampFormat,
+    /// Timezone format: [TimestampTZ](enum.TimestampTZ.html).
     ///
     /// Default: `Local`.
-    timestamp: TimestampMode,
+    timezone: TimestampTZ,
     /// Syslog facility [Facility](enum.Facility.html).
     ///
     /// Default: `LOG_USER`.
@@ -151,10 +203,14 @@ pub struct TCPStreamerConfig {
     ///
     /// Default: `RFC3164`.
     mode: FormatMode,
-    /// Timestamp mode [TimestampMode](enum.TimestampMode.html).
+    /// Timestamp format [TimestampFormat](enum.TimestampFormat.html).
+    ///
+    /// Default: `RFC3164`.
+    timestamp: TimestampFormat,
+    /// Timezone format: [TimeoneFormat](enum.TimeoneFormat.html).
     ///
     /// Default: `Local`.
-    timestamp: TimestampMode,
+    timezone: TimestampTZ,
     /// Syslog facility [Facility](enum.Facility.html).
     ///
     /// Default: `LOG_USER`.
@@ -184,7 +240,8 @@ impl SyslogBuilder {
             .async(false)
             .mode(FormatMode::RFC3164)
             .facility(Facility::LOG_USER)
-            .timestamp(TimestampMode::Local)
+            .timestamp(TimestampFormat::RFC3164)
+            .timezone(TimestampTZ::Local)
             .to_owned()
     }
 
@@ -195,7 +252,8 @@ impl SyslogBuilder {
             .async(false)
             .mode(FormatMode::RFC3164)
             .facility(Facility::LOG_USER)
-            .timestamp(TimestampMode::Local)
+            .timestamp(TimestampFormat::RFC3164)
+            .timezone(TimestampTZ::Local)
             .to_owned()
     }
 
@@ -206,7 +264,8 @@ impl SyslogBuilder {
             .async(false)
             .mode(FormatMode::RFC3164)
             .facility(Facility::LOG_USER)
-            .timestamp(TimestampMode::Local)
+            .timestamp(TimestampFormat::RFC3164)
+            .timezone(TimestampTZ::Local)
             .to_owned()
     }
 
