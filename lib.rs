@@ -71,8 +71,10 @@ pub enum SerializationFormat {
     KV,
     /// CEE serialization format
     ///
+    /// Most of the log analisys tools also support embedding JSON directly in RFC3164 messages
+    /// after the `@cee:` prefix
     CEE,
-    /// Supported only in RFC5424 Newer format (supported by rsyslog, syslog-ng and others).
+    /// RFC5424 format supports serialization of structured data natively (rsyslog, syslog-ng and others).
     /// When specified for RFC3164 will fall back to key=value
     ///
     /// This is the default setting - will fall back to key=value for RFC3164 and
@@ -133,6 +135,8 @@ pub struct UDSStreamerConfig {
     ///
     /// Default: `Local`.
     timezone: TimestampTZ,
+    /// Serialization format [SerializationFormat](enum.SerializationFormat.html)
+    serialization: SerializationFormat,
     /// Syslog facility [Facility](enum.Facility.html).
     ///
     /// Default: `LOG_USER`.
@@ -172,6 +176,8 @@ pub struct UDPStreamerConfig {
     ///
     /// Default: `Local`.
     timezone: TimestampTZ,
+    /// Serialization format [SerializationFormat](enum.SerializationFormat.html)
+    serialization: SerializationFormat,
     /// Syslog facility [Facility](enum.Facility.html).
     ///
     /// Default: `LOG_USER`.
@@ -211,6 +217,8 @@ pub struct TCPStreamerConfig {
     ///
     /// Default: `Local`.
     timezone: TimestampTZ,
+    /// Serialization format [SerializationFormat](enum.SerializationFormat.html)
+    serialization: SerializationFormat,
     /// Syslog facility [Facility](enum.Facility.html).
     ///
     /// Default: `LOG_USER`.
@@ -242,6 +250,7 @@ impl SyslogBuilder {
             .facility(Facility::LOG_USER)
             .timestamp(TimestampFormat::RFC3164)
             .timezone(TimestampTZ::Local)
+            .serialization(SerializationFormat::Default)
             .to_owned()
     }
 
@@ -254,6 +263,7 @@ impl SyslogBuilder {
             .facility(Facility::LOG_USER)
             .timestamp(TimestampFormat::RFC3164)
             .timezone(TimestampTZ::Local)
+            .serialization(SerializationFormat::Default)
             .to_owned()
     }
 
@@ -266,6 +276,7 @@ impl SyslogBuilder {
             .facility(Facility::LOG_USER)
             .timestamp(TimestampFormat::RFC3164)
             .timezone(TimestampTZ::Local)
+            .serialization(SerializationFormat::Default)
             .to_owned()
     }
 
