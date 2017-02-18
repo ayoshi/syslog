@@ -7,30 +7,37 @@ extern crate slog;
 mod tests {
 
     use slog_syslog::*;
+    use std::path::PathBuf;
     // use slog::Level;
 
     #[test]
-    fn uds_drain_default() {
-        let drain = syslog().uds().build();
-        assert!(drain.is_ok());
+    fn uds_config_default() {
+        let config = syslog().uds();
+        assert!(config.socket.is_none());
+        assert!(!config.async);
+        assert!(config.timestamp == TimestampFormat::RFC3164);
+        assert!(config.timezone == TimestampTZ::Local);
+        assert!(config.serialization == SerializationFormat::Native);
+        assert!(config.facility == Facility::LOG_USER);
     }
 
     #[test]
-    fn uds_drain_with_path() {
-        let drain = syslog().uds().socket("/dev/log").build();
-        assert!(drain.is_ok());
+    fn uds_config_with_path() {
+        let config = syslog().uds().socket("/dev/log").mode(FormatMode::RFC5424);
+        assert!(config.socket == Some(PathBuf::from("/dev/log")));
+        assert!(config.mode == FormatMode::RFC5424);
     }
 
     #[test]
-    fn udp_drain_default() {
-        let drain = syslog().udp().build();
-        assert!(drain.is_ok());
+    fn udp_config_default() {
+        let config = syslog().udp().build();
+        assert!(config.is_ok());
     }
 
     #[test]
-    fn tcp_drain_default() {
-        let drain = syslog().tcp().build();
-        assert!(drain.is_ok());
+    fn tcp_config_default() {
+        let config = syslog().tcp().build();
+        assert!(config.is_ok());
     }
 
     #[test]
@@ -46,8 +53,8 @@ mod tests {
     #[test]
     #[ignore]
     fn connect_to_default() {
-        let drain = syslog().connect();
-        assert!(drain.is_ok())
+        let config = syslog().connect();
+        assert!(config.is_ok())
     }
 
     #[test]

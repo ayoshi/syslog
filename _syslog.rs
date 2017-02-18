@@ -76,6 +76,10 @@ pub enum Facility {
     LOG_LOCAL7 = 23,
 }
 
+impl Default for Facility {
+    fn default() -> Facility { Facility::LOG_USER }
+}
+
 impl Facility {
     /// Return &str variants, for using in commandline and configuration parsing.
     pub fn variants() -> [&'static str; 19] {

@@ -2,8 +2,9 @@
 pub struct Format {
     mode: FormatMode,
     fn_timestamp: Box<TimestampFn>,
-    hostname: Option<String>,
-    process_name: Option<String>,
+    hostname: String,
+    process_name: String,
+    serializer: &Serializer,
     pid: i32,
     facility: Facility,
 }
@@ -11,8 +12,9 @@ pub struct Format {
 impl Format {
     pub fn new(mode: FormatMode,
                fn_timestamp: Box<TimestampFn>,
-               hostname: Option<String>,
-               process_name: Option<String>,
+               hostname: String,
+               process_name: String,
+               serializer: &Serializer,
                pid: i32,
                facility: Facility)
                -> Self {
@@ -60,6 +62,7 @@ impl Format {
                      -> io::Result<()> {
         f(io)
     }
+
     /// Format a value
     fn fmt_value(&self,
                  io: &mut io::Write,
@@ -67,6 +70,7 @@ impl Format {
                  -> io::Result<()> {
         f(io)
     }
+
     /// Format a timestamp
     fn fmt_timestamp(&self,
                      io: &mut io::Write,

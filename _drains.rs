@@ -7,7 +7,6 @@ extern crate libc;
 
 use libc::getpid;
 use std::{io, env, ffi};
-use std::path::Path;
 
 // extern crate hostname;
 // extern crate thread_local;

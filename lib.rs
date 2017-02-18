@@ -18,7 +18,7 @@
 extern crate slog;
 
 use std::str::FromStr;
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 use slog::{Level};
 use std::fmt;
 
@@ -30,6 +30,7 @@ extern crate serde_json;
 include!("_syslog.rs");
 include!("_drains.rs");
 include!("_serializers.rs");
+include!("_config.rs");
 
 
 #[derive(PartialEq, Clone)]
@@ -51,6 +52,10 @@ pub enum FormatMode {
     ///
     /// Allows for logging of structural data.
     RFC5424,
+}
+
+impl Default for FormatMode {
+    fn default() -> FormatMode { FormatMode::RFC3164 }
 }
 
 
@@ -79,7 +84,11 @@ pub enum SerializationFormat {
     ///
     /// This is the default setting - will fall back to key=value for RFC3164 and
     /// native format for RFC5424
-    Default,
+    Native,
+}
+
+impl Default for SerializationFormat {
+    fn default() -> SerializationFormat { SerializationFormat::Native }
 }
 
 
@@ -97,6 +106,10 @@ pub enum TimestampTZ {
     UTC,
 }
 
+impl Default for TimestampTZ {
+    fn default() -> TimestampTZ { TimestampTZ::Local}
+}
+
 
 /// Timestamp format
 ///
@@ -110,44 +123,8 @@ pub enum TimestampFormat {
     ISO8601
 }
 
-
-#[derive(PartialEq, Clone, Builder)]
-#[cfg_attr(not(feature = "release"), derive(Debug))]
-/// Builder to configure Unix domain socket connection to syslog server.
-pub struct UDSStreamerConfig {
-    /// Path to syslog socket.
-    ///
-    /// Will default to `/dev/log` on Linux and `/var/run/syslog` on MacOS.
-    socket: PathBuf,
-    /// Whether streamer should be synchronous or asynchronous.
-    ///
-    /// Default: `sync`.
-    async: bool,
-    /// Formatting mode [FormatMode](enum.FormatMode.html).
-    ///
-    /// Default: `RFC3164`.
-    mode: FormatMode,
-    /// Timestamp format: [TimestampFormat](enum.TimestampFormat.html).
-    ///
-    /// Default: `RFC3164`.
-    timestamp: TimestampFormat,
-    /// Timezone format: [TimestampTZ](enum.TimestampTZ.html).
-    ///
-    /// Default: `Local`.
-    timezone: TimestampTZ,
-    /// Serialization format [SerializationFormat](enum.SerializationFormat.html)
-    serialization: SerializationFormat,
-    /// Syslog facility [Facility](enum.Facility.html).
-    ///
-    /// Default: `LOG_USER`.
-    facility: Facility,
-}
-
-
-impl UDSStreamerConfigBuilder {
-    pub fn connect(self) -> Result<bool, String> {
-        Ok(true)
-    }
+impl Default for TimestampFormat {
+    fn default() -> TimestampFormat { TimestampFormat::RFC3164 }
 }
 
 
@@ -159,7 +136,7 @@ pub struct UDPStreamerConfig {
     /// [ToSocketAddrs](https://doc.rust-lang.org/std/net/trait.ToSocketAddrs.html).
     ///
     /// Default: `localhost:6514`
-    server: String,
+    server: Option<String>,
     /// Whether streamer should be synchronous or asynchronous.
     ///
     /// Default: `sync`.
@@ -242,28 +219,20 @@ impl SyslogBuilder {
     }
 
     /// Return Unix domain socket builder.
-    pub fn uds(self) -> UDSStreamerConfigBuilder {
-        UDSStreamerConfigBuilder::default()
-            .socket("/dev/log")
-            .async(false)
-            .mode(FormatMode::RFC3164)
-            .facility(Facility::LOG_USER)
-            .timestamp(TimestampFormat::RFC3164)
-            .timezone(TimestampTZ::Local)
-            .serialization(SerializationFormat::Default)
-            .to_owned()
+    pub fn uds(self) -> UDSStreamerConfig {
+        UDSStreamerConfig::default()
     }
 
     /// Return UDP socket builder.
     pub fn udp(self) -> UDPStreamerConfigBuilder {
         UDPStreamerConfigBuilder::default()
-            .server("localhost:514")
+            .server("localhost:514".to_owned())
             .async(false)
             .mode(FormatMode::RFC3164)
             .facility(Facility::LOG_USER)
             .timestamp(TimestampFormat::RFC3164)
             .timezone(TimestampTZ::Local)
-            .serialization(SerializationFormat::Default)
+            .serialization(SerializationFormat::Native)
             .to_owned()
     }
 
@@ -276,7 +245,7 @@ impl SyslogBuilder {
             .facility(Facility::LOG_USER)
             .timestamp(TimestampFormat::RFC3164)
             .timezone(TimestampTZ::Local)
-            .serialization(SerializationFormat::Default)
+            .serialization(SerializationFormat::Native)
             .to_owned()
     }
 
