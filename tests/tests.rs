@@ -30,14 +30,24 @@ mod tests {
 
     #[test]
     fn udp_config_default() {
-        let config = syslog().udp().build();
-        assert!(config.is_ok());
+        let config = syslog().udp();
+        assert!(config.server == None);
+        assert!(!config.async);
+        assert!(config.timestamp == TimestampFormat::RFC3164);
+        assert!(config.timezone == TimestampTZ::Local);
+        assert!(config.serialization == SerializationFormat::Native);
+        assert!(config.facility == Facility::LOG_USER);
     }
 
     #[test]
     fn tcp_config_default() {
-        let config = syslog().tcp().build();
-        assert!(config.is_ok());
+        let config = syslog().tcp();
+        assert!(config.server == None);
+        assert!(!config.async);
+        assert!(config.timestamp == TimestampFormat::RFC3164);
+        assert!(config.timezone == TimestampTZ::Local);
+        assert!(config.serialization == SerializationFormat::Native);
+        assert!(config.facility == Facility::LOG_USER);
     }
 
     #[test]

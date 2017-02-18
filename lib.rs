@@ -22,9 +22,6 @@ use std::path::{PathBuf, Path};
 use slog::{Level};
 use std::fmt;
 
-#[macro_use]
-extern crate derive_builder;
-
 extern crate serde_json;
 
 include!("_syslog.rs");
@@ -127,87 +124,6 @@ impl Default for TimestampFormat {
     fn default() -> TimestampFormat { TimestampFormat::RFC3164 }
 }
 
-
-#[derive(PartialEq, Clone, Builder)]
-#[cfg_attr(not(feature = "release"), derive(Debug))]
-/// Builder to configure UDP connection to syslog server.
-pub struct UDPStreamerConfig {
-    /// Syslog server host - should convert to
-    /// [ToSocketAddrs](https://doc.rust-lang.org/std/net/trait.ToSocketAddrs.html).
-    ///
-    /// Default: `localhost:6514`
-    server: Option<String>,
-    /// Whether streamer should be synchronous or asynchronous.
-    ///
-    /// Default: `sync`.
-    async: bool,
-    /// Formatting mode [FormatMode](enum.FormatMode.html).
-    ///
-    /// Default: `RFC3164`
-    mode: FormatMode,
-    /// Timestamp format: [TimestampFormat](enum.TimestampFormat.html).
-    ///
-    /// Default: `RFC3164`.
-    timestamp: TimestampFormat,
-    /// Timezone format: [TimestampTZ](enum.TimestampTZ.html).
-    ///
-    /// Default: `Local`.
-    timezone: TimestampTZ,
-    /// Serialization format [SerializationFormat](enum.SerializationFormat.html)
-    serialization: SerializationFormat,
-    /// Syslog facility [Facility](enum.Facility.html).
-    ///
-    /// Default: `LOG_USER`.
-    ///
-    facility: Facility,
-}
-
-impl UDPStreamerConfigBuilder {
-    pub fn connect(self) -> Result<bool, String> {
-        Ok(true)
-    }
-}
-
-
-#[derive(PartialEq, Clone, Builder)]
-#[cfg_attr(not(feature = "release"), derive(Debug))]
-/// Builder to configure TCP connection to syslog server.
-pub struct TCPStreamerConfig {
-    /// Syslog server host - should convert to
-    /// [ToSocketAddrs](https://doc.rust-lang.org/std/net/trait.ToSocketAddrs.html).
-    ///
-    /// Default: `localhost:6514`
-    server: String,
-    /// Whether streamer should be synchronous or asynchronous.
-    ///
-    /// Default: `sync`.
-    async: bool,
-    /// Formatting mode [FormatMode](enum.FormatMode.html).
-    ///
-    /// Default: `RFC3164`.
-    mode: FormatMode,
-    /// Timestamp format [TimestampFormat](enum.TimestampFormat.html).
-    ///
-    /// Default: `RFC3164`.
-    timestamp: TimestampFormat,
-    /// Timezone format: [TimeoneFormat](enum.TimeoneFormat.html).
-    ///
-    /// Default: `Local`.
-    timezone: TimestampTZ,
-    /// Serialization format [SerializationFormat](enum.SerializationFormat.html)
-    serialization: SerializationFormat,
-    /// Syslog facility [Facility](enum.Facility.html).
-    ///
-    /// Default: `LOG_USER`.
-    facility: Facility,
-}
-
-impl TCPStreamerConfigBuilder {
-    pub fn connect(self) -> Result<bool, String> {
-        Ok(true)
-    }
-}
-
 /// Syslog configuration builder.
 pub struct SyslogBuilder {
 }
@@ -218,35 +134,19 @@ impl SyslogBuilder {
         SyslogBuilder {}
     }
 
-    /// Return Unix domain socket builder.
+    /// Return Unix domain socket config.
     pub fn uds(self) -> UDSStreamerConfig {
         UDSStreamerConfig::default()
     }
 
-    /// Return UDP socket builder.
-    pub fn udp(self) -> UDPStreamerConfigBuilder {
-        UDPStreamerConfigBuilder::default()
-            .server("localhost:514".to_owned())
-            .async(false)
-            .mode(FormatMode::RFC3164)
-            .facility(Facility::LOG_USER)
-            .timestamp(TimestampFormat::RFC3164)
-            .timezone(TimestampTZ::Local)
-            .serialization(SerializationFormat::Native)
-            .to_owned()
+    /// Return UDP socket config.
+    pub fn udp(self) -> UDPStreamerConfig {
+        UDPStreamerConfig::default()
     }
 
-    /// Return TCP socket builder.
-    pub fn tcp(self) -> TCPStreamerConfigBuilder {
-        TCPStreamerConfigBuilder::default()
-            .server("localhost:6514")
-            .async(false)
-            .mode(FormatMode::RFC3164)
-            .facility(Facility::LOG_USER)
-            .timestamp(TimestampFormat::RFC3164)
-            .timezone(TimestampTZ::Local)
-            .serialization(SerializationFormat::Native)
-            .to_owned()
+    /// Return TCP socket config.
+    pub fn tcp(self) -> TCPStreamerConfig {
+        TCPStreamerConfig::default()
     }
 
     /// Connect unix domain socket drain without further configuration.
