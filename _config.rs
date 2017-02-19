@@ -1,6 +1,3 @@
-use std::marker::PhantomData;
-
-// Phantom types for the marker
 /// Empty configuration
 #[derive(Debug, Clone, PartialEq)]
 pub struct DefaultConfig {}
@@ -67,7 +64,6 @@ pub struct SyslogConfig<T> {
     /// Default: `LOG_USER`.
     pub facility: Facility,
     // PhantomData marker, to specialize builder depending on connection type
-    _marker: PhantomData<T>,
 }
 
 /// General syslog config, applies to all connection types
@@ -134,7 +130,6 @@ impl Default for SyslogConfig<DefaultConfig> {
             timezone: TimestampTZ::default(),
             serialization: SerializationFormat::default(),
             facility: Facility::default(),
-            _marker: PhantomData,
         }
     }
 }
@@ -151,7 +146,6 @@ impl SyslogConfig<DefaultConfig> {
             timezone: self.timezone,
             serialization: self.serialization,
             facility: self.facility,
-            _marker: PhantomData,
         }
     }
 
@@ -165,7 +159,6 @@ impl SyslogConfig<DefaultConfig> {
             timezone: self.timezone,
             serialization: self.serialization,
             facility: self.facility,
-            _marker: PhantomData,
         }
     }
 
@@ -179,7 +172,6 @@ impl SyslogConfig<DefaultConfig> {
             timezone: self.timezone,
             serialization: self.serialization,
             facility: self.facility,
-            _marker: PhantomData,
         }
     }
 

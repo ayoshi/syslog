@@ -81,11 +81,11 @@ mod tests {
         println!("{:?}", config);
         let config = config.mode(FormatMode::RFC5424);
         println!("{:?}", config);
-        // let config = config.socket("/dev/log"); Compiler error
+        // let config = config.socket("/dev/log"); // Compiler error
         let config = config.uds();
         let config = config.socket("/dev/log");
         println!("{:?}", config);
-        // let config = config("localhost:514"); Compiler error
+        // let config = config("localhost:514"); // Compiler error
 
         let config = syslog().mode(FormatMode::RFC3164);
         println!("{:?}", config);
@@ -94,7 +94,7 @@ mod tests {
 
         let config = syslog().tcp().server("localhost:514");
         let config = config.mode(FormatMode::RFC5424);
-        // let config = config.socket("/dev/log"); Compiler error
+        // let config = config.socket("/dev/log");  //Compiler error
         println!("{:?}", config);
     }
 
