@@ -5,8 +5,7 @@ pub const SYSLOG_DEFAULT_UDS_LOCATIONS: &'static [&'static str] =
 
 /// Syslog Severity
 #[allow(non_camel_case_types)]
-#[derive(PartialEq, Copy, Clone)]
-#[cfg_attr(not(feature = "release"), derive(Debug))]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Severity {
     LOG_EMERG = 0,
     LOG_ALERT,
@@ -51,8 +50,7 @@ impl FromStr for Severity {
 
 /// Syslog Facility
 #[allow(non_camel_case_types)]
-#[derive(PartialEq, Copy, Clone)]
-#[cfg_attr(not(feature = "release"), derive(Debug))]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Facility {
     LOG_KERN = 0,
     LOG_USER = 1,
@@ -119,7 +117,6 @@ impl FromStr for Facility {
 }
 
 #[derive(PartialEq, Copy, Clone)]
-#[cfg_attr(not(feature = "release"), derive(Debug))]
 pub struct Priority(u8);
 
 impl Priority {

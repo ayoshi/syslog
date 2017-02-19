@@ -12,15 +12,18 @@
 ///// o!("build-id" => "8dfljdf"));
 /////! }
 /////! ```
-///// ![warn(missing_docs)]
+/////
 /////
 
+#[warn(missing_docs)]
 extern crate slog;
 
 use std::str::FromStr;
 use std::path::{PathBuf, Path};
 use slog::{Level};
 use std::fmt;
+use std::net::{SocketAddr, ToSocketAddrs};
+use std::iter::Iterator;
 
 extern crate serde_json;
 
@@ -30,8 +33,7 @@ include!("_drains.rs");
 include!("_serializers.rs");
 
 
-#[derive(PartialEq, Clone)]
-#[cfg_attr(not(feature = "release"), derive(Debug))]
+#[derive(Debug, PartialEq, Clone)]
 /// Syslog message format
 ///
 /// Most of the newer syslog servers (syslog-ng, rsyslog)
@@ -56,8 +58,7 @@ impl Default for FormatMode {
 }
 
 
-#[derive(PartialEq, Clone)]
-#[cfg_attr(not(feature = "release"), derive(Debug))]
+#[derive(Debug, PartialEq, Clone)]
 ///  Structured data serialization format
 ///
 /// All of the newer syslog servers (syslog-ng, rsyslog), and log analisys tools
@@ -89,8 +90,7 @@ impl Default for SerializationFormat {
 }
 
 
-#[derive(PartialEq, Clone)]
-#[cfg_attr(not(feature = "release"), derive(Debug))]
+#[derive(Debug, PartialEq, Clone)]
 /// Timestamp timezone
 ///
 /// By default, syslog expects timestamp in the local timezone (recommended by RFC3164),
@@ -113,8 +113,7 @@ impl Default for TimestampTZ {
 /// By default, syslog expects timestamp in a RFC3164 format.
 /// Newer syslog servers support RFC 3339/ISO 8601 formats,
 /// which allow client to specify the timezone and use high precision timestamps
-#[derive(PartialEq, Clone)]
-#[cfg_attr(not(feature = "release"), derive(Debug))]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TimestampFormat {
     RFC3164,
     ISO8601

@@ -1,13 +1,16 @@
 extern crate slog_syslog;
 
-// #[macro_use]
+#[macro_use]
 extern crate slog;
+extern crate slog_stream;
 
 #[cfg(test)]
 mod tests {
 
     use slog_syslog::*;
     use std::path::PathBuf;
+    use slog::{Logger, Discard};
+    use slog_stream::stream;
     // use slog::Level;
 
     #[test]
@@ -70,6 +73,26 @@ mod tests {
     #[test]
     fn construct_priority() {
         Priority::new(Facility::LOG_USER, Severity::LOG_WARN);
+    }
+
+    #[test]
+    fn kv_formatter() {
+        let out = String::new()
+            // let serializer =
+            // let formatter = Format::(
+            //     mode: FormatMode::RFC3164
+            //     fn_timestamp: Box<timestamp_utc()>,
+            //     hostname: "localhost".to_string(),
+            //     process_name: test,
+            //     serializer: &KV,
+            //                          pid: i32,
+            //                          facility: Facility
+            // );
+
+            // let log = Logger::root(
+            //     stream(out, )
+            //     , o!("version" => env!("CARGO_PKG_VERSION"))
+            // );
     }
 
     //    #[test]

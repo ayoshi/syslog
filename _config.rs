@@ -142,6 +142,7 @@ pub struct UDPStreamerConfig {
 }
 
 impl UDPStreamerConfig {
+
     pub fn new(server: Option<String>,
                async: bool,
                mode: FormatMode,
