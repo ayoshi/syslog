@@ -2,6 +2,7 @@
 #[derive(Debug, Clone, PartialEq)]
 pub struct DefaultConfig {}
 
+
 /// Unix domain socket specific configuration
 #[derive(Debug, Clone, PartialEq)]
 pub struct UDSConfig {
@@ -20,7 +21,7 @@ pub struct UDPConfig {
     ///
     /// Default: None. will try to connect to
     /// `localhost:514`
-    pub server: Option<String>,
+    pub server: Option<String>
 }
 
 /// TCP specific configuration

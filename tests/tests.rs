@@ -98,7 +98,6 @@ mod tests {
         println!("{:?}", config);
     }
 
-
     #[test]
     fn kv_formatter() {
         let out = String::new();
