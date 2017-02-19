@@ -16,7 +16,7 @@ mod tests {
     #[test]
     fn uds_config_default() {
         let config = syslog().uds();
-        assert!(config.socket.is_none());
+        assert!(config.connection_config.socket.is_none());
         assert!(!config.async);
         assert!(config.timestamp == TimestampFormat::RFC3164);
         assert!(config.timezone == TimestampTZ::Local);
@@ -27,14 +27,14 @@ mod tests {
     #[test]
     fn uds_config_with_path() {
         let config = syslog().uds().socket("/dev/log").mode(FormatMode::RFC5424);
-        assert!(config.socket == Some(PathBuf::from("/dev/log")));
+        assert!(config.connection_config.socket == Some(PathBuf::from("/dev/log")));
         assert!(config.mode == FormatMode::RFC5424);
     }
 
     #[test]
     fn udp_config_default() {
         let config = syslog().udp();
-        assert!(config.server == None);
+        assert!(config.connection_config.server == None);
         assert!(!config.async);
         assert!(config.timestamp == TimestampFormat::RFC3164);
         assert!(config.timezone == TimestampTZ::Local);
@@ -45,7 +45,7 @@ mod tests {
     #[test]
     fn tcp_config_default() {
         let config = syslog().tcp();
-        assert!(config.server == None);
+        assert!(config.connection_config.server == None);
         assert!(!config.async);
         assert!(config.timestamp == TimestampFormat::RFC3164);
         assert!(config.timezone == TimestampTZ::Local);
@@ -76,23 +76,58 @@ mod tests {
     }
 
     #[test]
-    fn kv_formatter() {
-        let out = String::new()
-            // let serializer =
-            // let formatter = Format::(
-            //     mode: FormatMode::RFC3164
-            //     fn_timestamp: Box<timestamp_utc()>,
-            //     hostname: "localhost".to_string(),
-            //     process_name: test,
-            //     serializer: &KV,
-            //                          pid: i32,
-            //                          facility: Facility
-            // );
+    fn phantom_type_builder_invariants() {
+        let syslog = SyslogConfig::new();
+        println!("{:?}", syslog);
 
-            // let log = Logger::root(
-            //     stream(out, )
-            //     , o!("version" => env!("CARGO_PKG_VERSION"))
-            // );
+        // Works
+        let syslog = syslog.mode(FormatMode::RFC5424);
+        println!("{:?}", syslog);
+
+        // Hooray! Doesn't work :) !!!!
+        // let syslog = syslog.socket("/dev/log");
+
+        // Yay! Works!
+        let syslog = syslog.uds();
+        let syslog = syslog.socket("/dev/log");
+        println!("{:?}", syslog);
+
+        // Wow!! doesn't work and shouldn't!
+        // let syslog = syslog.server("localhost:514");
+
+        // HAHA! works!
+        let syslog = syslog.mode(FormatMode::RFC3164);
+        println!("{:?}", syslog);
+
+        let syslog = SyslogConfig::new().udp().server("localhost:514");
+        println!("{:?}", syslog);
+
+        let syslog = SyslogConfig::new().tcp().server("localhost:514");
+        let syslog = syslog.mode(FormatMode::RFC5424);
+        // let syslog = syslog.socket("/dev/log"); Doesn't work and shouldn't
+        println!("{:?}", syslog);
+    }
+
+
+
+    #[test]
+    fn kv_formatter() {
+        let out = String::new();
+        // let serializer =
+        // let formatter = Format::(
+        //     mode: FormatMode::RFC3164
+        //     fn_timestamp: Box<timestamp_utc()>,
+        //     hostname: "localhost".to_string(),
+        //     process_name: test,
+        //     serializer: &KV,
+        //                          pid: i32,
+        //                          facility: Facility
+        // );
+
+        // let log = Logger::root(
+        //     stream(out, )
+        //     , o!("version" => env!("CARGO_PKG_VERSION"))
+        // );
     }
 
     //    #[test]

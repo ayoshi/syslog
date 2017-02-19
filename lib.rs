@@ -20,7 +20,7 @@ extern crate slog;
 
 use std::str::FromStr;
 use std::path::{PathBuf, Path};
-use slog::{Level};
+use slog::Level;
 use std::fmt;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::iter::Iterator;
@@ -54,7 +54,9 @@ pub enum FormatMode {
 }
 
 impl Default for FormatMode {
-    fn default() -> FormatMode { FormatMode::RFC3164 }
+    fn default() -> FormatMode {
+        FormatMode::RFC3164
+    }
 }
 
 
@@ -77,7 +79,8 @@ pub enum SerializationFormat {
     /// Most of the log analisys tools also support embedding JSON directly in RFC3164 messages
     /// after the `@cee:` prefix
     CEE,
-    /// RFC5424 format supports serialization of structured data natively (rsyslog, syslog-ng and others).
+    /// RFC5424 format supports serialization of structured data natively
+    /// (rsyslog, syslog-ng and others).
     /// When specified for RFC3164 will fall back to key=value
     ///
     /// This is the default setting - will fall back to key=value for RFC3164 and
@@ -86,16 +89,18 @@ pub enum SerializationFormat {
 }
 
 impl Default for SerializationFormat {
-    fn default() -> SerializationFormat { SerializationFormat::Native }
+    fn default() -> SerializationFormat {
+        SerializationFormat::Native
+    }
 }
-
 
 #[derive(Debug, PartialEq, Clone)]
 /// Timestamp timezone
 ///
 /// By default, syslog expects timestamp in the local timezone (recommended by RFC3164),
 /// Since RFC3164 timestamps don't contain timezone information
-/// Newer syslog servers support RFC 3339/ISO 8601 formats, which allow client to specify the timezone
+/// Newer syslog servers support RFC 3339/ISO 8601 formats, which allow client to
+/// specify the timezone
 pub enum TimestampTZ {
     /// Default: Use timestamp in the local TZ.
     Local,
@@ -104,7 +109,9 @@ pub enum TimestampTZ {
 }
 
 impl Default for TimestampTZ {
-    fn default() -> TimestampTZ { TimestampTZ::Local}
+    fn default() -> TimestampTZ {
+        TimestampTZ::Local
+    }
 }
 
 
@@ -116,48 +123,16 @@ impl Default for TimestampTZ {
 #[derive(Debug, PartialEq, Clone)]
 pub enum TimestampFormat {
     RFC3164,
-    ISO8601
+    ISO8601,
 }
 
 impl Default for TimestampFormat {
-    fn default() -> TimestampFormat { TimestampFormat::RFC3164 }
-}
-
-/// Syslog configuration builder.
-pub struct SyslogBuilder {
-}
-
-impl SyslogBuilder {
-
-    pub fn new() -> SyslogBuilder {
-        SyslogBuilder {}
+    fn default() -> TimestampFormat {
+        TimestampFormat::RFC3164
     }
-
-    /// Return Unix domain socket config.
-    pub fn uds(self) -> UDSStreamerConfig {
-        UDSStreamerConfig::default()
-    }
-
-    /// Return UDP socket config.
-    pub fn udp(self) -> UDPStreamerConfig {
-        UDPStreamerConfig::default()
-    }
-
-    /// Return TCP socket config.
-    pub fn tcp(self) -> TCPStreamerConfig {
-        TCPStreamerConfig::default()
-    }
-
-    /// Connect unix domain socket drain without further configuration.
-    /// By default will use the first working detected socket on the system,
-    /// RFC3164 message format, and a local timestamp
-    pub fn connect(self) -> Result<bool, String> {
-        Ok(true)
-    }
-
 }
 
 /// Entry point to any further syslog configuration
-pub fn syslog() -> SyslogBuilder {
-    SyslogBuilder::new()
+pub fn syslog() -> SyslogConfig<DefaultConfig> {
+    SyslogConfig::<DefaultConfig>::new()
 }
