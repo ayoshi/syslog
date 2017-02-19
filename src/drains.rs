@@ -2,11 +2,13 @@
 
 //
 // extern crate slog_stream;
-extern crate chrono;
-extern crate libc;
 
 use libc::getpid;
 use std::{io, env, ffi};
+use std::path::{PathBuf, Path};
+use chrono;
+
+use syslog::*;
 
 // extern crate hostname;
 // extern crate thread_local;
@@ -47,7 +49,7 @@ use std::{io, env, ffi};
 // /}
 // /
 // //// Timestamp function type
-// pub type TimestampFn = Fn(&mut io::Write) -> io::Result<()> + Send + Sync;
+pub type TimestampFn = Fn(&mut io::Write) -> io::Result<()> + Send + Sync;
 // /
 //
 // // Formatting mode
@@ -83,17 +85,17 @@ use std::{io, env, ffi};
 //    SyslogStreamer::new()
 //
 
-/// Use the UTC time zone for the timestamp
-//fn use_utc_timestamp(mut self) -> Self {
+// /// Use the UTC time zone for the timestamp
+// fn use_utc_timestamp(mut self) -> Self {
 //    self.fn_timestamp = Box::new(self.timestamp_utc);
-//self
-//}
-//
-///// Use the local time zone for the timestamp (default)
-//fn use_local_timestamp(mut self) -> Self {
+// self
+// }
+
+// Use the local time zone for the timestamp (default)
+// fn use_local_timestamp(mut self) -> Self {
 //    self.fn_timestamp = Box::new(self.timestamp_local);
-//self
-//}
+// self
+// }
 
 /// Default local timestamp function used by `Format`
 pub fn timestamp_local(io: &mut io::Write) -> io::Result<()> {

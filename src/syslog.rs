@@ -1,3 +1,7 @@
+use slog;
+use std::str::FromStr;
+use std::fmt;
+
 /// Default syslog unix domain socket locations on different
 /// operating systems
 pub const SYSLOG_DEFAULT_UDS_LOCATIONS: &'static [&'static str] =
@@ -20,12 +24,12 @@ pub enum Severity {
 impl From<slog::Level> for Severity {
     fn from(level: slog::Level) -> Severity {
         match level {
-            Level::Critical => Severity::LOG_CRIT,
-            Level::Error => Severity::LOG_ERR,
-            Level::Warning => Severity::LOG_WARN,
-            Level::Info => Severity::LOG_INFO,
-            Level::Debug => Severity::LOG_DEBUG,
-            Level::Trace => Severity::LOG_DEBUG,
+            slog::Level::Critical => Severity::LOG_CRIT,
+            slog::Level::Error => Severity::LOG_ERR,
+            slog::Level::Warning => Severity::LOG_WARN,
+            slog::Level::Info => Severity::LOG_INFO,
+            slog::Level::Debug => Severity::LOG_DEBUG,
+            slog::Level::Trace => Severity::LOG_DEBUG,
         }
     }
 }

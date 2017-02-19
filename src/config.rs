@@ -1,3 +1,105 @@
+use syslog::{Facility};
+use std::path::PathBuf;
+
+#[derive(Debug, PartialEq, Clone)]
+/// Syslog message format
+///
+/// Most of the newer syslog servers (syslog-ng, rsyslog)
+/// support RFC5424, which allows to handle structured data properly.
+///
+/// All of the syslog server support RFC3164 (BSD format).
+/// This format is the default for all the drains.
+/// Structured data will be serialized as a part of the message.
+pub enum FormatMode {
+    /// RFC3164 (Older, BSD syslog format).
+    ///
+    /// Supported by all syslog daemons on all operating systems and platforms.
+    RFC3164,
+    /// RFC5424 Newer format (supported by rsyslog, syslog-ng and others).
+    ///
+    /// Allows for logging of structural data.
+    RFC5424,
+}
+
+impl Default for FormatMode {
+    fn default() -> FormatMode {
+        FormatMode::RFC3164
+    }
+}
+
+
+#[derive(Debug, PartialEq, Clone)]
+///  Structured data serialization format
+///
+/// All of the newer syslog servers (syslog-ng, rsyslog), and log analisys tools
+/// support for two formats of structured data serialization:
+/// key=value, and CEE (@cee: prefix in message followed by JSON)
+/// Encoding all the keys directly in the message
+///
+/// Those serialization formats can be supported both in RFC3164 and RFC5424 formats,
+/// though RFC5424 supports native way for structured data serialization
+pub enum SerializationFormat {
+    /// key=value This format is the default for RFC3164.
+    ///
+    KV,
+    /// CEE serialization format
+    ///
+    /// Most of the log analisys tools also support embedding JSON directly in RFC3164 messages
+    /// after the `@cee:` prefix
+    CEE,
+    /// RFC5424 format supports serialization of structured data natively
+    /// (rsyslog, syslog-ng and others).
+    /// When specified for RFC3164 will fall back to key=value
+    ///
+    /// This is the default setting - will fall back to key=value for RFC3164 and
+    /// native format for RFC5424
+    Native,
+}
+
+impl Default for SerializationFormat {
+    fn default() -> SerializationFormat {
+        SerializationFormat::Native
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+/// Timestamp timezone
+///
+/// By default, syslog expects timestamp in the local timezone (recommended by RFC3164),
+/// Since RFC3164 timestamps don't contain timezone information
+/// Newer syslog servers support RFC 3339/ISO 8601 formats, which allow client to
+/// specify the timezone
+pub enum TimestampTZ {
+    /// Default: Use timestamp in the local TZ.
+    Local,
+    /// Use UTC timestamp.
+    UTC,
+}
+
+impl Default for TimestampTZ {
+    fn default() -> TimestampTZ {
+        TimestampTZ::Local
+    }
+}
+
+
+/// Timestamp format
+///
+/// By default, syslog expects timestamp in a RFC3164 format.
+/// Newer syslog servers support RFC 3339/ISO 8601 formats,
+/// which allow client to specify the timezone and use high precision timestamps
+#[derive(Debug, PartialEq, Clone)]
+pub enum TimestampFormat {
+    RFC3164,
+    ISO8601,
+}
+
+impl Default for TimestampFormat {
+    fn default() -> TimestampFormat {
+        TimestampFormat::RFC3164
+    }
+}
+
 /// Empty configuration
 #[derive(Debug, Clone, PartialEq)]
 pub struct DefaultConfig {}

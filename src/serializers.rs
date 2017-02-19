@@ -1,3 +1,7 @@
+use std::io;
+use std::fmt;
+use slog;
+
 // Key Separator Value Serializer
 pub struct KSVSerializer<W> {
     io: W,
@@ -19,13 +23,13 @@ impl<W: io::Write> KSVSerializer<W> {
 
 macro_rules! ksv_emit (
     ($func_name:ident,T $value_type:ty) => (
-        fn $func_name(&mut self, key: &str, val: $value_type) -> slog::Result {
+        fn $func_name(&mut self, key: &str, val: $value_type) -> slog::ser::Result {
             write!(self.io, "{}{}{}", key, self.separator, val)?;
             Ok(())
         }
     );
     ($func_name:ident,V $value:expr) => (
-        fn $func_name(&mut self, key: &str) -> slog::Result {
+        fn $func_name(&mut self, key: &str) -> slog::ser::Result {
             write!(self.io, "{}{}{}", key, self.separator, $value)?;
             Ok(())
         }
@@ -41,6 +45,7 @@ impl<W: io::Write> slog::ser::Serializer for KSVSerializer<W> {
     ksv_emit!(emit_usize, T usize);
     ksv_emit!(emit_isize, T isize);
     ksv_emit!(emit_u8,  T u8);
+    ksv_emit!(emit_i8,  T i8);
     ksv_emit!(emit_u16, T u16);
     ksv_emit!(emit_i16, T i16);
     ksv_emit!(emit_u32, T u32);

@@ -1,10 +1,21 @@
+use std::{io};
+
+use slog::{Level, Serializer, Record, OwnedKeyValueList};
+use slog_stream::Format as StreamFormat;
+
+use config::*;
+use drains::*;
+use serializers::KSVSerializer;
+use syslog::{Facility, Priority};
+
+
+
 /// Full formatting with support for RFC3164 and RFC5424
 pub struct Format {
     mode: FormatMode,
     fn_timestamp: Box<TimestampFn>,
-    hostname: String,
-    process_name: String,
-    serializer: &Serializer,
+    hostname: Option<String>,
+    process_name: Option<String>,
     pid: i32,
     facility: Facility,
 }
@@ -12,9 +23,8 @@ pub struct Format {
 impl Format {
     pub fn new(mode: FormatMode,
                fn_timestamp: Box<TimestampFn>,
-               hostname: String,
-               process_name: String,
-               serializer: &Serializer,
+               hostname: Option<String>,
+               process_name: Option<String>,
                pid: i32,
                facility: Facility)
                -> Self {
@@ -85,54 +95,54 @@ impl Format {
                       logger_values: &OwnedKeyValueList)
                       -> io::Result<()> {
 
-        /// format RFC 5424 structured data as `([id (name="value")*])*`
-        /// / pub fn format_5424_structured_data(&self, data: StructuredData) -> String {
-        /// /if data.is_empty() {
-        /// /"-".to_string()
-        /// /} else {
-        /// /let mut res = String::new();
-        /// /for (id, params) in data.iter() {
-        /// /res = res + "["+id;
-        /// /for (name,value) in params.iter() {
-        /// /res = res + " " + name + "=\"" + value + "\"";
-        /// /}
-        /// /res = res + "]";
-        /// /}
-        /// /
-        /// /res
-        /// /}
-        /// /}
-        ///
-        /// // format a message as a RFC 5424 log message
-        /// pub fn
-        /// format_5424<T: fmt::Display>(
-        /// &self, severity:Severity,
-        /// message_id: i32, data:
-        /// StructuredData, message: T) -> String {
-        /// let f =  format!("<{}> {} {} {} {} {} {} {} {}",
-        /// self.encode_priority(severity, self.facility),
-        /// 1, // version
-        /// time::now_utc().rfc3339(),
-        /// self.hostname.as_ref().map(|x| &x[..]).unwrap_or("localhost"),
-        /// self.process, self.pid, message_id,
-        /// self.format_5424_structured_data(data), message);
-        /// return f;
-        ///
-        ///
-        ///        let mut comma_needed = try!(self.print_msg_header(io,  record));
-        let mut serializer = Serializer::new(io);
+        // /// format RFC 5424 structured data as `([id (name="value")*])*`
+        // /// / pub fn format_5424_structured_data(&self, data: StructuredData) -> String {
+        // /// /if data.is_empty() {
+        // /// /"-".to_string()
+        // /// /} else {
+        // /// /let mut res = String::new();
+        // /// /for (id, params) in data.iter() {
+        // /// /res = res + "["+id;
+        // /// /for (name,value) in params.iter() {
+        // /// /res = res + " " + name + "=\"" + value + "\"";
+        // /// /}
+        // /// /res = res + "]";
+        // /// /}
+        // /// /
+        // /// /res
+        // /// /}
+        // /// /}
+        // ///
+        // /// // format a message as a RFC 5424 log message
+        // /// pub fn
+        // /// format_5424<T: fmt::Display>(
+        // /// &self, severity:Severity,
+        // /// message_id: i32, data:
+        // /// StructuredData, message: T) -> String {
+        // /// let f =  format!("<{}> {} {} {} {} {} {} {} {}",
+        // /// self.encode_priority(severity, self.facility),
+        // /// 1, // version
+        // /// time::now_utc().rfc3339(),
+        // /// self.hostname.as_ref().map(|x| &x[..]).unwrap_or("localhost"),
+        // /// self.process, self.pid, message_id,
+        // /// self.format_5424_structured_data(data), message);
+        // /// return f;
+        // ///
+        // ///
+        // ///        let mut comma_needed = try!(self.print_msg_header(io,  record));
+        // let mut serializer = KSVSerializer::new(io, "=");
 
-        for &(k, v) in record.values().iter().rev() {
-            v.serialize(record, k, &mut serializer)?;
-        }
+        // for &(k, v) in record.values().iter().rev() {
+        //     v.serialize(record, k, &mut serializer)?;
+        // }
 
-        for (k, v) in logger_values.iter() {
-            v.serialize(record, k, &mut serializer)?;
-        }
+        // for (k, v) in logger_values.iter() {
+        //     v.serialize(record, k, &mut serializer)?;
+        // }
 
-        let mut io = serializer.finish();
+        // let mut io = serializer.finish();
 
-        write!(io, "\n")?;
+        // write!(io, "\n")?;
 
         Ok(())
     }
@@ -172,7 +182,7 @@ impl Format {
         self.fmt_msg(io, &|io: &mut io::Write| write!(io, "{}", record.msg()))?;
         self.fmt_separator(io, &|io: &mut io::Write| write!(io, " "))?;
 
-        let mut serializer = Serializer::new(io);
+        let mut serializer = KSVSerializer::new(io,"=");
 
         for &(k, v) in record.values().iter().rev() {
             v.serialize(record, k, &mut serializer)?;
