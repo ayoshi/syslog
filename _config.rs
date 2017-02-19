@@ -69,6 +69,12 @@ pub struct SyslogConfig<T> {
 
 /// General syslog config, applies to all connection types
 impl<T> SyslogConfig<T> {
+
+    // Default constructor
+    pub fn new() -> SyslogConfig<DefaultConfig> {
+        SyslogConfig::default()
+    }
+
     /// Whether streamer should be synchronous or asynchronous.
     ///
     /// Default: `sync`.
@@ -131,10 +137,8 @@ impl Default for SyslogConfig<DefaultConfig> {
 }
 
 impl SyslogConfig<DefaultConfig> {
-    pub fn new() -> SyslogConfig<DefaultConfig> {
-        SyslogConfig::default()
-    }
 
+    /// Set config to UDS
     pub fn uds(self) -> SyslogConfig<UDSConfig> {
         SyslogConfig {
             connection_config: UDSConfig { socket: None },
@@ -148,6 +152,7 @@ impl SyslogConfig<DefaultConfig> {
         }
     }
 
+    /// Set config to UDP
     pub fn udp(self) -> SyslogConfig<UDPConfig> {
         SyslogConfig {
             connection_config: UDPConfig { server: None },
@@ -161,6 +166,7 @@ impl SyslogConfig<DefaultConfig> {
         }
     }
 
+    /// Set config to TCP
     pub fn tcp(self) -> SyslogConfig<TCPConfig> {
         SyslogConfig {
             connection_config: TCPConfig { server: None },
