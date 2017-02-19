@@ -174,9 +174,9 @@ impl SyslogConfig<DefaultConfig> {
         }
     }
 
-    /// Try to connect without further configuration.
+    /// Try to bind without further configuration.
     ///
-    /// It will attempt to bind to unix domain socket,
+    /// It will attempt to bind unix domain socket,
     /// then try to fall back on UDP and then TCP
     /// By default will use the first working detected socket on the system,
     /// and in case of UDP and TCP standart ports (514, 6514)
@@ -185,7 +185,7 @@ impl SyslogConfig<DefaultConfig> {
     /// RFC3164 message format,
     /// key=value serialiation and a timestamp in RFC3164 format
     /// in a local timezone
-    pub fn connect(self) -> Result<bool, String> {
+    pub fn bind(self) -> Result<bool, String> {
         Ok(true)
     }
 }
@@ -199,8 +199,8 @@ impl SyslogConfig<UDSConfig> {
         self
     }
 
-    /// Connect over unix domain socket
-    pub fn connect(self) -> Result<bool, String> {
+    /// Bind unix domain socket drain
+    pub fn bind(self) -> Result<bool, String> {
         Ok(true)
     }
 }
@@ -215,10 +215,8 @@ impl SyslogConfig<UDPConfig> {
         self
     }
 
-    /// Connect unix domain socket drain without further configuration.
-    /// By default will use the first working detected socket on the system,
-    /// RFC3164 message format, and a local timestamp
-    pub fn connect(self) -> Result<bool, String> {
+    /// Bind UDP drain
+    pub fn bind(self) -> Result<bool, String> {
         Ok(true)
     }
 }
@@ -233,10 +231,8 @@ impl SyslogConfig<TCPConfig> {
         self
     }
 
-    /// Connect unix domain socket drain without further configuration.
-    /// By default will use the first working detected socket on the system,
-    /// RFC3164 message format, and a local timestamp
-    pub fn connect(self) -> Result<bool, String> {
+    /// Bind TCP drain
+    pub fn bind(self) -> Result<bool, String> {
         Ok(true)
     }
 }
