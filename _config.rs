@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-// Phantom types for marker
+// Phantom types for the marker
 /// Empty configuration
 #[derive(Debug, Clone, PartialEq)]
 pub struct DefaultConfig {}
@@ -10,7 +10,8 @@ pub struct DefaultConfig {}
 pub struct UDSConfig {
     /// Path to syslog socket.
     ///
-    /// Default: `/dev/log` on Linux and `/var/run/syslog` on MacOS.
+    /// Default: `None`, will try to connect to
+    /// `/dev/log` on Linux and `/var/run/syslog` on MacOS.
     pub socket: Option<PathBuf>,
 }
 
@@ -20,7 +21,8 @@ pub struct UDPConfig {
     /// Syslog server host - should convert to
     /// [ToSocketAddrs](https://doc.rust-lang.org/std/net/trait.ToSocketAddrs.html).
     ///
-    /// Default: `localhost:514`
+    /// Default: None. will try to connect to
+    /// `localhost:514`
     pub server: Option<String>,
 }
 
@@ -30,7 +32,8 @@ pub struct TCPConfig {
     /// Syslog server host - should convert to
     /// [ToSocketAddrs](https://doc.rust-lang.org/std/net/trait.ToSocketAddrs.html).
     ///
-    /// Default: `localhost:6514`
+    /// Default: None, will try to connect to
+    /// `localhost:6514`
     pub server: Option<String>,
 }
 
@@ -180,9 +183,9 @@ impl SyslogConfig<DefaultConfig> {
         }
     }
 
-    /// Try to bind without further configuration.
+    /// Try to connect without further configuration.
     ///
-    /// It will attempt to bind unix domain socket,
+    /// It will attempt to connect unix domain socket,
     /// then try to fall back on UDP and then TCP
     /// By default will use the first working detected socket on the system,
     /// and in case of UDP and TCP standart ports (514, 6514)
@@ -191,7 +194,7 @@ impl SyslogConfig<DefaultConfig> {
     /// RFC3164 message format,
     /// key=value serialiation and a timestamp in RFC3164 format
     /// in a local timezone
-    pub fn bind(self) -> Result<bool, String> {
+    pub fn connect(self) -> Result<bool, String> {
         Ok(true)
     }
 }
@@ -205,8 +208,8 @@ impl SyslogConfig<UDSConfig> {
         self
     }
 
-    /// Bind unix domain socket drain
-    pub fn bind(self) -> Result<bool, String> {
+    /// Connect unix domain socket drain
+    pub fn connect(self) -> Result<bool, String> {
         Ok(true)
     }
 }
@@ -215,14 +218,15 @@ impl SyslogConfig<UDPConfig> {
     /// Syslog server host - should convert to
     /// [ToSocketAddrs](https://doc.rust-lang.org/std/net/trait.ToSocketAddrs.html).
     ///
-    /// Default: `localhost:514`
+    /// Default: `None`, will try to connect to
+    /// `localhost:514`
     pub fn server<VALUE: Into<String>>(mut self, value: VALUE) -> Self {
         self.connection_config.server = Some(value.into());
         self
     }
 
-    /// Bind UDP drain
-    pub fn bind(self) -> Result<bool, String> {
+    /// Connect UDP drain
+    pub fn connect(self) -> Result<bool, String> {
         Ok(true)
     }
 }
@@ -231,14 +235,15 @@ impl SyslogConfig<TCPConfig> {
     /// Syslog server host - should convert to
     /// [ToSocketAddrs](https://doc.rust-lang.org/std/net/trait.ToSocketAddrs.html).
     ///
-    /// Default: `localhost:6514`
+    /// Default: None
+    /// will try to connect to `localhost:6514`
     pub fn server<VALUE: Into<String>>(mut self, value: VALUE) -> Self {
         self.connection_config.server = Some(value.into());
         self
     }
 
-    /// Bind TCP drain
-    pub fn bind(self) -> Result<bool, String> {
+    /// Connect TCP drain
+    pub fn connect(self) -> Result<bool, String> {
         Ok(true)
     }
 }

@@ -77,37 +77,26 @@ mod tests {
 
     #[test]
     fn phantom_type_builder_invariants() {
-        let syslog = SyslogConfig::new();
-        println!("{:?}", syslog);
+        let config = syslog();
+        println!("{:?}", config);
+        let config = config.mode(FormatMode::RFC5424);
+        println!("{:?}", config);
+        // let config = config.socket("/dev/log"); Compiler error
+        let config = config.uds();
+        let config = config.socket("/dev/log");
+        println!("{:?}", config);
+        // let config = config("localhost:514"); Compiler error
 
-        // Works
-        let syslog = syslog.mode(FormatMode::RFC5424);
-        println!("{:?}", syslog);
+        let config = syslog().mode(FormatMode::RFC3164);
+        println!("{:?}", config);
+        let config = syslog().udp().server("localhost:514");
+        println!("{:?}", config);
 
-        // Hooray! Doesn't work :) !!!!
-        // let syslog = syslog.socket("/dev/log");
-
-        // Yay! Works!
-        let syslog = syslog.uds();
-        let syslog = syslog.socket("/dev/log");
-        println!("{:?}", syslog);
-
-        // Wow!! doesn't work and shouldn't!
-        // let syslog = syslog.server("localhost:514");
-
-        // HAHA! works!
-        let syslog = syslog.mode(FormatMode::RFC3164);
-        println!("{:?}", syslog);
-
-        let syslog = SyslogConfig::new().udp().server("localhost:514");
-        println!("{:?}", syslog);
-
-        let syslog = SyslogConfig::new().tcp().server("localhost:514");
-        let syslog = syslog.mode(FormatMode::RFC5424);
-        // let syslog = syslog.socket("/dev/log"); Doesn't work and shouldn't
-        println!("{:?}", syslog);
+        let config = syslog().tcp().server("localhost:514");
+        let config = config.mode(FormatMode::RFC5424);
+        // let config = config.socket("/dev/log"); Compiler error
+        println!("{:?}", config);
     }
-
 
 
     #[test]
