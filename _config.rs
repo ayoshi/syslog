@@ -80,15 +80,14 @@ pub struct UDSStreamerConfig {
 }
 
 impl UDSStreamerConfig {
-    pub fn new(
-        socket: Option<PathBuf>,
-        async: bool,
-        mode: FormatMode,
-        timestamp: TimestampFormat,
-        timezone: TimestampTZ,
-        serialization: SerializationFormat,
-        facility: Facility,
-    ) -> UDSStreamerConfig {
+    pub fn new(socket: Option<PathBuf>,
+               async: bool,
+               mode: FormatMode,
+               timestamp: TimestampFormat,
+               timezone: TimestampTZ,
+               serialization: SerializationFormat,
+               facility: Facility)
+               -> UDSStreamerConfig {
         UDSStreamerConfig {
             socket: socket,
             async: async,
@@ -96,14 +95,14 @@ impl UDSStreamerConfig {
             timestamp: timestamp,
             timezone: timezone,
             serialization: serialization,
-            facility: facility
+            facility: facility,
         }
     }
 
     /// Path to syslog socket.
     ///
     /// Will default to `/dev/log` on Linux and `/var/run/syslog` on MacOS.
-    pub fn socket<VALUE: Into<PathBuf>>(mut self, value: VALUE) ->  Self {
+    pub fn socket<VALUE: Into<PathBuf>>(mut self, value: VALUE) -> Self {
         self.socket = Some(value.into());
         self
     }
@@ -143,15 +142,14 @@ pub struct UDPStreamerConfig {
 }
 
 impl UDPStreamerConfig {
-    pub fn new(
-        server: Option<String>,
-        async: bool,
-        mode: FormatMode,
-        timestamp: TimestampFormat,
-        timezone: TimestampTZ,
-        serialization: SerializationFormat,
-        facility: Facility,
-    ) -> UDPStreamerConfig {
+    pub fn new(server: Option<String>,
+               async: bool,
+               mode: FormatMode,
+               timestamp: TimestampFormat,
+               timezone: TimestampTZ,
+               serialization: SerializationFormat,
+               facility: Facility)
+               -> UDPStreamerConfig {
         UDPStreamerConfig {
             server: server,
             async: async,
@@ -159,7 +157,7 @@ impl UDPStreamerConfig {
             timestamp: timestamp,
             timezone: timezone,
             serialization: serialization,
-            facility: facility
+            facility: facility,
         }
     }
 
@@ -167,7 +165,7 @@ impl UDPStreamerConfig {
     /// [ToSocketAddrs](https://doc.rust-lang.org/std/net/trait.ToSocketAddrs.html).
     ///
     /// Default: `localhost:514`
-    pub fn server<VALUE: Into<String>>(mut self, value: VALUE) ->  Self {
+    pub fn server<VALUE: Into<String>>(mut self, value: VALUE) -> Self {
         self.server = Some(value.into());
         self
     }
@@ -207,15 +205,14 @@ pub struct TCPStreamerConfig {
 }
 
 impl TCPStreamerConfig {
-    pub fn new(
-        server: Option<String>,
-        async: bool,
-        mode: FormatMode,
-        timestamp: TimestampFormat,
-        timezone: TimestampTZ,
-        serialization: SerializationFormat,
-        facility: Facility,
-    ) -> TCPStreamerConfig {
+    pub fn new(server: Option<String>,
+               async: bool,
+               mode: FormatMode,
+               timestamp: TimestampFormat,
+               timezone: TimestampTZ,
+               serialization: SerializationFormat,
+               facility: Facility)
+               -> TCPStreamerConfig {
         TCPStreamerConfig {
             server: server,
             async: async,
@@ -223,7 +220,7 @@ impl TCPStreamerConfig {
             timestamp: timestamp,
             timezone: timezone,
             serialization: serialization,
-            facility: facility
+            facility: facility,
         }
     }
 
@@ -231,7 +228,7 @@ impl TCPStreamerConfig {
     /// [ToSocketAddrs](https://doc.rust-lang.org/std/net/trait.ToSocketAddrs.html).
     ///
     /// Default: `localhost:6514`
-    pub fn server<VALUE: Into<String>>(mut self, value: VALUE) ->  Self {
+    pub fn server<VALUE: Into<String>>(mut self, value: VALUE) -> Self {
         self.server = Some(value.into());
         self
     }

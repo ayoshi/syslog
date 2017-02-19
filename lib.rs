@@ -24,10 +24,10 @@ use std::fmt;
 
 extern crate serde_json;
 
+include!("_config.rs");
 include!("_syslog.rs");
 include!("_drains.rs");
 include!("_serializers.rs");
-include!("_config.rs");
 
 
 #[derive(PartialEq, Clone)]
