@@ -77,15 +77,18 @@ mod tests {
     }
 
     #[test]
-    fn phantom_type_builder_invariants() {
+    fn builder_invariants_pass() {
+
         let config = syslog();
         println!("{:?}", config);
         let config = config.mode(FormatMode::RFC5424);
         println!("{:?}", config);
         // let config = config.socket("/dev/log"); // Compiler error
+
         let config = config.uds();
         let config = config.socket("/dev/log");
         println!("{:?}", config);
+        let config = config.socket(PathBuf::from("/dev/log"));
         // let config = config.server("localhost:514"); // Compiler error
 
         let config = syslog().mode(FormatMode::RFC3164);
@@ -103,7 +106,6 @@ mod tests {
         let config = syslog().tcp().server(addr);
         // SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 514) );
         println!("{:?}", config);
-
     }
 
     #[test]
