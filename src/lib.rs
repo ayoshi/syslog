@@ -15,7 +15,7 @@
 /////
 /////
 
-#[warn(missing_docs)]
+#![warn(missing_docs)]
 extern crate slog;
 extern crate chrono;
 extern crate libc;

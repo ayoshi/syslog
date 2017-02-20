@@ -3,8 +3,8 @@ use std::{io};
 use slog::{Level, Serializer, Record, OwnedKeyValueList};
 use slog_stream::Format as StreamFormat;
 
-use config::*;
-use drains::*;
+use config::{FormatMode};
+use drains::{TimestampFn};
 use serializers::KSVSerializer;
 use syslog::{Facility, Priority};
 

@@ -7,8 +7,9 @@ extern crate slog_stream;
 #[cfg(test)]
 mod tests {
 
-    use slog_syslog_ng::*;
+    use std::net::{ToSocketAddrs, SocketAddr, IpAddr, Ipv4Addr};
     use std::path::PathBuf;
+    use slog_syslog_ng::*;
     use slog::{Logger, Discard};
     use slog_stream::stream;
     // use slog::Level;
@@ -95,6 +96,7 @@ mod tests {
         let config = syslog().tcp().server("localhost:514");
         let config = config.mode(FormatMode::RFC5424);
         // let config = config.socket("/dev/log");  //Compiler error
+        // SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 514) );
         println!("{:?}", config);
     }
 

@@ -1,5 +1,6 @@
 use syslog::{Facility};
 use std::path::PathBuf;
+use std::net::{ToSocketAddrs, SocketAddr, IpAddr, Ipv4Addr};
 
 #[derive(Debug, PartialEq, Clone)]
 /// Syslog message format
@@ -26,7 +27,6 @@ impl Default for FormatMode {
         FormatMode::RFC3164
     }
 }
-
 
 #[derive(Debug, PartialEq, Clone)]
 ///  Structured data serialization format
@@ -115,26 +115,67 @@ pub struct UDSConfig {
     pub socket: Option<PathBuf>,
 }
 
+impl Default for UDSConfig
+{
+    fn default() -> UDSConfig {
+        UDSConfig { socket: None }
+    }
+}
+
 /// UDP specific configuration
 #[derive(Debug, Clone, PartialEq)]
-pub struct UDPConfig {
+pub struct UDPConfig<S>
+    where S: ToSocketAddrs
+{
     /// Syslog server host - should convert to
     /// [ToSocketAddrs](https://doc.rust-lang.org/std/net/trait.ToSocketAddrs.html).
     ///
-    /// Default: None. will try to connect to
-    /// `localhost:514`
-    pub server: Option<String>
+    /// Default: None. will try to connect to default ports on localhost
+    pub server: Option<S>
+}
+
+impl<S: ToSocketAddrs> UDPConfig<S>
+    where S: ToSocketAddrs
+{
+    fn new(server: S) -> Self {
+        UDPConfig { server: Some(server) }
+    }
+}
+
+impl <S>Default for UDPConfig<S>
+    where S: ToSocketAddrs
+{
+    fn default() -> Self {
+        UDPConfig { server: None}
+    }
 }
 
 /// TCP specific configuration
 #[derive(Debug, Clone, PartialEq)]
-pub struct TCPConfig {
+pub struct TCPConfig<S>
+    where S: ToSocketAddrs
+{
     /// Syslog server host - should convert to
     /// [ToSocketAddrs](https://doc.rust-lang.org/std/net/trait.ToSocketAddrs.html).
     ///
-    /// Default: None, will try to connect to
-    /// `localhost:6514`
-    pub server: Option<String>,
+    /// Default: None. will try to connect to default ports on localhost
+    pub server: Option<S>
+}
+
+impl<S: ToSocketAddrs> TCPConfig<S>
+    where S: ToSocketAddrs
+{
+    fn new(server: S) -> Self {
+        TCPConfig { server: Some(server) }
+    }
+}
+
+impl <S>Default for TCPConfig<S>
+    where S: ToSocketAddrs
+{
+    fn default() -> Self {
+        TCPConfig { server: None}
+    }
 }
 
 /// Syslog drain configuration
@@ -181,7 +222,7 @@ impl<T> SyslogConfig<T> {
     ///
     /// Default: `sync`.
     pub fn async<VALUE: Into<bool>>(mut self, value: VALUE) -> Self {
-        self.async = value.into().clone();
+        self.async = value.into();
         self
     }
     /// Formatting mode [FormatMode](enum.FormatMode.html).
@@ -218,7 +259,7 @@ impl<T> SyslogConfig<T> {
     ///
     /// Default: `LOG_USER`.
     pub fn facility<VALUE: Into<Facility>>(mut self, value: VALUE) -> Self {
-        self.facility = value.into().clone();
+        self.facility = value.into();
         self
     }
 }
@@ -242,7 +283,7 @@ impl SyslogConfig<DefaultConfig> {
     /// Set config to UDS
     pub fn uds(self) -> SyslogConfig<UDSConfig> {
         SyslogConfig {
-            connection_config: UDSConfig { socket: None },
+            connection_config: UDSConfig::default(),
             async: self.async,
             mode: self.mode,
             timestamp: self.timestamp,
@@ -253,9 +294,11 @@ impl SyslogConfig<DefaultConfig> {
     }
 
     /// Set config to UDP
-    pub fn udp(self) -> SyslogConfig<UDPConfig> {
+    pub fn udp<S>(self) -> SyslogConfig<UDPConfig<S>>
+        where S: ToSocketAddrs
+    {
         SyslogConfig {
-            connection_config: UDPConfig { server: None },
+            connection_config: UDPConfig::default(),
             async: self.async,
             mode: self.mode,
             timestamp: self.timestamp,
@@ -266,9 +309,11 @@ impl SyslogConfig<DefaultConfig> {
     }
 
     /// Set config to TCP
-    pub fn tcp(self) -> SyslogConfig<TCPConfig> {
+    pub fn tcp<S>(self) -> SyslogConfig<TCPConfig<S>>
+        where S: ToSocketAddrs
+    {
         SyslogConfig {
-            connection_config: TCPConfig { server: None },
+            connection_config: TCPConfig::default(),
             async: self.async,
             mode: self.mode,
             timestamp: self.timestamp,
@@ -309,14 +354,17 @@ impl SyslogConfig<UDSConfig> {
     }
 }
 
-impl SyslogConfig<UDPConfig> {
+impl <S>SyslogConfig<UDPConfig<S>>
+    where S: ToSocketAddrs
+{
     /// Syslog server host - should convert to
     /// [ToSocketAddrs](https://doc.rust-lang.org/std/net/trait.ToSocketAddrs.html).
     ///
     /// Default: `None`, will try to connect to
     /// `localhost:514`
-    pub fn server<VALUE: Into<String>>(mut self, value: VALUE) -> Self {
-        self.connection_config.server = Some(value.into());
+    pub fn server(mut self, value: S) -> Self
+    {
+        self.connection_config.server = Some(value);
         self
     }
 
@@ -326,14 +374,16 @@ impl SyslogConfig<UDPConfig> {
     }
 }
 
-impl SyslogConfig<TCPConfig> {
+impl <S>SyslogConfig<TCPConfig<S>>
+    where S: ToSocketAddrs
+{
     /// Syslog server host - should convert to
     /// [ToSocketAddrs](https://doc.rust-lang.org/std/net/trait.ToSocketAddrs.html).
     ///
     /// Default: None
     /// will try to connect to `localhost:6514`
-    pub fn server<VALUE: Into<String>>(mut self, value: VALUE) -> Self {
-        self.connection_config.server = Some(value.into());
+    pub fn server(mut self, value: S) -> Self {
+        self.connection_config.server = Some(value);
         self
     }
 

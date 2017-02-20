@@ -8,7 +8,7 @@ use std::{io, env, ffi};
 use std::path::{PathBuf, Path};
 use chrono;
 
-use syslog::*;
+use syslog::SYSLOG_DEFAULT_UDS_LOCATIONS;
 
 // extern crate hostname;
 // extern crate thread_local;

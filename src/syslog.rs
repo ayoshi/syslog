@@ -28,8 +28,7 @@ impl From<slog::Level> for Severity {
             slog::Level::Error => Severity::LOG_ERR,
             slog::Level::Warning => Severity::LOG_WARN,
             slog::Level::Info => Severity::LOG_INFO,
-            slog::Level::Debug => Severity::LOG_DEBUG,
-            slog::Level::Trace => Severity::LOG_DEBUG,
+            slog::Level::Debug | slog::Level::Trace => Severity::LOG_DEBUG,
         }
     }
 }
