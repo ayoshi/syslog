@@ -98,13 +98,11 @@ mod tests {
 
         let config = syslog().tcp().server("localhost:514");
         let config = config.mode(FormatMode::RFC5424);
-        // let config = config.socket("/dev/log");  //Compiler error
         // SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 514) );
         println!("{:?}", config);
 
         let addr =SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 514);
         let config = syslog().tcp().server(addr);
-        // SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 514) );
         println!("{:?}", config);
     }
 
