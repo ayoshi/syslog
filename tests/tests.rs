@@ -86,7 +86,7 @@ mod tests {
         let config = config.uds();
         let config = config.socket("/dev/log");
         println!("{:?}", config);
-        // let config = config("localhost:514"); // Compiler error
+        // let config = config.server("localhost:514"); // Compiler error
 
         let config = syslog().mode(FormatMode::RFC3164);
         println!("{:?}", config);
