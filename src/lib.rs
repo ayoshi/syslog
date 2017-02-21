@@ -24,6 +24,7 @@ extern crate slog_stream;
 
 pub mod config;
 pub mod syslog;
+pub mod posix;
 
 mod drains;
 mod format;
@@ -31,7 +32,7 @@ mod serializers;
 
 pub use self::config::*;
 pub use self::syslog::*;
-pub use self::drains::{get_pid, get_process_name, get_host_name};
+pub use self::posix::{get_pid, get_process_name, get_host_name};
 
 
 /// Entry point to any further syslog configuration
