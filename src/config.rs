@@ -103,7 +103,7 @@ impl Default for TimestampFormat {
 }
 
 /// Empty configuration
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct DefaultConfig {}
 
 
@@ -174,7 +174,7 @@ impl<S: ToSocketAddrs> TCPConfig<S>
 impl Default for TCPConfig<SocketAddr>
 {
     fn default() -> Self {
-        TCPConfig { server: None}
+        TCPConfig { server: None }
     }
 }
 
@@ -207,7 +207,11 @@ pub struct SyslogConfig<T> {
     ///
     /// Default: `LOG_USER`.
     pub facility: Facility,
-    // PhantomData marker, to specialize builder depending on connection type
+    /// Hostname
+    ///
+    /// Default: `None` will be omitted for unix domain socket drain,
+    /// autodetected in case of UDP or TCP drains
+    pub hostname: Option<String>
 }
 
 /// General syslog config, applies to all connection types
@@ -263,6 +267,15 @@ impl<T> SyslogConfig<T> {
         self
     }
 
+    /// Hostname
+    ///
+    /// Default: `None` will be omitted for unix domain socket drain,
+    /// autodetected in case of UDP or TCP drains
+    pub fn hostname<VALUE: Into<String>>(mut self, value: VALUE) -> Self {
+        self.hostname = Some(value.into());
+        self
+    }
+
     pub fn connection_config<C>(self, connection_config: C) -> SyslogConfig<C> {
         SyslogConfig {
             connection_config: connection_config,
@@ -271,7 +284,8 @@ impl<T> SyslogConfig<T> {
             timestamp: self.timestamp,
             timezone: self.timezone,
             serialization: self.serialization,
-            facility: self.facility
+            facility: self.facility,
+            hostname: self.hostname
         }
     }
 }
@@ -286,6 +300,7 @@ impl Default for SyslogConfig<DefaultConfig> {
             timezone: TimestampTZ::default(),
             serialization: SerializationFormat::default(),
             facility: Facility::default(),
+            hostname: None
         }
     }
 }

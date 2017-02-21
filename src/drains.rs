@@ -2,6 +2,7 @@
 
 //
 // extern crate slog_stream;
+extern crate libc;
 
 use libc::getpid;
 use std::{io, env, ffi};
@@ -130,4 +131,29 @@ pub fn get_process_name() -> Option<String> {
 // Get pid
 pub fn get_pid() -> i32 {
     unsafe { getpid() }
+}
+
+// Get my hostname
+pub fn get_host_name() -> Result<String, String> {
+
+    extern {
+        pub fn gethostname(name: *mut libc::c_char, size: libc::size_t) -> libc::c_int;
+    }
+
+    let len = u8::max_value() as usize;
+    let mut buf = vec![0; len];
+
+    let err = unsafe {
+        gethostname (buf.as_mut_ptr() as *mut libc::c_char, len as libc::size_t)
+    };
+
+    match err {
+        0 => {
+            // If we have NULL, terminate, otherwise take whole buffer
+            let actual_len = buf.iter().position(|byte| *byte == 0).unwrap_or(len);
+            // trim the hostname to the actual len
+            String::from_utf8(buf.split_at(actual_len).0.to_vec()).map_err(|err| err.to_string())
+        },
+        _ => { Err("Couldn't get my own hostname".to_string()) }
+    }
 }

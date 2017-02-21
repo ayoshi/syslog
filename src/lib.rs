@@ -31,6 +31,7 @@ mod serializers;
 
 pub use self::config::*;
 pub use self::syslog::*;
+pub use self::drains::{get_pid, get_process_name, get_host_name};
 
 
 /// Entry point to any further syslog configuration

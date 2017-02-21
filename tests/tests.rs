@@ -15,54 +15,22 @@ mod tests {
     // use slog::Level;
 
     #[test]
-    fn uds_config_default() {
-        let config = syslog().uds();
-        assert!(config.connection_config.socket.is_none());
-        assert!(!config.async);
-        assert!(config.timestamp == TimestampFormat::RFC3164);
-        assert!(config.timezone == TimestampTZ::Local);
-        assert!(config.serialization == SerializationFormat::Native);
-        assert!(config.facility == Facility::LOG_USER);
+    fn get_pid_gt_one() {
+        assert!(get_pid() > 1);
     }
 
     #[test]
-    fn uds_config_with_path() {
-        let config = syslog().uds().socket("/dev/log").mode(FormatMode::RFC5424);
-        assert!(config.connection_config.socket == Some(PathBuf::from("/dev/log")));
-        assert!(config.mode == FormatMode::RFC5424);
+    fn get_process_name_some() {
+        assert!(get_process_name().is_some());
     }
 
     #[test]
-    fn udp_config_default() {
-        let config = syslog().udp();
-        assert!(config.connection_config.server == None);
-        assert!(!config.async);
-        assert!(config.timestamp == TimestampFormat::RFC3164);
-        assert!(config.timezone == TimestampTZ::Local);
-        assert!(config.serialization == SerializationFormat::Native);
-        assert!(config.facility == Facility::LOG_USER);
+    fn get_host_name_ok() {
+        let hostname = get_host_name();
+        println!("{:?}", hostname);
+        assert!(hostname.is_ok());
     }
 
-    #[test]
-    fn tcp_config_default() {
-        let config = syslog().tcp();
-        assert!(config.connection_config.server == None);
-        assert!(!config.async);
-        assert!(config.timestamp == TimestampFormat::RFC3164);
-        assert!(config.timezone == TimestampTZ::Local);
-        assert!(config.serialization == SerializationFormat::Native);
-        assert!(config.facility == Facility::LOG_USER);
-    }
-
-    // #[test]
-    // fn test_get_pid() {
-    //     assert!(get_pid() > 1);
-    // }
-
-    // #[test]
-    // fn test_get_process_name() {
-    //     assert!(get_process_name().is_some());
-    // }
 
     // #[test]
     // #[ignore]
