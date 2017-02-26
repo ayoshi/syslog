@@ -1,6 +1,6 @@
 use slog;
-use std::str::FromStr;
 use std::fmt;
+use std::str::FromStr;
 
 /// Default syslog unix domain socket locations on different
 /// operating systems
@@ -78,7 +78,9 @@ pub enum Facility {
 }
 
 impl Default for Facility {
-    fn default() -> Facility { Facility::LOG_USER }
+    fn default() -> Facility {
+        Facility::LOG_USER
+    }
 }
 
 impl Facility {

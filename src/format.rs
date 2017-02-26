@@ -1,11 +1,10 @@
-use std::{io};
+use config::FormatMode;
+use drains::TimestampFn;
+use serializers::KSVSerializer;
 
 use slog::{Level, Serializer, Record, OwnedKeyValueList};
 use slog_stream::Format as StreamFormat;
-
-use config::{FormatMode};
-use drains::{TimestampFn};
-use serializers::KSVSerializer;
+use std::io;
 use syslog::{Facility, Priority};
 
 
@@ -182,7 +181,7 @@ impl Format {
         self.fmt_msg(io, &|io: &mut io::Write| write!(io, "{}", record.msg()))?;
         self.fmt_separator(io, &|io: &mut io::Write| write!(io, " "))?;
 
-        let mut serializer = KSVSerializer::new(io,"=");
+        let mut serializer = KSVSerializer::new(io, "=");
 
         for &(k, v) in record.values().iter().rev() {
             v.serialize(record, k, &mut serializer)?;

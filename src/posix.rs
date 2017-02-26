@@ -1,9 +1,9 @@
 extern crate libc;
 
+use chrono;
 use libc::getpid;
 use std::{io, env, ffi};
 use std::path::{PathBuf, Path};
-use chrono;
 
 use syslog::SYSLOG_DEFAULT_UDS_LOCATIONS;
 
@@ -17,7 +17,7 @@ pub fn locate_default_uds_socket() -> Result<PathBuf, String> {
                        SYSLOG_DEFAULT_UDS_LOCATIONS))
 }
 
- // Get process name
+// Get process name
 pub fn get_process_name() -> Option<String> {
     env::current_exe()
         .ok()
@@ -36,16 +36,14 @@ pub fn get_pid() -> i32 {
 // Get my hostname
 pub fn get_host_name() -> Result<String, String> {
 
-    extern {
+    extern "C" {
         pub fn gethostname(name: *mut libc::c_char, size: libc::size_t) -> libc::c_int;
     }
 
     let len = u8::max_value() as usize;
     let mut buf = vec![0; len];
 
-    let err = unsafe {
-        gethostname (buf.as_mut_ptr() as *mut libc::c_char, len as libc::size_t)
-    };
+    let err = unsafe { gethostname(buf.as_mut_ptr() as *mut libc::c_char, len as libc::size_t) };
 
     match err {
         0 => {
@@ -53,7 +51,7 @@ pub fn get_host_name() -> Result<String, String> {
             let actual_len = buf.iter().position(|byte| *byte == 0).unwrap_or(len);
             // trim the hostname to the actual len
             String::from_utf8(buf.split_at(actual_len).0.to_vec()).map_err(|err| err.to_string())
-        },
-        _ => { Err("Couldn't get my own hostname".to_string()) }
+        }
+        _ => Err("Couldn't get my own hostname".to_string()),
     }
 }

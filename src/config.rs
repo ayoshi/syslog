@@ -1,6 +1,6 @@
-use syslog::{Facility};
-use std::path::PathBuf;
 use std::net::{ToSocketAddrs, SocketAddr};
+use std::path::PathBuf;
+use syslog::Facility;
 
 #[derive(Debug, PartialEq, Clone)]
 /// Syslog message format
@@ -117,8 +117,7 @@ pub struct UDSConfig {
     pub socket: Option<PathBuf>,
 }
 
-impl Default for UDSConfig
-{
+impl Default for UDSConfig {
     fn default() -> UDSConfig {
         UDSConfig { socket: None }
     }
@@ -133,7 +132,7 @@ pub struct UDPConfig<S>
     /// [ToSocketAddrs](https://doc.rust-lang.org/std/net/trait.ToSocketAddrs.html).
     ///
     /// Default: None. will try to connect to default ports on localhost
-    pub server: Option<S>
+    pub server: Option<S>,
 }
 
 impl<S: ToSocketAddrs> UDPConfig<S>
@@ -144,10 +143,9 @@ impl<S: ToSocketAddrs> UDPConfig<S>
     }
 }
 
-impl Default for UDPConfig<SocketAddr>
-{
+impl Default for UDPConfig<SocketAddr> {
     fn default() -> Self {
-        UDPConfig { server: None}
+        UDPConfig { server: None }
     }
 }
 
@@ -160,7 +158,7 @@ pub struct TCPConfig<S>
     /// [ToSocketAddrs](https://doc.rust-lang.org/std/net/trait.ToSocketAddrs.html).
     ///
     /// Default: None. will try to connect to default ports on localhost
-    pub server: Option<S>
+    pub server: Option<S>,
 }
 
 impl<S: ToSocketAddrs> TCPConfig<S>
@@ -171,8 +169,7 @@ impl<S: ToSocketAddrs> TCPConfig<S>
     }
 }
 
-impl Default for TCPConfig<SocketAddr>
-{
+impl Default for TCPConfig<SocketAddr> {
     fn default() -> Self {
         TCPConfig { server: None }
     }
@@ -211,12 +208,11 @@ pub struct SyslogConfig<T> {
     ///
     /// Default: `None` will be omitted for unix domain socket drain,
     /// autodetected in case of UDP or TCP drains
-    pub hostname: Option<String>
+    pub hostname: Option<String>,
 }
 
 /// General syslog config, applies to all connection types
 impl<T> SyslogConfig<T> {
-
     /// Constructor
     pub fn new() -> SyslogConfig<DefaultConfig> {
         SyslogConfig::default()
@@ -285,7 +281,7 @@ impl<T> SyslogConfig<T> {
             timezone: self.timezone,
             serialization: self.serialization,
             facility: self.facility,
-            hostname: self.hostname
+            hostname: self.hostname,
         }
     }
 }
@@ -300,13 +296,12 @@ impl Default for SyslogConfig<DefaultConfig> {
             timezone: TimestampTZ::default(),
             serialization: SerializationFormat::default(),
             facility: Facility::default(),
-            hostname: None
+            hostname: None,
         }
     }
 }
 
 impl SyslogConfig<DefaultConfig> {
-
     /// Set config to UDS
     pub fn uds(self) -> SyslogConfig<UDSConfig> {
         let config = self.connection_config(UDSConfig::default());
@@ -314,16 +309,14 @@ impl SyslogConfig<DefaultConfig> {
     }
 
     /// Set config to UDP
-    pub fn udp(self) -> SyslogConfig<UDPConfig<SocketAddr>>
-    {
+    pub fn udp(self) -> SyslogConfig<UDPConfig<SocketAddr>> {
         let config = self.connection_config(UDPConfig::default());
         config
     }
 
 
     /// Set config to TCP
-    pub fn tcp(self) -> SyslogConfig<TCPConfig<SocketAddr>>
-    {
+    pub fn tcp(self) -> SyslogConfig<TCPConfig<SocketAddr>> {
         let config = self.connection_config(TCPConfig::default());
         config
     }
@@ -359,8 +352,7 @@ impl SyslogConfig<UDSConfig> {
     }
 }
 
-impl SyslogConfig<UDPConfig<SocketAddr>>
-{
+impl SyslogConfig<UDPConfig<SocketAddr>> {
     /// Syslog server host - should convert to
     /// [ToSocketAddrs](https://doc.rust-lang.org/std/net/trait.ToSocketAddrs.html).
     ///
@@ -378,8 +370,7 @@ impl SyslogConfig<UDPConfig<SocketAddr>>
     }
 }
 
-impl SyslogConfig<TCPConfig<SocketAddr>>
-{
+impl SyslogConfig<TCPConfig<SocketAddr>> {
     /// Syslog server host - should convert to
     /// [ToSocketAddrs](https://doc.rust-lang.org/std/net/trait.ToSocketAddrs.html).
     ///

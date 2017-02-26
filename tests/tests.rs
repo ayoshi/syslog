@@ -7,11 +7,17 @@ extern crate slog_stream;
 #[cfg(test)]
 mod tests {
 
+    use slog::{Logger, Discard, Record, OwnedKeyValueList, Drain, Never};
+    use slog_stream;
+    use slog_syslog_ng::*;
     use std::net::{ToSocketAddrs, SocketAddr, IpAddr, Ipv4Addr};
     use std::path::PathBuf;
-    use slog_syslog_ng::*;
-    use slog::{Logger, Discard};
-    use slog_stream::stream;
+    use std::rc::Rc;
+    use std::cell::RefCell;
+    use std;
+    use std::fmt::Write as FmtWrite;
+    use std::io::Write as IoWrite;
+    use std::sync::Mutex;
     // use slog::Level;
 
     #[test]
@@ -66,16 +72,83 @@ mod tests {
         let config = config.mode(FormatMode::RFC5424);
         println!("{:?}", config);
 
-        let addr =SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 514);
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 514);
         let config = syslog().tcp().server(addr);
         println!("{:?}", config);
     }
 
     #[test]
     fn kv_formatter() {
-        let out = String::new();
-        // let serializer =
-        // let formatter = Format::(
+
+        pub struct TestingFormat;
+
+        impl TestingFormat {
+            pub fn new() -> Self {
+                TestingFormat {}
+            }
+        }
+
+        impl slog_stream::Format for TestingFormat {
+            fn format(&self,
+                      io: &mut std::io::Write,
+                      rinfo: &Record,
+                      logger_values: &OwnedKeyValueList)
+                      -> std::io::Result<()> {
+                try!(write!(io, "{}", rinfo.msg()));
+
+                // let mut ser = KSVSerializer::new(io, ": ".into());
+                // {
+                //     for (ref k, ref v) in logger_values.iter() {
+                //         try!(ser.io().write_all(", ".as_bytes()));
+                //         try!(v.serialize(rinfo, k, &mut ser));
+                //     }
+
+                //     for &(ref k, ref v) in rinfo.values().iter() {
+                //         try!(ser.io().write_all(", ".as_bytes()));
+                //         try!(v.serialize(rinfo, k, &mut ser));
+                //     }
+                // }
+                Ok(())
+            }
+        }
+
+        struct TestDrain
+        {
+            io: std::io::Write
+        }
+
+        impl TestDrain
+        {
+
+            fn new() -> TestDrain
+            {
+                TestDrain {io: Vec::with_capacity(1024)}
+            }
+
+        }
+
+
+        impl Drain for TestDrain
+        {
+
+            type Error = std::io::Error;
+
+            fn log(&self,
+                   record: &Record,
+                   values: &OwnedKeyValueList)
+                   -> std::io::Result<()> {
+                try!(write!(self.io, "{}", record.msg()));
+                Ok(())
+            }
+        }
+
+        let out = Vec::new();
+        let stream = TestDrain::new();
+        // let logger = Logger::root(stream, o!("lk" => "lv"));
+    }
+
+    // let serializer =
+    // let formatter = Format::(
         //     mode: FormatMode::RFC3164
         //     fn_timestamp: Box<timestamp_utc()>,
         //     hostname: "localhost".to_string(),
@@ -98,4 +171,3 @@ mod tests {
     //                 UnixDomainSocketStreamer::locate_default_uds_socket());
     //        assert!(false);
     //    }
-}
