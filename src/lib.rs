@@ -19,8 +19,10 @@
 extern crate slog;
 extern crate chrono;
 extern crate libc;
+extern crate serde;
 extern crate serde_json;
 extern crate slog_stream;
+
 
 pub mod config;
 pub mod syslog;

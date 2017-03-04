@@ -1,14 +1,21 @@
-use std::io;
-use std::fmt;
+use serde;
+use serde::ser::SerializeMap;
 use slog;
+use slog::OwnedKeyValueList;
+use slog::Record;
+use std::{io, result, fmt};
+use std::cell::RefCell;
+use std::fmt::Write;
 
-// Key Separator Value Serializer
+/// Key Separator Value Serializer
 pub struct KSVSerializer<W> {
     io: W,
     separator: String,
 }
 
-impl<W: io::Write> KSVSerializer<W> {
+impl<W> KSVSerializer<W>
+    where W: io::Write
+{
     pub fn new(io: W, separator: &str) -> Self {
         KSVSerializer {
             io: io,
@@ -21,14 +28,14 @@ impl<W: io::Write> KSVSerializer<W> {
     }
 }
 
-macro_rules! ksv_emit (
-    ($func_name:ident,T $value_type:ty) => (
+macro_rules! impl_serialize_for (
+    (T $value_type:ty, $func_name:ident) => (
         fn $func_name(&mut self, key: &str, val: $value_type) -> slog::ser::Result {
             write!(self.io, "{}{}{}", key, self.separator, val)?;
             Ok(())
         }
     );
-    ($func_name:ident,V $value:expr) => (
+    (V $value:expr, $func_name:ident) => (
         fn $func_name(&mut self, key: &str) -> slog::ser::Result {
             write!(self.io, "{}{}{}", key, self.separator, $value)?;
             Ok(())
@@ -37,56 +44,22 @@ macro_rules! ksv_emit (
 );
 
 impl<W: io::Write> slog::ser::Serializer for KSVSerializer<W> {
-
-    ksv_emit!(emit_none, V "None");
-    ksv_emit!(emit_unit, V "()");
-    ksv_emit!(emit_bool, T bool);
-    ksv_emit!(emit_char, T char);
-    ksv_emit!(emit_usize, T usize);
-    ksv_emit!(emit_isize, T isize);
-    ksv_emit!(emit_u8,  T u8);
-    ksv_emit!(emit_i8,  T i8);
-    ksv_emit!(emit_u16, T u16);
-    ksv_emit!(emit_i16, T i16);
-    ksv_emit!(emit_u32, T u32);
-    ksv_emit!(emit_i32, T i32);
-    ksv_emit!(emit_f32, T f32);
-    ksv_emit!(emit_u64, T u64);
-    ksv_emit!(emit_i64, T i64);
-    ksv_emit!(emit_f64, T f64);
-    ksv_emit!(emit_str, T &str);
-    ksv_emit!(emit_arguments, T &fmt::Arguments);
-
+    impl_serialize_for!(V "None", emit_none);
+    impl_serialize_for!(V "()", emit_unit);
+    impl_serialize_for!(T bool, emit_bool);
+    impl_serialize_for!(T char, emit_char);
+    impl_serialize_for!(T usize, emit_usize);
+    impl_serialize_for!(T isize, emit_isize);
+    impl_serialize_for!(T u8, emit_u8);
+    impl_serialize_for!(T i8, emit_i8);
+    impl_serialize_for!(T u16, emit_u16);
+    impl_serialize_for!(T i16, emit_i16);
+    impl_serialize_for!(T u32, emit_u32);
+    impl_serialize_for!(T i32, emit_i32);
+    impl_serialize_for!(T f32, emit_f32);
+    impl_serialize_for!(T u64, emit_u64);
+    impl_serialize_for!(T i64, emit_i64);
+    impl_serialize_for!(T f64, emit_f64);
+    impl_serialize_for!(T & str, emit_str);
+    impl_serialize_for!(T & fmt::Arguments, emit_arguments);
 }
-
-// struct CEESerializer<W> {
-//     io: W,
-// }
-
-// impl<W: io::Write> CEESerializer<W> {
-
-//     fn serialize(&self,
-//                  io: &mut io::Write,
-//                  rinfo: &Record,
-//                  logger_values: &OwnedKeyValueList)
-//                  -> io::Result<()> {
-
-//         let serializer = serde_json::Serializer::new(io);
-//         let mut serializer = try!(SerdeSerializer::start(serializer, None));
-
-//         let _ = try!(io.write_all("cee@:".as_bytes()));
-
-//         for (ref k, ref v) in logger_values.iter() {
-//             try!(v.serialize(rinfo, k, &mut serializer));
-//         }
-
-//         for &(ref k, ref v) in rinfo.values().iter() {
-//             try!(v.serialize(rinfo, k, &mut serializer));
-//         }
-
-//         let (serializer, res) = serializer.end();
-
-//         let _ = try!(res);
-//         Ok(())
-//     }
-// }
