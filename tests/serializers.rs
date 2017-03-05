@@ -128,4 +128,27 @@ mod tests {
         println!("{:?}", buffer.as_string());
         assert!(buffer.as_string() == "Test message 1 lk=lv mk=mv");
     }
+
+        #[test]
+    fn formatter_rfc3164() {
+
+        let mut formatter =  Format3164::new(
+             FormatMode::RFC3164,
+             Box::new(timestamp_local),
+             None,
+             Some("test".to_owned()),
+             12345,
+             Facility::LOG_USER,
+             SerializationFormat::KSV
+        );
+
+        let buffer = TestIoBuffer::new(1024);
+        let test_drain = TestDrain::new(buffer.io(), formatter);
+        let logger = Logger::root(test_drain, o!("lk" => "lv"));
+        info!(logger, "Test message 1"; "mk" => "mv" );
+        println!("{:?}", buffer.as_vec());
+        println!("{:?}", buffer.as_string());
+        assert!(buffer.as_string() == "Test message 1 lk=lv mk=mv");
+    }
+
 }

@@ -36,6 +36,8 @@ pub use self::config::*;
 pub use self::posix::{get_pid, get_process_name, get_host_name};
 pub use self::syslog::*;
 pub use self::serializers::*;
+pub use self::format::*;
+pub use self::drains::*;
 
 
 /// Entry point to any further syslog configuration

@@ -41,7 +41,7 @@ impl Default for FormatMode {
 pub enum SerializationFormat {
     /// key=value This format is the default for RFC3164.
     ///
-    KV,
+    KSV,
     /// CEE serialization format
     ///
     /// Most of the log analisys tools also support embedding JSON directly in RFC3164 messages
