@@ -134,7 +134,7 @@ mod tests {
 
         let mut formatter =  Format3164::new(
              FormatMode::RFC3164,
-             Box::new(timestamp_local),
+             Box::new(timestamp_local_rfc3164),
              None,
              Some("test".to_owned()),
              12345,

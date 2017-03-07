@@ -49,7 +49,10 @@ impl Format3164 {
         write!(io,
                "<{}> ",
                Priority::new(self.facility, record.level().into()))?;
+
         (self.fn_timestamp)(io)?;
+
+        write!(io, " ")?;
 
         match self.hostname {
             Some(ref hostname) => write!(io, "{} ", hostname)?,
@@ -68,6 +71,12 @@ impl Format3164 {
         for &(k, v) in record.values().iter().rev() {
             v.serialize(record, k, &mut serializer)?;
         }
+
+        let mut io = serializer.finish();
+
+        write!(io, " ")?;
+
+        let mut serializer = KSVSerializer::new(io, "=");
 
         for (k, v) in logger_values.iter() {
             v.serialize(record, k, &mut serializer)?;

@@ -1,11 +1,12 @@
-use serde;
-use serde::ser::SerializeMap;
+// use serde;
+// use serde::ser::SerializeMap;
+
 use slog;
-use slog::OwnedKeyValueList;
-use slog::Record;
-use std::{io, result, fmt};
-use std::cell::RefCell;
-use std::fmt::Write;
+// use slog::OwnedKeyValueList;
+// use slog::Record;
+use std::{io, fmt};
+// use std::cell::RefCell;
+// use std::fmt::Write;
 
 /// Key Separator Value Serializer
 pub struct KSVSerializer<W> {
