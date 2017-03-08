@@ -66,7 +66,7 @@ impl Default for SerializationFormat {
 /// Timestamp timezone
 ///
 /// By default, syslog expects timestamp in the local timezone (recommended by RFC3164),
-/// Since RFC3164 timestamps don't contain timezone information
+/// Since RFC3164 timestamps don't contain timezone information.
 /// Newer syslog servers support RFC 3339/ISO 8601 formats, which allow client to
 /// specify the timezone
 pub enum TimestampTZ {

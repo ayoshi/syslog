@@ -129,18 +129,15 @@ mod tests {
         assert!(buffer.as_string() == "Test message 1 lk=lv mk=mv");
     }
 
-        #[test]
+    #[test]
     fn formatter_rfc3164() {
 
-        let mut formatter =  Format3164::new(
-             FormatMode::RFC3164,
-             Box::new(timestamp_local_rfc3164),
-             None,
-             Some("test".to_owned()),
-             12345,
-             Facility::LOG_USER,
-             SerializationFormat::KSV
-        );
+        let mut formatter = Format3164::new(None,
+                                            Some("test".to_owned()),
+                                            12345,
+                                            Facility::LOG_USER,
+                                            Box::new(timestamp_local_rfc3164),
+                                            SerializationFormat::KSV);
 
         let buffer = TestIoBuffer::new(1024);
         let test_drain = TestDrain::new(buffer.io(), formatter);
