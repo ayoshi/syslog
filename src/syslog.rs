@@ -11,13 +11,21 @@ pub const SYSLOG_DEFAULT_UDS_LOCATIONS: &'static [&'static str] =
 #[allow(non_camel_case_types)]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Severity {
+    ///
     LOG_EMERG = 0,
+    ///
     LOG_ALERT,
+    ///
     LOG_CRIT,
+    ///
     LOG_ERR,
+    ///
     LOG_WARN,
+    ///
     LOG_NOTICE,
+    ///
     LOG_INFO,
+    ///
     LOG_DEBUG,
 }
 
@@ -55,25 +63,45 @@ impl FromStr for Severity {
 #[allow(non_camel_case_types)]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Facility {
+    ///
     LOG_KERN = 0,
+    ///
     LOG_USER = 1,
+    ///
     LOG_MAIL = 2,
+    ///
     LOG_DAEMON = 3,
+    ///
     LOG_AUTH = 4,
+    ///
     LOG_SYSLOG = 5,
+    ///
     LOG_LPR = 6,
+    ///
     LOG_NEWS = 7,
+    ///
     LOG_UUCP = 8,
+    ///
     LOG_CRON = 9,
+    ///
     LOG_AUTHPRIV = 10,
+    ///
     LOG_FTP = 11,
+    ///
     LOG_LOCAL0 = 16,
+    ///
     LOG_LOCAL1 = 17,
+    ///
     LOG_LOCAL2 = 18,
+    ///
     LOG_LOCAL3 = 19,
+    ///
     LOG_LOCAL4 = 20,
+    ///
     LOG_LOCAL5 = 21,
+    ///
     LOG_LOCAL6 = 22,
+    ///
     LOG_LOCAL7 = 23,
 }
 
@@ -122,9 +150,11 @@ impl FromStr for Facility {
 }
 
 #[derive(PartialEq, Copy, Clone)]
+/// Syslog message priority
 pub struct Priority(u8);
 
 impl Priority {
+    /// Calculate syslog priority from facility and severity
     pub fn new(facility: Facility, severity: Severity) -> Priority {
         let facility = facility as u8;
         let severity = severity as u8;

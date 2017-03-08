@@ -66,7 +66,7 @@ impl Default for SerializationFormat {
 /// Timestamp timezone
 ///
 /// By default, syslog expects timestamp in the local timezone (recommended by RFC3164),
-/// Since RFC3164 timestamps don't contain timezone information.
+/// Since RFC3164 timestamps don't contain timezone information
 /// Newer syslog servers support RFC 3339/ISO 8601 formats, which allow client to
 /// specify the timezone
 pub enum TimestampTZ {
@@ -272,7 +272,7 @@ impl<T> SyslogConfig<T> {
         self
     }
 
-    pub fn connection_config<C>(self, connection_config: C) -> SyslogConfig<C> {
+    fn connection_config<C>(self, connection_config: C) -> SyslogConfig<C> {
         SyslogConfig {
             connection_config: connection_config,
             async: self.async,
@@ -304,21 +304,18 @@ impl Default for SyslogConfig<DefaultConfig> {
 impl SyslogConfig<DefaultConfig> {
     /// Set config to UDS
     pub fn uds(self) -> SyslogConfig<UDSConfig> {
-        let config = self.connection_config(UDSConfig::default());
-        config
+        self.connection_config(UDSConfig::default())
     }
 
     /// Set config to UDP
     pub fn udp(self) -> SyslogConfig<UDPConfig<SocketAddr>> {
-        let config = self.connection_config(UDPConfig::default());
-        config
+     self.connection_config(UDPConfig::default())
     }
 
 
     /// Set config to TCP
     pub fn tcp(self) -> SyslogConfig<TCPConfig<SocketAddr>> {
-        let config = self.connection_config(TCPConfig::default());
-        config
+        self.connection_config(TCPConfig::default())
     }
 
     /// Try to connect without further configuration.
@@ -360,8 +357,7 @@ impl SyslogConfig<UDPConfig<SocketAddr>> {
     pub fn server<S>(self, server: S) -> SyslogConfig<UDPConfig<S>>
         where S: ToSocketAddrs
     {
-        let config = self.connection_config(UDPConfig::new(server));
-        config
+        self.connection_config(UDPConfig::new(server))
     }
 
     /// Connect UDP drain
@@ -378,8 +374,7 @@ impl SyslogConfig<TCPConfig<SocketAddr>> {
     pub fn server<S>(self, server: S) -> SyslogConfig<TCPConfig<S>>
         where S: ToSocketAddrs
     {
-        let config = self.connection_config(TCPConfig::new(server));
-        config
+     self.connection_config(TCPConfig::new(server))
     }
 
     /// Connect TCP drain

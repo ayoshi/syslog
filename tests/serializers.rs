@@ -72,7 +72,7 @@ mod tests {
                -> std::result::Result<(), Never> {
             use std::ops::DerefMut;
             let mut io = self.io.lock().unwrap();
-            self.formatter.format(io.deref_mut(), record, values);
+            self.formatter.format(io.deref_mut(), record, values).unwrap_or(());
             Ok(())
         }
     }
@@ -100,7 +100,7 @@ mod tests {
 
                 let mut serializer = KSVSerializer::new(io, "=".into());
                 {
-                    for (ref k, ref v) in logger_values.iter() {
+                    for (k, v) in logger_values.iter() {
                         v.serialize(rinfo, k, &mut serializer)?;
                     }
                 }
@@ -111,7 +111,7 @@ mod tests {
 
                 let mut serializer = KSVSerializer::new(io, "=".into());
                 {
-                    for &(ref k, ref v) in rinfo.values().iter() {
+                    for &(k, v) in rinfo.values().iter() {
                         v.serialize(rinfo, k, &mut serializer)?;
                     }
                 }
@@ -132,12 +132,13 @@ mod tests {
     #[test]
     fn formatter_rfc3164() {
 
-        let mut formatter = Format3164::new(None,
-                                            Some("test".to_owned()),
-                                            12345,
-                                            Facility::LOG_USER,
-                                            timestamp(TimestampFormat::ISO8601, TimestampTZ::Local),
-                                            SerializationFormat::KSV);
+        let formatter = Format3164::new(None,
+                                        Some("test".to_owned()),
+                                        12345,
+                                        Facility::LOG_USER,
+                                        TimestampConfig::new(TimestampFormat::ISO8601,
+                                                             TimestampTZ::Local)
+                                            .timestamp_fn());
 
         let buffer = TestIoBuffer::new(1024);
         let test_drain = TestDrain::new(buffer.io(), formatter);

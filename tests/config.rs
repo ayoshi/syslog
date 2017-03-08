@@ -1,18 +1,13 @@
 extern crate slog_syslog_ng;
 
-#[macro_use]
 extern crate slog;
 extern crate slog_stream;
 
 #[cfg(test)]
 mod tests {
 
-    use std::net::{ToSocketAddrs, SocketAddr, IpAddr, Ipv4Addr};
-    use std::path::PathBuf;
     use slog_syslog_ng::*;
-    use slog::{Logger, Discard};
-    use slog_stream::stream;
-    // use slog::Level;
+    use std::path::PathBuf;
 
     #[test]
     fn uds_config_default() {

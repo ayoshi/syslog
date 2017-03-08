@@ -1,8 +1,7 @@
 extern crate libc;
 
-use chrono;
 use libc::getpid;
-use std::{io, env, ffi};
+use std::{env, ffi};
 use std::path::{PathBuf, Path};
 
 use syslog::SYSLOG_DEFAULT_UDS_LOCATIONS;
@@ -17,7 +16,7 @@ pub fn locate_default_uds_socket() -> Result<PathBuf, String> {
                        SYSLOG_DEFAULT_UDS_LOCATIONS))
 }
 
-// Get process name
+/// Get current process name
 pub fn get_process_name() -> Option<String> {
     env::current_exe()
         .ok()
@@ -28,12 +27,12 @@ pub fn get_process_name() -> Option<String> {
         .map(String::from)
 }
 
-// Get pid
+/// Get current proccess pid
 pub fn get_pid() -> i32 {
     unsafe { getpid() }
 }
 
-// Get my hostname
+/// Get local hostname
 pub fn get_host_name() -> Result<String, String> {
 
     extern "C" {

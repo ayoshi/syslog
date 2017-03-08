@@ -1,29 +1,29 @@
-use config::SerializationFormat;
+// use config::SerializationFormat;
 use serializers::KSVSerializer;
 
-use slog::{Serializer, Record, OwnedKeyValueList};
+use slog::{Record, OwnedKeyValueList};
 use slog_stream::Format as StreamFormat;
 use std::io;
 use syslog::{Facility, Priority};
 use time::TimestampFn;
 
 
+/// RFC3164 formatter
 pub struct Format3164 {
     hostname: Option<String>,
     process_name: Option<String>,
     pid: i32,
     facility: Facility,
     fn_timestamp: Box<TimestampFn>,
-    serialization_format: SerializationFormat,
 }
 
 impl Format3164 {
+    /// Return an instance of RFC3164 compatible formatter
     pub fn new(hostname: Option<String>,
                process_name: Option<String>,
                pid: i32,
                facility: Facility,
-               fn_timestamp: Box<TimestampFn>,
-               serialization_format: SerializationFormat)
+               fn_timestamp: Box<TimestampFn>)
                -> Self {
         Format3164 {
             fn_timestamp: fn_timestamp,
@@ -31,7 +31,6 @@ impl Format3164 {
             process_name: process_name,
             pid: pid,
             facility: facility,
-            serialization_format: serialization_format,
         }
     }
 
@@ -61,10 +60,10 @@ impl Format3164 {
     }
 
     fn format_message_ksv(&self,
-                      io: &mut io::Write,
-                      record: &Record,
-                      logger_values: &OwnedKeyValueList)
-                      -> io::Result<()> {
+                          io: &mut io::Write,
+                          record: &Record,
+                          logger_values: &OwnedKeyValueList)
+                          -> io::Result<()> {
 
         // MESSAGE
         write!(io, "{} ", record.msg())?;

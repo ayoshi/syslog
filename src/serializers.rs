@@ -17,6 +17,7 @@ pub struct KSVSerializer<W> {
 impl<W> KSVSerializer<W>
     where W: io::Write
 {
+    /// Return new instance of serializers with specified separator
     pub fn new(io: W, separator: &str) -> Self {
         KSVSerializer {
             io: io,
@@ -24,6 +25,8 @@ impl<W> KSVSerializer<W>
         }
     }
 
+    /// Return back borrowed mutable handle to `io`
+    /// at the end of serialization
     pub fn finish(self) -> W {
         self.io
     }
