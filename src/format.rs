@@ -60,7 +60,7 @@ impl Format3164 {
         Ok(())
     }
 
-    fn format_message(&self,
+    fn format_message_ksv(&self,
                       io: &mut io::Write,
                       record: &Record,
                       logger_values: &OwnedKeyValueList)
@@ -99,7 +99,7 @@ impl Format3164 {
         self.format_header(io, record)?;
 
         // MESSAGE
-        self.format_message(io, record, logger_values)?;
+        self.format_message_ksv(io, record, logger_values)?;
 
         // EOL
         write!(io, "\n")?;

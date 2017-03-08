@@ -136,7 +136,7 @@ mod tests {
                                             Some("test".to_owned()),
                                             12345,
                                             Facility::LOG_USER,
-                                            Box::new(timestamp_local_rfc3164),
+                                            timestamp(TimestampFormat::ISO8601, TimestampTZ::Local),
                                             SerializationFormat::KSV);
 
         let buffer = TestIoBuffer::new(1024);
