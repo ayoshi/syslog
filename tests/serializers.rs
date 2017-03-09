@@ -146,7 +146,8 @@ mod tests {
         info!(logger, "Test message 1"; "mk" => "mv" );
         println!("{:?}", buffer.as_vec());
         println!("{:?}", buffer.as_string());
-        assert!(buffer.as_string() == "Test message 1 lk=lv mk=mv");
+        assert!(buffer.as_string().contains("<14>"));
+        assert!(buffer.as_string().contains("Test message 1 mk=mv lk=lv"));
     }
 
 }
