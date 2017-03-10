@@ -130,13 +130,13 @@ mod tests {
     }
 
     #[test]
-    fn formatter_rfc3164() {
+    fn formatter_rfc3164_ksv() {
 
         let formatter = Format3164::new(None,
                                         Some("test".to_owned()),
                                         12345,
                                         Facility::LOG_USER,
-                                        TimestampConfig::new(TimestampFormat::ISO8601,
+                                        TimestampConfig::new(TimestampFormat::RFC3164,
                                                              TimestampTZ::Local)
                                             .timestamp_fn());
 
@@ -147,6 +147,27 @@ mod tests {
         println!("{:?}", buffer.as_vec());
         println!("{:?}", buffer.as_string());
         assert!(buffer.as_string().contains("<14>"));
+        assert!(buffer.as_string().contains("Test message 1 mk=mv lk=lv"));
+    }
+
+    #[test]
+    fn formatter_rfc5424_ksv() {
+
+        let formatter = Format5424::new(None,
+                                        Some("test".to_owned()),
+                                        12345,
+                                        Facility::LOG_USER,
+                                        TimestampConfig::new(TimestampFormat::ISO8601,
+                                                             TimestampTZ::Local)
+                                        .timestamp_fn());
+
+        let buffer = TestIoBuffer::new(1024);
+        let test_drain = TestDrain::new(buffer.io(), formatter);
+        let logger = Logger::root(test_drain, o!("lk" => "lv"));
+        info!(logger, "Test message 1"; "mk" => "mv" );
+        println!("{:?}", buffer.as_vec());
+        println!("{:?}", buffer.as_string());
+        assert!(buffer.as_string().contains("<14>1"));
         assert!(buffer.as_string().contains("Test message 1 mk=mv lk=lv"));
     }
 
