@@ -1,7 +1,6 @@
 language: rust
 rust:
   - stable
-  - 1.12.0
   - beta
   - nightly
 
@@ -17,10 +16,10 @@ env:
     -
     - RELEASE=true
 
-notifications:
-  webhooks:
-    urls:
-      - https://webhooks.gitter.im/e/6d8e17dd2fa83b143168
-    on_success: change  # options: [always|never|change] default: always
-    on_failure: change  # options: [always|never|change] default: always
-    on_start: false     # default: false
+#notifications:
+#  webhooks:
+#    urls:
+#      - https://webhooks.gitter.im/e/6d8e17dd2fa83b143168
+#    on_success: change  # options: [always|never|change] default: always
+#    on_failure: change  # options: [always|never|change] default: always
+#    on_start: false     # default: false

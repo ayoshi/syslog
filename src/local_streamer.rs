@@ -1,105 +1,3 @@
-//! Syslog RFC3164 and RFC5424 formatter and drain for slog
-//!
-//! ```
-//! #[macro_use]
-//! extern crate slog;
-//! extern crate slog_term;
-//!
-//! use slog::*;
-//!
-//! fn main() {
-//!     let root = Logger::root(slog_term::streamer().build().fuse(), o!("build-id" => "8dfljdf"));
-//! }
-//! ```
-#![warn(missing_docs)]
-
-extern crate slog;
-extern crate slog_stream;
-extern crate chrono;
-extern crate libc;
-extern crate hostname;
-extern crate thread_local;
-
-use libc::getpid;
-use std::str::FromStr;
-use std::io::Write;
-use std::{io, fmt, sync, cell, env, os, ffi};
-use std::path::Path;
-
-use slog::Record;
-use slog::ser;
-use slog::{Level, OwnedKeyValueList};
-
-use hostname::get_hostname;
-
-use slog_stream::Format as StreamFormat;
-use slog_stream::{stream, async_stream};
-
-include!("_syslog.rs");
-include!("_format.rs");
-
-/// By default the following locations are checked for sockets, in order
-pub const SYSLOG_SOCKET_LOCATIONS: &'static [&'static str] = &["/dev/log", "/var/run/syslog"];
-
-thread_local! {
-    static TL_BUF: cell::RefCell<Vec<u8>> = cell::RefCell::new(Vec::with_capacity(128));
-}
-
-/// Get process name and pid
-fn get_process_name() -> Option<String> {
-    env::current_exe()
-        .ok()
-        .as_ref()
-        .map(Path::new)
-        .and_then(Path::file_name)
-        .and_then(ffi::OsStr::to_str)
-        .map(String::from)
-}
-
-fn get_pid() -> i32 {
-    unsafe { getpid() }
-}
-
-fn get_syslog_socket<'a>() -> Option<String> {
-    vec!["/dev/log", "/var/run/syslog"]
-        .iter()
-        .find(|s| Path::new(s).exists())
-        .map(|s| s.to_string())
-}
-
-/// Timestamp function type
-pub type TimestampFn = Fn(&mut io::Write) -> io::Result<()> + Send + Sync;
-
-/// Default local timestamp function used by `Format`
-pub fn timestamp_local(io: &mut io::Write) -> io::Result<()> {
-    write!(io, "{}", chrono::Local::now().to_rfc3339())
-}
-
-/// Default UTC timestamp function used by `Format`
-pub fn timestamp_utc(io: &mut io::Write) -> io::Result<()> {
-    write!(io, "{}", chrono::UTC::now().to_rfc3339())
-}
-
-/// Formatting mode
-#[derive(Debug)]
-pub enum FormatMode {
-    /// Compact logging format
-    RFC3164,
-    /// Full logging format
-    RFC5424,
-}
-
-/// Protocol
-#[derive(Debug)]
-pub enum Protocol {
-    /// Log to Unix socket
-    UnixSocket,
-    /// Log over TCP
-    TCP,
-    /// Log over UDP
-    UDP,
-}
-
 
 /// Streamer builder
 pub struct SyslogStreamer {
@@ -234,6 +132,7 @@ impl SyslogStreamer {
 
     /// Build the streamer
     pub fn build(self) -> Box<slog::Drain<Error = io::Error> + Send + Sync> {
+        // FIX: the builder can fail, we need a way to fail safely
         let process_name = get_process_name();
         let pid = get_pid();
         let hostname = self.hostname.or(get_hostname());
@@ -244,7 +143,15 @@ impl SyslogStreamer {
                                  pid,
                                  self.facility);
 
-        let io = Box::new(io::stdout()) as Box<io::Write + Send>;
+        let syslog_socket = self.syslog_socket.or(get_syslog_socket());
+
+        // Connect to socket
+        let mut socket_stream = match  UnixDatagram::bind(&Path::new("/var/run/syslog")) {
+            Err(_) => panic!("Couldn't connect to socket"),
+            Ok(stream) => stream,
+        };
+
+        let io = Box::new(socket_stream) as Box<io::Write + Send>;
 
         if self.async {
             Box::new(async_stream(io, format))
@@ -269,6 +176,7 @@ impl fmt::Debug for SyslogStreamer {
                self.facility)
     }
 }
+
 impl Default for SyslogStreamer {
     fn default() -> Self {
         Self::new()

@@ -1,23 +1,29 @@
 [package]
-name = "slog-syslog"
+name = "slog-syslog-ng"
 version = "0.0.1"
 authors = ["Alexander Goldberg <algold@gmail.com>"]
 description = "Syslog drain and formatter for slog-rs"
 keywords = ["slog", "logging", "log", "syslog"]
 license = "MPL-2.0"
-documentation = "https://docs.rs/slog-syslog"
-homepage = "https://github.com/slog-rs/syslog"
-repository = "https://github.com/slog-rs/syslog"
+documentation = "https://docs.rs/slog-syslog-ng"
+homepage = "https://github.com/slog-rs/syslog-ng"
+repository = "https://github.com/slog-rs/syslog-ng"
 readme = "README.md"
 
 [lib]
-path = "lib.rs"
+path = "src/lib.rs"
 
 [dependencies]
-slog = "1.5.0"
-slog-stream = "1.2"
-chrono = "0.2"
+slog = "^1.5.0"
+# slog = { git = "https://github.com/slog-rs/slog.git" }
+slog-stream = "^1.2"
+serde = "^0.9"
+serde_json = "^0.9"
+chrono = "^0.3"
 isatty = "0.1"
-thread_local = "0.3"
+thread_local = "^0.3"
 libc = "*"
 hostname = "*"
+
+[dev-dependencies]
+compiletest_rs = "*"
