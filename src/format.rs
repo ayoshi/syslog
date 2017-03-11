@@ -15,6 +15,7 @@ macro_rules! write_nilvalue { ($io:expr) => ( write!($io, "-") ) }
 macro_rules! write_eom { ($io:expr) => ( write!($io, "\0") ) }
 
 
+// All fields that are present in header
 struct HeaderFields {
     hostname: Option<String>,
     process_name: Option<String>,
@@ -67,7 +68,6 @@ struct HeaderRFC5424 {
 }
 
 impl HeaderRFC5424 {
-    /// Return an instance of syslog formatter
     pub fn new(config: HeaderFields) -> Self {
         HeaderRFC5424 { config: config }
     }
@@ -140,6 +140,7 @@ impl FormatHeader for HeaderRFC5424 {
     }
 }
 
+// Nescessary to dispatch on header type
 enum SyslogHeaderFormat {
     RFC3164(HeaderRFC3164),
     RFC5424(HeaderRFC5424),
@@ -251,6 +252,7 @@ impl FormatMessage for MessageKSV {
     }
 }
 
+// Nescessary to dispatch on message type
 enum SyslogMessageFormat {
     KSV(MessageKSV),
     RFC5424(MessageRFC5424),
