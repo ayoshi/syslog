@@ -132,15 +132,13 @@ mod tests {
     #[test]
     fn formatter_rfc3164_ksv() {
 
-        let formatter = SyslogFormat::new(None,
+        let formatter = SyslogFormat::<HeaderRFC3164, MessageKSV>::new(None,
                                           Some("test".to_owned()),
                                           12345,
                                           Facility::LOG_USER,
                                           TimestampConfig::new(TimestampFormat::ISO8601,
                                                                TimestampTZ::Local)
-                                              .timestamp_fn(),
-                                          FormatMode::RFC3164,
-                                          SerializationFormat::KSV);
+                                              .timestamp_fn());
 
         let buffer = TestIoBuffer::new(1024);
         let test_drain = TestDrain::new(buffer.io(), formatter);
@@ -156,15 +154,13 @@ mod tests {
     #[test]
     fn formatter_rfc5424_ksv() {
 
-        let formatter = SyslogFormat::new(None,
+        let formatter = SyslogFormat::<HeaderRFC5424, MessageKSV>::new(None,
                                           Some("test".to_owned()),
                                           12345,
                                           Facility::LOG_USER,
                                           TimestampConfig::new(TimestampFormat::ISO8601,
                                                                TimestampTZ::Local)
-                                              .timestamp_fn(),
-                                          FormatMode::RFC5424,
-                                          SerializationFormat::KSV);
+                                              .timestamp_fn());
 
         let buffer = TestIoBuffer::new(1024);
         let test_drain = TestDrain::new(buffer.io(), formatter);
@@ -179,16 +175,15 @@ mod tests {
 
     #[test]
     fn formatter_rfc5424_native() {
-        let formatter = SyslogFormat::new(None,
-                                          Some("test".to_owned()),
-                                          12345,
-                                          Facility::LOG_USER,
-                                          TimestampConfig::new(TimestampFormat::ISO8601,
-                                                               TimestampTZ::Local)
-                                              .timestamp_fn(),
-                                          FormatMode::RFC5424,
-                                          SerializationFormat::Native);
-
+        let formatter =
+            SyslogFormat::<HeaderRFC5424,
+                           MessageRFC5424>::new(None,
+                                                Some("test".to_owned()),
+                                                12345,
+                                                Facility::LOG_USER,
+                                                TimestampConfig::new(TimestampFormat::ISO8601,
+                                                                     TimestampTZ::Local)
+                                                    .timestamp_fn());
 
         let buffer = TestIoBuffer::new(1024);
         let test_drain = TestDrain::new(buffer.io(), formatter);
