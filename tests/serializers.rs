@@ -96,24 +96,14 @@ mod tests {
                       logger_values: &OwnedKeyValueList)
                       -> std::io::Result<()> {
                 write!(io, "{}", rinfo.msg())?;
-                write!(io, " ")?;
 
                 let mut serializer = KSVSerializer::new(io, "=".into());
-                {
-                    for (k, v) in logger_values.iter() {
-                        v.serialize(rinfo, k, &mut serializer)?;
-                    }
+                for (k, v) in logger_values.iter() {
+                    v.serialize(rinfo, k, &mut serializer)?;
                 }
 
-                let mut io = serializer.finish();
-
-                write!(io, " ")?;
-
-                let mut serializer = KSVSerializer::new(io, "=".into());
-                {
-                    for &(k, v) in rinfo.values().iter() {
-                        v.serialize(rinfo, k, &mut serializer)?;
-                    }
+                for &(k, v) in rinfo.values().iter() {
+                    v.serialize(rinfo, k, &mut serializer)?;
                 }
 
                 Ok(())
@@ -147,8 +137,7 @@ mod tests {
         println!("{:?}", buffer.as_vec());
         println!("{:?}", buffer.as_string());
         assert!(buffer.as_string().contains("<14>"));
-        assert!(buffer.as_string().contains("Test message 1 mk=mv lk=lv"));
-        assert!(false);
+        assert!(buffer.as_string().contains("Test message 1 mk2=mv2 mk1=mv1 lk2=lv2 lk1=lv1"));
     }
 
     #[test]
@@ -170,7 +159,6 @@ mod tests {
         println!("{:?}", buffer.as_string());
         assert!(buffer.as_string().contains("<14>1"));
         assert!(buffer.as_string().contains("Test message 1 mk=mv lk=lv"));
-        assert!(false);
     }
 
     #[test]
@@ -191,9 +179,13 @@ mod tests {
         info!(logger, "Test message 1"; "mk" => "mv" );
         println!("{:?}", buffer.as_vec());
         println!("{:?}", buffer.as_string());
-        // assert!(buffer.as_string().contains("<14>1"));
-        // assert!(buffer.as_string().contains("Test message 1 mk=mv lk=lv"));
-        assert!(false);
+        assert!(buffer.as_string().contains("<14>1"));
+        assert!(buffer.as_string().contains("Test message 1"));
+        assert!(buffer.as_string().contains("[logger@"));
+        assert!(buffer.as_string().contains("[msg@"));
+        assert!(buffer.as_string().contains("mk=mv]"));
+        assert!(buffer.as_string().contains("lk=lv]"));
+        // assert!(false);
     }
 
 }

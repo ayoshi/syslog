@@ -155,7 +155,6 @@ impl MessageRFC5424 {
                          -> io::Result<()> {
         write!(io, "{}", "[")?;
         write!(io, "{}", sd_id)?;
-        write_separator!(io)?;
         f(io)?;
         write!(io, "{}", "]")?;
         Ok(())
@@ -219,7 +218,6 @@ impl FormatMessage for MessageKSV {
 
         // MESSAGE
         write!(io, "{}", record.msg())?;
-        write_separator!(io)?;
 
         // MESSAGE STRUCTURED_DATA
         let mut serializer = KSVSerializer::new(io, "=");
@@ -227,11 +225,6 @@ impl FormatMessage for MessageKSV {
         for &(k, v) in record.values().iter().rev() {
             v.serialize(record, k, &mut serializer)?;
         }
-
-        let mut io = serializer.finish();
-        write_separator!(io)?;
-
-        let mut serializer = KSVSerializer::new(io, "=");
 
         for (k, v) in logger_values.iter() {
             v.serialize(record, k, &mut serializer)?;
