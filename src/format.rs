@@ -28,7 +28,7 @@ pub trait FormatMessage {
               -> io::Result<()>;
 }
 
-struct HeaderRFC3164 {
+pub struct HeaderRFC3164 {
     hostname: Option<String>,
     process_name: Option<String>,
     pid: i32,
@@ -36,7 +36,7 @@ struct HeaderRFC3164 {
     fn_timestamp: Box<TimestampFn>,
 }
 
-struct HeaderRFC5424 {
+pub struct HeaderRFC5424 {
     hostname: Option<String>,
     process_name: Option<String>,
     pid: i32,

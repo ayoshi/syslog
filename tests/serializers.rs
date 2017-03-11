@@ -132,7 +132,7 @@ mod tests {
     #[test]
     fn formatter_rfc3164_ksv() {
 
-        let formatter = SyslogFormat::new(None,
+        let formatter = SyslogFormat::<HeaderRFC3164>::new(None,
                                           Some("test".to_owned()),
                                           12345,
                                           Facility::LOG_USER,
@@ -156,7 +156,7 @@ mod tests {
     #[test]
     fn formatter_rfc5424_ksv() {
 
-        let formatter = SyslogFormat::new(None,
+        let formatter = SyslogFormat::<HeaderRFC5424>::new(None,
                                           Some("test".to_owned()),
                                           12345,
                                           Facility::LOG_USER,
@@ -179,7 +179,7 @@ mod tests {
 
     #[test]
     fn formatter_rfc5424_native() {
-        let formatter = SyslogFormat::new(None,
+        let formatter = SyslogFormat::<HeaderRFC5424>::new(None,
                                           Some("test".to_owned()),
                                           12345,
                                           Facility::LOG_USER,
