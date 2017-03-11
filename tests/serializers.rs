@@ -144,8 +144,8 @@ mod tests {
 
         let buffer = TestIoBuffer::new(1024);
         let test_drain = TestDrain::new(buffer.io(), formatter);
-        let logger = Logger::root(test_drain, o!("lk" => "lv"));
-        info!(logger, "Test message 1"; "mk" => "mv" );
+        let logger = Logger::root(test_drain, o!("lk1" => "lv1", "lk2" => "lv2"));
+        info!(logger, "Test message 1"; "mk1" => "mv1", "mk2" => "mv2" );
         println!("{:?}", buffer.as_vec());
         println!("{:?}", buffer.as_string());
         assert!(buffer.as_string().contains("<14>"));

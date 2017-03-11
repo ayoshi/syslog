@@ -15,6 +15,31 @@ macro_rules! write_nilvalue { ($io:expr) => ( write!($io, "-") ) }
 macro_rules! write_eom { ($io:expr) => ( write!($io, "\0") ) }
 
 
+struct HeaderFields {
+    hostname: Option<String>,
+    process_name: Option<String>,
+    pid: i32,
+    facility: Facility,
+    fn_timestamp: Box<TimestampFn>,
+}
+
+impl HeaderFields {
+    pub fn new(hostname: Option<String>,
+               process_name: Option<String>,
+               pid: i32,
+               facility: Facility,
+               fn_timestamp: Box<TimestampFn>)
+               -> Self {
+        HeaderFields {
+            hostname: hostname,
+            process_name: process_name,
+            pid: pid,
+            facility: facility,
+            fn_timestamp: fn_timestamp,
+        }
+    }
+}
+
 trait FormatHeader {
     fn format(&self, io: &mut io::Write, record: &Record) -> io::Result<()>;
 }
@@ -28,53 +53,23 @@ trait FormatMessage {
 }
 
 struct HeaderRFC3164 {
-    hostname: Option<String>,
-    process_name: Option<String>,
-    pid: i32,
-    facility: Facility,
-    fn_timestamp: Box<TimestampFn>,
+    config: HeaderFields,
 }
 
 impl HeaderRFC3164 {
-    pub fn new(hostname: Option<String>,
-               process_name: Option<String>,
-               pid: i32,
-               facility: Facility,
-               fn_timestamp: Box<TimestampFn>)
-               -> Self {
-        HeaderRFC3164 {
-            hostname: hostname,
-            process_name: process_name,
-            pid: pid,
-            facility: facility,
-            fn_timestamp: fn_timestamp,
-        }
+    pub fn new(config: HeaderFields) -> Self {
+        HeaderRFC3164 { config: config }
     }
 }
 
 struct HeaderRFC5424 {
-    hostname: Option<String>,
-    process_name: Option<String>,
-    pid: i32,
-    facility: Facility,
-    fn_timestamp: Box<TimestampFn>,
+    config: HeaderFields,
 }
 
 impl HeaderRFC5424 {
     /// Return an instance of syslog formatter
-    pub fn new(hostname: Option<String>,
-               process_name: Option<String>,
-               pid: i32,
-               facility: Facility,
-               fn_timestamp: Box<TimestampFn>)
-               -> Self {
-        HeaderRFC5424 {
-            hostname: hostname,
-            process_name: process_name,
-            pid: pid,
-            facility: facility,
-            fn_timestamp: fn_timestamp,
-        }
+    pub fn new(config: HeaderFields) -> Self {
+        HeaderRFC5424 { config: config }
     }
 }
 
@@ -83,21 +78,23 @@ impl FormatHeader for HeaderRFC3164 {
         // PRIORITY
         write!(io,
                "<{}>",
-               Priority::new(self.facility, record.level().into()))?;
+               Priority::new(self.config.facility, record.level().into()))?;
         write_separator!(io)?;
 
         // TIMESTAMP
-        (self.fn_timestamp)(io)?;
+        (self.config.fn_timestamp)(io)?;
         write_separator!(io)?;
 
         // HOSTNAME
-        if let Some(ref hostname) = self.hostname { write!(io, "{}", hostname)? }
+        if let Some(ref hostname) = self.config.hostname {
+            write!(io, "{}", hostname)?
+        }
         write_separator!(io)?;
 
         // TAG process_name[pid]:
-        match self.process_name {
-            Some(ref process_name) => write!(io, "{}[{}]:", process_name, self.pid)?,
-            None => write!(io, "[{}]:", self.pid)?,
+        match self.config.process_name {
+            Some(ref process_name) => write!(io, "{}[{}]:", process_name, self.config.pid)?,
+            None => write!(io, "[{}]:", self.config.pid)?,
         }
         write_separator!(io)?;
 
@@ -110,29 +107,29 @@ impl FormatHeader for HeaderRFC5424 {
         // <PRIORITY>VERSION
         write!(io,
                "<{}>1",
-               Priority::new(self.facility, record.level().into()))?;
+               Priority::new(self.config.facility, record.level().into()))?;
         write_separator!(io)?;
 
         // TIMESTAMP (ISOTIMESTAMP)
-        (self.fn_timestamp)(io)?;
+        (self.config.fn_timestamp)(io)?;
         write_separator!(io)?;
 
         // HOSTNAME
-        match self.hostname {
+        match self.config.hostname {
             Some(ref hostname) => write!(io, "{}", hostname)?,
             None => write_nilvalue!(io)?,
         }
         write_separator!(io)?;
 
         // APPLICATION
-        match self.process_name {
+        match self.config.process_name {
             Some(ref process_name) => write!(io, "{}", process_name)?,
             None => write_nilvalue!(io)?,
         }
         write_separator!(io)?;
 
         // PID
-        write!(io, "{}", self.pid)?;
+        write!(io, "{}", self.config.pid)?;
         write_separator!(io)?;
 
         // MESSAGEID
@@ -290,46 +287,28 @@ impl SyslogFormat {
                serialization_format: SerializationFormat)
                -> Self {
 
+        let header_fields = HeaderFields::new(hostname, process_name, pid, facility, fn_timestamp);
+
         let (header, message) = match (mode, serialization_format) {
             (FormatMode::RFC3164, SerializationFormat::KSV) |
             (FormatMode::RFC3164, SerializationFormat::Native) => {
-                (SyslogHeaderFormat::RFC3164(HeaderRFC3164::new(hostname,
-                                                                process_name,
-                                                                pid,
-                                                                facility,
-                                                                fn_timestamp)),
+                (SyslogHeaderFormat::RFC3164(HeaderRFC3164::new(header_fields)),
                  SyslogMessageFormat::KSV(MessageKSV::new()))
             }
             (FormatMode::RFC5424, SerializationFormat::Native) => {
-                (SyslogHeaderFormat::RFC5424(HeaderRFC5424::new(hostname,
-                                                                process_name,
-                                                                pid,
-                                                                facility,
-                                                                fn_timestamp)),
+                (SyslogHeaderFormat::RFC5424(HeaderRFC5424::new(header_fields)),
                  SyslogMessageFormat::RFC5424(MessageRFC5424::new()))
             }
             (FormatMode::RFC5424, SerializationFormat::KSV) => {
-                (SyslogHeaderFormat::RFC5424(HeaderRFC5424::new(hostname,
-                                                                process_name,
-                                                                pid,
-                                                                facility,
-                                                                fn_timestamp)),
+                (SyslogHeaderFormat::RFC5424(HeaderRFC5424::new(header_fields)),
                  SyslogMessageFormat::KSV(MessageKSV::new()))
             }
             (FormatMode::RFC3164, SerializationFormat::CEE) => {
-                (SyslogHeaderFormat::RFC5424(HeaderRFC5424::new(hostname,
-                                                                process_name,
-                                                                pid,
-                                                                facility,
-                                                                fn_timestamp)),
+                (SyslogHeaderFormat::RFC5424(HeaderRFC5424::new(header_fields)),
                  SyslogMessageFormat::KSV(MessageKSV::new()))
             }
             (FormatMode::RFC5424, SerializationFormat::CEE) => {
-                (SyslogHeaderFormat::RFC5424(HeaderRFC5424::new(hostname,
-                                                                process_name,
-                                                                pid,
-                                                                facility,
-                                                                fn_timestamp)),
+                (SyslogHeaderFormat::RFC5424(HeaderRFC5424::new(header_fields)),
                  SyslogMessageFormat::KSV(MessageKSV::new()))
             }
         };
