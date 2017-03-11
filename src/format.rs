@@ -151,17 +151,17 @@ impl FormatHeader for HeaderRFC5424 {
     }
 }
 
-enum SyslogHeader
+enum SyslogHeaderFormat
 {
     RFC3164(HeaderRFC3164),
     RFC5424(HeaderRFC5424),
 }
 
-impl FormatHeader for SyslogHeader {
+impl FormatHeader for SyslogHeaderFormat {
     fn format(&self, io: &mut io::Write, record: &Record) -> io::Result<()> {
         match self {
-            &SyslogHeader::RFC3164(ref header) => header.format(io, record),
-            &SyslogHeader::RFC5424(ref header) => header.format(io, record)
+            &SyslogHeaderFormat::RFC3164(ref header) => header.format(io, record),
+            &SyslogHeaderFormat::RFC5424(ref header) => header.format(io, record)
         }
     }
 }
@@ -271,17 +271,17 @@ impl FormatMessage for MessageKSV {
     }
 }
 
-enum SyslogMessage
+enum SyslogMessageFormat
 {
     KSV(MessageKSV),
     RFC5424(MessageRFC5424)
 }
 
-impl FormatMessage for SyslogMessage {
+impl FormatMessage for SyslogMessageFormat {
     fn format(&self, io: &mut io::Write, record: &Record, logger_values: &OwnedKeyValueList) -> io::Result<()> {
         match self {
-            &SyslogMessage::KSV(ref message) => message.format(io, record, logger_values),
-            &SyslogMessage::RFC5424(ref message) => message.format(io, record, logger_values)
+            &SyslogMessageFormat::KSV(ref message) => message.format(io, record, logger_values),
+            &SyslogMessageFormat::RFC5424(ref message) => message.format(io, record, logger_values)
         }
     }
 }
@@ -289,8 +289,8 @@ impl FormatMessage for SyslogMessage {
 
 struct SyslogFormat
 {
-    header: SyslogHeader,
-    message: SyslogMessage
+    header: SyslogHeaderFormat,
+    message: SyslogMessageFormat
 }
 
 
@@ -308,28 +308,28 @@ impl SyslogFormat
 
         let (header, message)  = match (mode, serialization_format) {
             (FormatMode::RFC3164, SerializationFormat::KSV) => (
-                    SyslogHeader::RFC3164(HeaderRFC3164::new(hostname, process_name, pid, facility, fn_timestamp)),
-                    SyslogMessage::KSV(MessageKSV::new())
+                    SyslogHeaderFormat::RFC3164(HeaderRFC3164::new(hostname, process_name, pid, facility, fn_timestamp)),
+                    SyslogMessageFormat::KSV(MessageKSV::new())
             ),
             (FormatMode::RFC3164, SerializationFormat::Native) => (
-                    SyslogHeader::RFC3164(HeaderRFC3164::new(hostname, process_name, pid, facility, fn_timestamp)),
-                    SyslogMessage::KSV(MessageKSV::new())
+                    SyslogHeaderFormat::RFC3164(HeaderRFC3164::new(hostname, process_name, pid, facility, fn_timestamp)),
+                    SyslogMessageFormat::KSV(MessageKSV::new())
             ),
             (FormatMode::RFC5424, SerializationFormat::Native) => (
-                    SyslogHeader::RFC5424(HeaderRFC5424::new(hostname, process_name, pid, facility, fn_timestamp)),
-                    SyslogMessage::RFC5424(MessageRFC5424::new())
+                    SyslogHeaderFormat::RFC5424(HeaderRFC5424::new(hostname, process_name, pid, facility, fn_timestamp)),
+                    SyslogMessageFormat::RFC5424(MessageRFC5424::new())
             ),
             (FormatMode::RFC5424, SerializationFormat::KSV) => (
-                    SyslogHeader::RFC5424(HeaderRFC5424::new(hostname, process_name, pid, facility, fn_timestamp)),
-                    SyslogMessage::KSV(MessageKSV::new())
+                    SyslogHeaderFormat::RFC5424(HeaderRFC5424::new(hostname, process_name, pid, facility, fn_timestamp)),
+                    SyslogMessageFormat::KSV(MessageKSV::new())
             ),
             (FormatMode::RFC3164, SerializationFormat::CEE) => (
-                SyslogHeader::RFC5424(HeaderRFC5424::new(hostname, process_name, pid, facility, fn_timestamp)),
-                SyslogMessage::KSV(MessageKSV::new())
+                SyslogHeaderFormat::RFC5424(HeaderRFC5424::new(hostname, process_name, pid, facility, fn_timestamp)),
+                SyslogMessageFormat::KSV(MessageKSV::new())
             ),
             (FormatMode::RFC5424, SerializationFormat::CEE) => (
-                SyslogHeader::RFC5424(HeaderRFC5424::new(hostname, process_name, pid, facility, fn_timestamp)),
-                SyslogMessage::KSV(MessageKSV::new())
+                SyslogHeaderFormat::RFC5424(HeaderRFC5424::new(hostname, process_name, pid, facility, fn_timestamp)),
+                SyslogMessageFormat::KSV(MessageKSV::new())
             ),
         };
 
