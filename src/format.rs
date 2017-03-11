@@ -15,11 +15,12 @@ macro_rules! write_nilvalue { ($io:expr) => ( write!($io, "-") ) }
 macro_rules! write_eom { ($io:expr) => ( write!($io, "\0") ) }
 
 
-trait FormatHeader {
+pub trait FormatHeader {
+    fn new(hostname: Option<String>, process_name: Option<String>, pid: i32, facility: Facility, fn_timestamp: Box<TimestampFn>) -> Self;
     fn format(&self, io: &mut io::Write, record: &Record) -> io::Result<()>;
 }
 
-trait FormatMessage {
+pub trait FormatMessage {
     fn format(&self,
               io: &mut io::Write,
               record: &Record,
@@ -35,8 +36,16 @@ struct HeaderRFC3164 {
     fn_timestamp: Box<TimestampFn>,
 }
 
-impl HeaderRFC3164 {
-    pub fn new(hostname: Option<String>,
+struct HeaderRFC5424 {
+    hostname: Option<String>,
+    process_name: Option<String>,
+    pid: i32,
+    facility: Facility,
+    fn_timestamp: Box<TimestampFn>,
+}
+
+impl FormatHeader for HeaderRFC3164 {
+    fn new(hostname: Option<String>,
                process_name: Option<String>,
                pid: i32,
                facility: Facility,
@@ -50,35 +59,7 @@ impl HeaderRFC3164 {
             fn_timestamp: fn_timestamp,
         }
     }
-}
 
-struct HeaderRFC5424 {
-    hostname: Option<String>,
-    process_name: Option<String>,
-    pid: i32,
-    facility: Facility,
-    fn_timestamp: Box<TimestampFn>,
-}
-
-impl HeaderRFC5424 {
-    /// Return an instance of syslog formatter
-    pub fn new(hostname: Option<String>,
-               process_name: Option<String>,
-               pid: i32,
-               facility: Facility,
-               fn_timestamp: Box<TimestampFn>)
-               -> Self {
-        HeaderRFC5424 {
-            hostname: hostname,
-            process_name: process_name,
-            pid: pid,
-            facility: facility,
-            fn_timestamp: fn_timestamp,
-        }
-    }
-}
-
-impl FormatHeader for HeaderRFC3164 {
     fn format(&self, io: &mut io::Write, record: &Record) -> io::Result<()> {
         // PRIORITY
         write!(io,
@@ -106,6 +87,21 @@ impl FormatHeader for HeaderRFC3164 {
 }
 
 impl FormatHeader for HeaderRFC5424 {
+    fn new(hostname: Option<String>,
+               process_name: Option<String>,
+               pid: i32,
+               facility: Facility,
+               fn_timestamp: Box<TimestampFn>)
+               -> Self {
+        HeaderRFC5424 {
+            hostname: hostname,
+            process_name: process_name,
+            pid: pid,
+            facility: facility,
+            fn_timestamp: fn_timestamp,
+        }
+    }
+
     fn format(&self, io: &mut io::Write, record: &Record) -> io::Result<()> {
         // <PRIORITY>VERSION
         write!(io,
@@ -143,19 +139,6 @@ impl FormatHeader for HeaderRFC5424 {
     }
 }
 
-enum SyslogHeaderFormat {
-    RFC3164(HeaderRFC3164),
-    RFC5424(HeaderRFC5424),
-}
-
-impl FormatHeader for SyslogHeaderFormat {
-    fn format(&self, io: &mut io::Write, record: &Record) -> io::Result<()> {
-        match *self {
-            SyslogHeaderFormat::RFC3164(ref header) => header.format(io, record),
-            SyslogHeaderFormat::RFC5424(ref header) => header.format(io, record),
-        }
-    }
-}
 
 struct MessageRFC5424 {}
 struct MessageKSV {}
@@ -273,13 +256,13 @@ impl FormatMessage for SyslogMessageFormat {
 }
 
 /// Generic Syslog Formatter
-pub struct SyslogFormat {
-    header: SyslogHeaderFormat,
+pub struct SyslogFormat<H> where H: FormatHeader {
+    header: H,
     message: SyslogMessageFormat,
 }
 
 
-impl SyslogFormat {
+impl<H> SyslogFormat<H> where H: FormatHeader + Send + Sync {
     ///
     pub fn new(hostname: Option<String>,
                process_name: Option<String>,
@@ -290,48 +273,11 @@ impl SyslogFormat {
                serialization_format: SerializationFormat)
                -> Self {
 
-        let (header, message) = match (mode, serialization_format) {
-            (FormatMode::RFC3164, SerializationFormat::KSV) |
-            (FormatMode::RFC3164, SerializationFormat::Native) => {
-                (SyslogHeaderFormat::RFC3164(HeaderRFC3164::new(hostname,
-                                                                process_name,
-                                                                pid,
-                                                                facility,
-                                                                fn_timestamp)),
-                 SyslogMessageFormat::KSV(MessageKSV::new()))
-            }
-            (FormatMode::RFC5424, SerializationFormat::Native) => {
-                (SyslogHeaderFormat::RFC5424(HeaderRFC5424::new(hostname,
-                                                                process_name,
-                                                                pid,
-                                                                facility,
-                                                                fn_timestamp)),
-                 SyslogMessageFormat::RFC5424(MessageRFC5424::new()))
-            }
-            (FormatMode::RFC5424, SerializationFormat::KSV) => {
-                (SyslogHeaderFormat::RFC5424(HeaderRFC5424::new(hostname,
-                                                                process_name,
-                                                                pid,
-                                                                facility,
-                                                                fn_timestamp)),
-                 SyslogMessageFormat::KSV(MessageKSV::new()))
-            }
-            (FormatMode::RFC3164, SerializationFormat::CEE) => {
-                (SyslogHeaderFormat::RFC5424(HeaderRFC5424::new(hostname,
-                                                                process_name,
-                                                                pid,
-                                                                facility,
-                                                                fn_timestamp)),
-                 SyslogMessageFormat::KSV(MessageKSV::new()))
-            }
-            (FormatMode::RFC5424, SerializationFormat::CEE) => {
-                (SyslogHeaderFormat::RFC5424(HeaderRFC5424::new(hostname,
-                                                                process_name,
-                                                                pid,
-                                                                facility,
-                                                                fn_timestamp)),
-                 SyslogMessageFormat::KSV(MessageKSV::new()))
-            }
+        let header = H::new(hostname, process_name, pid, facility, fn_timestamp);
+
+        let message = match (mode, serialization_format) {
+            (FormatMode::RFC5424, SerializationFormat::Native) => SyslogMessageFormat::RFC5424(MessageRFC5424::new()),
+            _ => SyslogMessageFormat::KSV(MessageKSV::new()),
         };
 
         SyslogFormat {
@@ -355,7 +301,7 @@ impl SyslogFormat {
     }
 }
 
-impl StreamFormat for SyslogFormat {
+impl<H> StreamFormat for SyslogFormat<H> where H: FormatHeader + Send + Sync {
     fn format(&self,
               io: &mut io::Write,
               record: &Record,
