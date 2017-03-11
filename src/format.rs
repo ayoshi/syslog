@@ -1,4 +1,4 @@
-// use config::{SerializationFormat, FormatMode};
+// use fields::{SerializationFormat, FormatMode};
 use serializers::KSVSerializer;
 
 use slog::{Record, OwnedKeyValueList};
@@ -42,48 +42,48 @@ impl HeaderFields {
 }
 
 pub trait FormatHeader {
-    fn new(config: HeaderFields) -> Self;
+    fn new(fields: HeaderFields) -> Self;
     fn format(&self, io: &mut io::Write, record: &Record) -> io::Result<()>;
 }
 
 pub struct HeaderRFC3164 {
-    config: HeaderFields,
+    fields: HeaderFields,
 }
 
 impl HeaderRFC3164 {
 }
 
 pub struct HeaderRFC5424 {
-    config: HeaderFields,
+    fields: HeaderFields,
 }
 
 impl FormatHeader for HeaderRFC3164 {
 
-    fn new(config: HeaderFields) -> Self {
-        HeaderRFC3164 { config: config }
+    fn new(fields: HeaderFields) -> Self {
+        HeaderRFC3164 { fields: fields }
     }
 
     fn format(&self, io: &mut io::Write, record: &Record) -> io::Result<()> {
         // PRIORITY
         write!(io,
                "<{}>",
-               Priority::new(self.config.facility, record.level().into()))?;
+               Priority::new(self.fields.facility, record.level().into()))?;
         write_separator!(io)?;
 
         // TIMESTAMP
-        (self.config.fn_timestamp)(io)?;
+        (self.fields.fn_timestamp)(io)?;
         write_separator!(io)?;
 
         // HOSTNAME
-        if let Some(ref hostname) = self.config.hostname {
+        if let Some(ref hostname) = self.fields.hostname {
             write!(io, "{}", hostname)?
         }
         write_separator!(io)?;
 
         // TAG process_name[pid]:
-        match self.config.process_name {
-            Some(ref process_name) => write!(io, "{}[{}]:", process_name, self.config.pid)?,
-            None => write!(io, "[{}]:", self.config.pid)?,
+        match self.fields.process_name {
+            Some(ref process_name) => write!(io, "{}[{}]:", process_name, self.fields.pid)?,
+            None => write!(io, "[{}]:", self.fields.pid)?,
         }
         write_separator!(io)?;
 
@@ -93,37 +93,37 @@ impl FormatHeader for HeaderRFC3164 {
 
 impl FormatHeader for HeaderRFC5424 {
 
-    fn new(config: HeaderFields) -> Self {
-        HeaderRFC5424 { config: config }
+    fn new(fields: HeaderFields) -> Self {
+        HeaderRFC5424 { fields: fields }
     }
 
     fn format(&self, io: &mut io::Write, record: &Record) -> io::Result<()> {
         // <PRIORITY>VERSION
         write!(io,
                "<{}>1",
-               Priority::new(self.config.facility, record.level().into()))?;
+               Priority::new(self.fields.facility, record.level().into()))?;
         write_separator!(io)?;
 
         // TIMESTAMP (ISOTIMESTAMP)
-        (self.config.fn_timestamp)(io)?;
+        (self.fields.fn_timestamp)(io)?;
         write_separator!(io)?;
 
         // HOSTNAME
-        match self.config.hostname {
+        match self.fields.hostname {
             Some(ref hostname) => write!(io, "{}", hostname)?,
             None => write_nilvalue!(io)?,
         }
         write_separator!(io)?;
 
         // APPLICATION
-        match self.config.process_name {
+        match self.fields.process_name {
             Some(ref process_name) => write!(io, "{}", process_name)?,
             None => write_nilvalue!(io)?,
         }
         write_separator!(io)?;
 
         // PID
-        write!(io, "{}", self.config.pid)?;
+        write!(io, "{}", self.fields.pid)?;
         write_separator!(io)?;
 
         // MESSAGEID
