@@ -8,15 +8,30 @@ use syslog::{Facility, Priority};
 use time::TimestampFn;
 
 // Write separator
-macro_rules! write_separator { ($i:expr) => ( write!($i, " ") ) }
+macro_rules! write_separator { ($io:expr) => ( write!($io, " ") ) }
 // Write RFC5424 NILVALUE
-macro_rules! write_nilvalue { ($i:expr) => ( write!($i, "-") ) }
+macro_rules! write_nilvalue { ($io:expr) => ( write!($io, "-") ) }
 // Write end of message
-macro_rules! write_eom { ($i:expr) => ( write!($i, "\0") ) }
+macro_rules! write_eom { ($io:expr) => ( write!($io, "\0") ) }
 
 
-/// Syslog formatter
-pub struct Format {
+trait FormatHeader {
+    fn format(
+        &self,
+        io: &mut io::Write,
+        record: &Record) -> io::Result<()>;
+}
+
+trait FormatMessage {
+    fn format(
+        &self,
+        io: &mut io::Write,
+        record: &Record,
+        logger_values:
+        &OwnedKeyValueList) -> io::Result<()>;
+}
+
+pub struct HeaderRFC3164 {
     hostname: Option<String>,
     process_name: Option<String>,
     pid: i32,
@@ -24,15 +39,14 @@ pub struct Format {
     fn_timestamp: Box<TimestampFn>,
 }
 
-impl Format {
-    /// Return an instance of syslog formatter
+impl HeaderRFC3164 {
     pub fn new(hostname: Option<String>,
                process_name: Option<String>,
                pid: i32,
                facility: Facility,
                fn_timestamp: Box<TimestampFn>)
                -> Self {
-        Format {
+        HeaderRFC3164 {
             hostname: hostname,
             process_name: process_name,
             pid: pid,
@@ -40,8 +54,37 @@ impl Format {
             fn_timestamp: fn_timestamp,
         }
     }
+}
 
-    fn format_header_rfc3164(&self, io: &mut io::Write, record: &Record) -> io::Result<()> {
+pub struct HeaderRFC5424 {
+    hostname: Option<String>,
+    process_name: Option<String>,
+    pid: i32,
+    facility: Facility,
+    fn_timestamp: Box<TimestampFn>,
+}
+
+impl HeaderRFC5424 {
+    /// Return an instance of syslog formatter
+    pub fn new(hostname: Option<String>,
+               process_name: Option<String>,
+               pid: i32,
+               facility: Facility,
+               fn_timestamp: Box<TimestampFn>)
+               -> Self {
+        HeaderRFC5424 {
+            hostname: hostname,
+            process_name: process_name,
+            pid: pid,
+            facility: facility,
+            fn_timestamp: fn_timestamp,
+        }
+    }
+}
+
+impl FormatHeader for HeaderRFC3164 {
+
+    fn format(&self, io: &mut io::Write, record: &Record) -> io::Result<()> {
         // PRIORITY
         write!(io,
                "<{}>",
@@ -68,55 +111,10 @@ impl Format {
 
         Ok(())
     }
+}
 
-    fn format_message_ksv(&self,
-                          io: &mut io::Write,
-                          record: &Record,
-                          logger_values: &OwnedKeyValueList)
-                          -> io::Result<()> {
-
-        // MESSAGE
-        write!(io, "{}", record.msg())?;
-        write_separator!(io)?;
-
-        // MESSAGE STRUCTURED_DATA
-        let mut serializer = KSVSerializer::new(io, "=");
-
-        for &(k, v) in record.values().iter().rev() {
-            v.serialize(record, k, &mut serializer)?;
-        }
-
-        let mut io = serializer.finish();
-        write_separator!(io)?;
-
-        let mut serializer = KSVSerializer::new(io, "=");
-
-        for (k, v) in logger_values.iter() {
-            v.serialize(record, k, &mut serializer)?;
-        }
-
-        Ok(())
-    }
-
-    // fn format_rfc3164_ksv(&self,
-    //                       io: &mut io::Write,
-    //                       record: &Record,
-    //                       logger_values: &OwnedKeyValueList)
-    //                       -> io::Result<()> {
-
-    //     // HEADER
-    //     self.format_header_rfc3164(io, record)?;
-
-    //     // MESSAGE
-    //     self.format_message_ksv(io, record, logger_values)?;
-
-    //     // EOM
-    //     write_eom!(io)?;
-
-    //     Ok(())
-    // }
-
-    fn format_header_rfc5424(&self, io: &mut io::Write, record: &Record) -> io::Result<()> {
+impl FormatHeader for HeaderRFC5424 {
+    fn format(&self, io: &mut io::Write, record: &Record) -> io::Result<()> {
         // <PRIORITY>VERSION
         write!(io,
                "<{}>1",
@@ -151,12 +149,43 @@ impl Format {
 
         Ok(())
     }
+}
 
-    fn _format_sd_element(&self,
-                          io: &mut io::Write,
-                          sd_id: String,
-                          f: &Fn(&mut io::Write) -> io::Result<()>)
-                          -> io::Result<()> {
+enum SyslogHeader
+{
+    RFC3164(HeaderRFC3164),
+    RFC5424(HeaderRFC5424),
+}
+
+impl FormatHeader for SyslogHeader {
+    fn format(&self, io: &mut io::Write, record: &Record) -> io::Result<()> {
+        match self {
+            &SyslogHeader::RFC3164(ref header) => header.format(io, record),
+            &SyslogHeader::RFC5424(ref header) => header.format(io, record)
+        }
+    }
+}
+
+pub struct MessageRFC5424 {}
+pub struct MessageKSV {}
+
+impl MessageKSV {
+    pub fn new() -> Self {
+        MessageKSV {}
+    }
+}
+
+impl MessageRFC5424 {
+
+    pub fn new( )-> Self {
+        MessageRFC5424 {}
+    }
+
+    fn format_sd_element(&self,
+                         io: &mut io::Write,
+                         sd_id: String,
+                         f: &Fn(&mut io::Write) -> io::Result<()>)
+                         -> io::Result<()> {
         write!(io, "{}", "[")?;
         write!(io, "{}", sd_id)?;
         write_separator!(io)?;
@@ -164,36 +193,39 @@ impl Format {
         write!(io, "{}", "]")?;
         Ok(())
     }
+}
 
-    fn format_message_rfc5424(&self,
-                                     io: &mut io::Write,
-                                     record: &Record,
-                                     logger_values: &OwnedKeyValueList)
-                                     -> io::Result<()> {
+impl FormatMessage for MessageRFC5424 {
+
+    fn format(&self,
+                      io: &mut io::Write,
+                      record: &Record,
+                      logger_values: &OwnedKeyValueList)
+                      -> io::Result<()> {
 
         // MESSAGE STRUCTURED_DATA
 
         // write!(io, "{}", "[")?;
 
-        self._format_sd_element(io,
-                                format!("{}@{}", "logger", self.pid),
-                                &|io| {
-                let mut serializer = KSVSerializer::new(io, "=");
-                for &(k, v) in record.values().iter().rev() {
-                    v.serialize(record, k, &mut serializer)?;
-                }
-                Ok(())
-            })?;
+        self.format_sd_element(io,
+                               format!("{}@{}", "logger", record.line()),
+                               &|io| {
+                                   let mut serializer = KSVSerializer::new(io, "=");
+                                   for &(k, v) in record.values().iter().rev() {
+                                       v.serialize(record, k, &mut serializer)?;
+                                   }
+                                   Ok(())
+                               })?;
 
-        self._format_sd_element(io,
-                                format!("{}@{}", "msg", record.line()),
-                                &|io| {
-                let mut serializer = KSVSerializer::new(io, "=");
-                for (k, v) in logger_values.iter() {
-                    v.serialize(record, k, &mut serializer)?;
-                }
-                Ok(())
-            })?;
+        self.format_sd_element(io,
+                               format!("{}@{}", "msg", record.line()),
+                               &|io| {
+                                   let mut serializer = KSVSerializer::new(io, "=");
+                                   for (k, v) in logger_values.iter() {
+                                       v.serialize(record, k, &mut serializer)?;
+                                   }
+                                   Ok(())
+                               })?;
 
         write_separator!(io)?;
 
@@ -205,70 +237,65 @@ impl Format {
         Ok(())
     }
 
-    // fn format_rfc5424_native(&self,
-    //                          io: &mut io::Write,
-    //                          record: &Record,
-    //                          logger_values: &OwnedKeyValueList)
-    //                          -> io::Result<()> {
-
-    //     // HEADER
-    //     self.format_header_rfc5424(io, record)?;
-
-    //     // MESSAGE
-    //     self.format_message_native_rfc5424(io, record, logger_values)?;
-
-    //     // EOM
-    //     write_eom!(io)?;
-
-    //     Ok(())
-    // }
-
-    // fn format_rfc5424_ksv(&self,
-    //                       io: &mut io::Write,
-    //                       record: &Record,
-    //                       logger_values: &OwnedKeyValueList)
-    //                       -> io::Result<()> {
-
-    //     // HEADER
-    //     self.format_header_rfc5424(io, record)?;
-
-    //     // MESSAGE
-    //     self.format_message_ksv(io, record, logger_values)?;
-
-    //     // EOM
-    //     write_eom!(io)?;
-
-    //     Ok(())
-    // }
 }
 
-// impl StreamFormat for Format {
-//     fn format(&self,
-//               io: &mut io::Write,
-//               record: &Record,
-//               logger_values: &OwnedKeyValueList)
-//               -> io::Result<()> {
-//         match self.mode {
-//             FormatMode::RFC3164 => self.format_rfc3164(io, record, logger_values),
-//             FormatMode::RFC5424 => self.format_rfc5424(io, record, logger_values),
-//         }
-//     }
-// }
+impl FormatMessage for MessageKSV {
 
-pub type HeaderWriterFn = Fn(&mut io::Write, &Record) -> io::Result<()> + Send + Sync;
+    fn format(&self,
+                      io: &mut io::Write,
+                      record: &Record,
+                      logger_values: &OwnedKeyValueList)
+                      -> io::Result<()> {
 
+        // MESSAGE
+        write!(io, "{}", record.msg())?;
+        write_separator!(io)?;
 
-pub type MessageWriterFn =
-    Fn(&mut io::Write, &Record, &OwnedKeyValueList) -> io::Result<()> + Send + Sync;
+        // MESSAGE STRUCTURED_DATA
+        let mut serializer = KSVSerializer::new(io, "=");
 
+        for &(k, v) in record.values().iter().rev() {
+            v.serialize(record, k, &mut serializer)?;
+        }
 
-struct SyslogFormat {
-    write_header: Box<HeaderWriterFn>,
-    write_message: Box<MessageWriterFn>,
+        let mut io = serializer.finish();
+        write_separator!(io)?;
+
+        let mut serializer = KSVSerializer::new(io, "=");
+
+        for (k, v) in logger_values.iter() {
+            v.serialize(record, k, &mut serializer)?;
+        }
+
+        Ok(())
+    }
 }
 
-impl SyslogFormat {
+enum SyslogMessage
+{
+    KSV(MessageKSV),
+    RFC5424(MessageRFC5424)
+}
 
+impl FormatMessage for SyslogMessage {
+    fn format(&self, io: &mut io::Write, record: &Record, logger_values: &OwnedKeyValueList) -> io::Result<()> {
+        match self {
+            &SyslogMessage::KSV(ref message) => message.format(io, record, logger_values),
+            &SyslogMessage::RFC5424(ref message) => message.format(io, record, logger_values)
+        }
+    }
+}
+
+
+struct SyslogFormat
+{
+    header: SyslogHeader,
+    message: SyslogMessage
+}
+
+
+impl SyslogFormat
+{
     pub fn new(
         hostname: Option<String>,
         process_name: Option<String>,
@@ -279,22 +306,34 @@ impl SyslogFormat {
         serialization_format: SerializationFormat
     ) -> Self {
 
-        let formatter = Format::new(
-            hostname,
-            process_name,
-            pid,
-            facility,
-            fn_timestamp,
-        );
-
-        let (write_header, write_message) = match (mode, serialization_format) {
-            (FormatMode::RFC3164, SerializationFormat::KSV) => (Box::new(formatter.format_header_rfc3164), Box::new(formatter.format_message_ksv)),
+        let (header, message)  = match (mode, serialization_format) {
+            (FormatMode::RFC3164, SerializationFormat::KSV) => (
+                    SyslogHeader::RFC3164(HeaderRFC3164::new(hostname, process_name, pid, facility, fn_timestamp)),
+                    SyslogMessage::KSV(MessageKSV::new())
+            ),
+            (FormatMode::RFC3164, SerializationFormat::Native) => (
+                    SyslogHeader::RFC3164(HeaderRFC3164::new(hostname, process_name, pid, facility, fn_timestamp)),
+                    SyslogMessage::KSV(MessageKSV::new())
+            ),
+            (FormatMode::RFC5424, SerializationFormat::Native) => (
+                    SyslogHeader::RFC5424(HeaderRFC5424::new(hostname, process_name, pid, facility, fn_timestamp)),
+                    SyslogMessage::RFC5424(MessageRFC5424::new())
+            ),
+            (FormatMode::RFC5424, SerializationFormat::KSV) => (
+                    SyslogHeader::RFC5424(HeaderRFC5424::new(hostname, process_name, pid, facility, fn_timestamp)),
+                    SyslogMessage::KSV(MessageKSV::new())
+            ),
+            (FormatMode::RFC3164, SerializationFormat::CEE) => (
+                SyslogHeader::RFC5424(HeaderRFC5424::new(hostname, process_name, pid, facility, fn_timestamp)),
+                SyslogMessage::KSV(MessageKSV::new())
+            ),
+            (FormatMode::RFC5424, SerializationFormat::CEE) => (
+                SyslogHeader::RFC5424(HeaderRFC5424::new(hostname, process_name, pid, facility, fn_timestamp)),
+                SyslogMessage::KSV(MessageKSV::new())
+            ),
         };
 
-        SyslogFormat {
-            write_header: write_header,
-            write_message: write_message
-        }
+        SyslogFormat { header: header, message: message }
 
     }
 
@@ -302,17 +341,13 @@ impl SyslogFormat {
               io: &mut io::Write,
               record: &Record,
               logger_values: &OwnedKeyValueList)
-              -> io::Result<()> {
+                   -> io::Result<()>
+    {
         // HEADER
-        (self.write_header)(io, record)?;
+        self.header.format(io, record)?;
         // MESSAGE
-        (self.write_message)(io, record, logger_values)?;
+        self.message.format(io, record, logger_values)?;
         write_eom!(io)?;
         Ok(())
     }
 }
-
-// impl StreamFormat for SyslogFormat {
-
-
-// }
