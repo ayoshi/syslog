@@ -1,4 +1,5 @@
 // use fields::{SerializationFormat, FormatMode};
+
 use serializers::KSVSerializer;
 
 use slog::{Record, OwnedKeyValueList};
@@ -9,8 +10,10 @@ use time::TimestampFn;
 
 // Write separator
 macro_rules! write_separator { ($io:expr) => ( write!($io, " ") ) }
+
 // Write RFC5424 NILVALUE
 macro_rules! write_nilvalue { ($io:expr) => ( write!($io, "-") ) }
+
 // Write end of message
 macro_rules! write_eom { ($io:expr) => ( write!($io, "\0") ) }
 
@@ -43,6 +46,7 @@ impl HeaderFields {
 
 pub trait FormatHeader {
     fn new(fields: HeaderFields) -> Self;
+
     fn format(&self, io: &mut io::Write, record: &Record) -> io::Result<()>;
 }
 
@@ -50,15 +54,11 @@ pub struct HeaderRFC3164 {
     fields: HeaderFields,
 }
 
-impl HeaderRFC3164 {
-}
-
 pub struct HeaderRFC5424 {
     fields: HeaderFields,
 }
 
 impl FormatHeader for HeaderRFC3164 {
-
     fn new(fields: HeaderFields) -> Self {
         HeaderRFC3164 { fields: fields }
     }
@@ -92,7 +92,6 @@ impl FormatHeader for HeaderRFC3164 {
 }
 
 impl FormatHeader for HeaderRFC5424 {
-
     fn new(fields: HeaderFields) -> Self {
         HeaderRFC5424 { fields: fields }
     }
@@ -147,7 +146,6 @@ pub struct MessageRFC5424 {}
 pub struct MessageKSV {}
 
 impl MessageRFC5424 {
-
     fn format_sd_element(&self,
                          io: &mut io::Write,
                          sd_id: String,
@@ -162,7 +160,6 @@ impl MessageRFC5424 {
 }
 
 impl FormatMessage for MessageRFC5424 {
-
     fn new() -> Self {
         MessageRFC5424 {}
     }
@@ -205,7 +202,6 @@ impl FormatMessage for MessageRFC5424 {
 }
 
 impl FormatMessage for MessageKSV {
-
     fn new() -> Self {
         MessageKSV {}
     }
@@ -237,15 +233,17 @@ impl FormatMessage for MessageKSV {
 /// Generic Syslog Formatter
 pub struct SyslogFormat<H, M>
     where H: FormatHeader,
-          M: FormatMessage {
+          M: FormatMessage
+{
     header: H,
-    message: M
+    message: M,
 }
 
 
-impl <H, M> SyslogFormat<H, M>
+impl<H, M> SyslogFormat<H, M>
     where H: FormatHeader + Send + Sync,
-          M: FormatMessage + Send + Sync {
+          M: FormatMessage + Send + Sync
+{
     ///
     pub fn new(hostname: Option<String>,
                process_name: Option<String>,
@@ -279,9 +277,10 @@ impl <H, M> SyslogFormat<H, M>
     }
 }
 
-impl <H,M>StreamFormat for SyslogFormat<H,M>
+impl<H, M> StreamFormat for SyslogFormat<H, M>
     where H: FormatHeader + Send + Sync,
-          M: FormatMessage + Send + Sync {
+          M: FormatMessage + Send + Sync
+{
     fn format(&self,
               io: &mut io::Write,
               record: &Record,
