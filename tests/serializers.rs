@@ -79,7 +79,7 @@ mod tests {
 
 
     #[test]
-    fn kvs_serializer() {
+    fn ksv_serializer() {
 
         pub struct TestFormatter;
 
@@ -132,14 +132,15 @@ mod tests {
     #[test]
     fn formatter_rfc3164_ksv() {
 
-        let formatter = Format3164::new(None,
-                                        Some("test".to_owned()),
-                                        12345,
-                                        Facility::LOG_USER,
-                                        SerializationFormat::Native,
-                                        TimestampConfig::new(TimestampFormat::RFC3164,
-                                                             TimestampTZ::Local)
-                                            .timestamp_fn());
+        let formatter = SyslogFormat::new(None,
+                                          Some("test".to_owned()),
+                                          12345,
+                                          Facility::LOG_USER,
+                                          TimestampConfig::new(TimestampFormat::ISO8601,
+                                                               TimestampTZ::Local)
+                                              .timestamp_fn(),
+                                          FormatMode::RFC3164,
+                                          SerializationFormat::KSV);
 
         let buffer = TestIoBuffer::new(1024);
         let test_drain = TestDrain::new(buffer.io(), formatter);
@@ -149,19 +150,21 @@ mod tests {
         println!("{:?}", buffer.as_string());
         assert!(buffer.as_string().contains("<14>"));
         assert!(buffer.as_string().contains("Test message 1 mk=mv lk=lv"));
+        assert!(false);
     }
 
     #[test]
     fn formatter_rfc5424_ksv() {
 
-        let formatter = Format5424::new(None,
-                                        Some("test".to_owned()),
-                                        12345,
-                                        Facility::LOG_USER,
-                                        SerializationFormat::Native,
-                                        TimestampConfig::new(TimestampFormat::ISO8601,
-                                                             TimestampTZ::Local)
-                                        .timestamp_fn());
+        let formatter = SyslogFormat::new(None,
+                                          Some("test".to_owned()),
+                                          12345,
+                                          Facility::LOG_USER,
+                                          TimestampConfig::new(TimestampFormat::ISO8601,
+                                                               TimestampTZ::Local)
+                                              .timestamp_fn(),
+                                          FormatMode::RFC5424,
+                                          SerializationFormat::KSV);
 
         let buffer = TestIoBuffer::new(1024);
         let test_drain = TestDrain::new(buffer.io(), formatter);
@@ -171,19 +174,21 @@ mod tests {
         println!("{:?}", buffer.as_string());
         assert!(buffer.as_string().contains("<14>1"));
         assert!(buffer.as_string().contains("Test message 1 mk=mv lk=lv"));
+        assert!(false);
     }
 
     #[test]
     fn formatter_rfc5424_native() {
+        let formatter = SyslogFormat::new(None,
+                                          Some("test".to_owned()),
+                                          12345,
+                                          Facility::LOG_USER,
+                                          TimestampConfig::new(TimestampFormat::ISO8601,
+                                                               TimestampTZ::Local)
+                                              .timestamp_fn(),
+                                          FormatMode::RFC5424,
+                                          SerializationFormat::Native);
 
-        let formatter = Format5424::new(None,
-                                        Some("test".to_owned()),
-                                        12345,
-                                        Facility::LOG_USER,
-                                        SerializationFormat::Native,
-                                        TimestampConfig::new(TimestampFormat::ISO8601,
-                                                             TimestampTZ::Local)
-                                        .timestamp_fn());
 
         let buffer = TestIoBuffer::new(1024);
         let test_drain = TestDrain::new(buffer.io(), formatter);
