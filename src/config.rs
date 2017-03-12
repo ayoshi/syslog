@@ -309,7 +309,7 @@ impl SyslogConfig<DefaultConfig> {
 
     /// Set config to UDP
     pub fn udp(self) -> SyslogConfig<UDPConfig<SocketAddr>> {
-     self.connection_config(UDPConfig::default())
+        self.connection_config(UDPConfig::default())
     }
 
 
@@ -374,7 +374,7 @@ impl SyslogConfig<TCPConfig<SocketAddr>> {
     pub fn server<S>(self, server: S) -> SyslogConfig<TCPConfig<S>>
         where S: ToSocketAddrs
     {
-     self.connection_config(TCPConfig::new(server))
+        self.connection_config(TCPConfig::new(server))
     }
 
     /// Connect TCP drain

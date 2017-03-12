@@ -5,9 +5,9 @@ use serializers::KSVSerializer;
 use slog::{Record, OwnedKeyValueList};
 use slog_stream::Format as StreamFormat;
 use std::io;
+use std::marker::PhantomData;
 use syslog::{Facility, Priority};
 use time::FormatTimestamp;
-use std::marker::PhantomData;
 
 // Write separator
 macro_rules! write_separator { ($io:expr) => ( write!($io, " ") ) }
@@ -25,24 +25,23 @@ pub struct HeaderFields<T> {
     process_name: Option<String>,
     pid: i32,
     facility: Facility,
-    _timestamp: PhantomData<T>
+    _timestamp: PhantomData<T>,
 }
 
-impl <T>HeaderFields<T>
+impl<T> HeaderFields<T>
     where T: FormatTimestamp
 {
     pub fn new(hostname: Option<String>,
                process_name: Option<String>,
                pid: i32,
-               facility: Facility,
-        )
+               facility: Facility)
                -> Self {
         HeaderFields {
             hostname: hostname,
             process_name: process_name,
             pid: pid,
             facility: facility,
-            _timestamp: PhantomData
+            _timestamp: PhantomData,
         }
     }
 }
@@ -61,7 +60,7 @@ pub struct HeaderRFC5424<T> {
     fields: HeaderFields<T>,
 }
 
-impl <T>FormatHeader<T> for HeaderRFC3164<T>
+impl<T> FormatHeader<T> for HeaderRFC3164<T>
     where T: FormatTimestamp
 {
     fn new(fields: HeaderFields<T>) -> Self {
@@ -96,7 +95,7 @@ impl <T>FormatHeader<T> for HeaderRFC3164<T>
     }
 }
 
-impl <T>FormatHeader<T> for HeaderRFC5424<T>
+impl<T> FormatHeader<T> for HeaderRFC5424<T>
     where T: FormatTimestamp
 {
     fn new(fields: HeaderFields<T>) -> Self {
@@ -245,7 +244,7 @@ pub struct SyslogFormat<H, M, T>
 {
     header: H,
     message: M,
-    _timestamp: PhantomData<T>
+    _timestamp: PhantomData<T>,
 }
 
 
@@ -268,7 +267,7 @@ impl<H, M, T> SyslogFormat<H, M, T>
         SyslogFormat {
             header: header,
             message: message,
-            _timestamp: PhantomData
+            _timestamp: PhantomData,
         }
 
     }
