@@ -1,5 +1,4 @@
 use chrono;
-use config::{TimestampFormat, TimestampTZ};
 use std::io;
 use std::marker::PhantomData;
 
