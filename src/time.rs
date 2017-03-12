@@ -1,5 +1,5 @@
 use chrono;
-
+use std::marker::PhantomData;
 use config::{TimestampFormat, TimestampTZ};
 use std::io;
 
@@ -49,5 +49,77 @@ impl TimestampConfig {
             (TimestampFormat::ISO8601, TimestampTZ::UTC) => TimestampConfig::_utc_iso8601,
         };
         Box::new(timestamp_fn)
+    }
+}
+
+pub struct TimestampLocal {}
+pub struct TimestampUTC {}
+
+pub struct TimestampRFC3164 {}
+pub struct TimestampISO8601 {}
+
+pub trait FormatTimestamp {
+    fn new () -> Self;
+    fn format (&mut io::Write) -> io::Result<()>;
+}
+
+pub struct Timestamp<TZ, TF>
+{
+    _tz: PhantomData<TZ>,
+    _tf: PhantomData<TF>
+}
+
+impl FormatTimestamp for Timestamp<TimestampRFC3164, TimestampLocal> {
+
+    fn new () -> Self {
+        Timestamp::<TimestampRFC3164, TimestampLocal> {
+            _tz: PhantomData::<TimestampRFC3164>,
+            _tf: PhantomData::<TimestampLocal>,
+        }
+    }
+
+    fn format (io: &mut io::Write) -> io::Result<()> {
+        write!(io, "{}", chrono::Local::now().format("%b %d %T"))
+    }
+}
+
+impl FormatTimestamp for Timestamp<TimestampRFC3164, TimestampUTC> {
+    fn new () -> Self {
+        Timestamp::<TimestampRFC3164, TimestampUTC> {
+            _tz: PhantomData::<TimestampRFC3164>,
+            _tf: PhantomData::<TimestampUTC>,
+        }
+    }
+
+    fn format (io: &mut io::Write) -> io::Result<()> {
+        write!(io, "{}", chrono::UTC::now().format("%b %d %T"))
+    }
+}
+
+impl FormatTimestamp for Timestamp<TimestampISO8601, TimestampLocal> {
+
+    fn new () -> Self {
+        Timestamp::<TimestampISO8601, TimestampLocal> {
+            _tz: PhantomData::<TimestampISO8601>,
+            _tf: PhantomData::<TimestampLocal>,
+        }
+    }
+
+    fn format (io: &mut io::Write) -> io::Result<()> {
+        write!(io, "{}", chrono::Local::now().to_rfc3339())
+    }
+}
+
+impl FormatTimestamp for Timestamp<TimestampISO8601, TimestampUTC> {
+
+    fn new () -> Self {
+        Timestamp::<TimestampISO8601, TimestampUTC> {
+            _tz: PhantomData::<TimestampISO8601>,
+            _tf: PhantomData::<TimestampUTC>,
+        }
+    }
+
+    fn format (io: &mut io::Write) -> io::Result<()> {
+        write!(io, "{}", chrono::UTC::now().to_rfc3339())
     }
 }
