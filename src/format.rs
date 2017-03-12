@@ -48,9 +48,10 @@ impl<T> HeaderFields<T>
 }
 
 /// Generic Syslog Header Formatter
-pub trait FormatHeader<T> {
+pub trait FormatHeader {
+    type Timestamp;
     /// Syslog Header formatter constructor
-    fn new(fields: HeaderFields<T>) -> Self;
+    fn new(fields: HeaderFields<Self::Timestamp>) -> Self;
 
     /// Format syslog header
     fn format(&self, io: &mut io::Write, record: &Record) -> io::Result<()>;
@@ -66,9 +67,10 @@ pub struct HeaderRFC5424<T> {
     fields: HeaderFields<T>,
 }
 
-impl<T> FormatHeader<T> for HeaderRFC3164<T>
+impl<T> FormatHeader for HeaderRFC3164<T>
     where T: FormatTimestamp
 {
+    type Timestamp = T;
     fn new(fields: HeaderFields<T>) -> Self {
         HeaderRFC3164::<T> { fields: fields }
     }
@@ -101,9 +103,10 @@ impl<T> FormatHeader<T> for HeaderRFC3164<T>
     }
 }
 
-impl<T> FormatHeader<T> for HeaderRFC5424<T>
+impl<T> FormatHeader for HeaderRFC5424<T>
     where T: FormatTimestamp
 {
+    type Timestamp = T;
     fn new(fields: HeaderFields<T>) -> Self {
         HeaderRFC5424::<T> { fields: fields }
     }
@@ -237,21 +240,20 @@ impl FormatMessage for MessageKSV {
 }
 
 /// Generic Syslog Formatter
-pub struct SyslogFormat<H, M, T>
-    where H: FormatHeader<T>,
-          M: FormatMessage,
-          T: FormatTimestamp
+pub struct SyslogFormat<H, M>
+    where H: FormatHeader,
+          H::Timestamp: FormatTimestamp,
+          M: FormatMessage
 {
     header: H,
     _message: PhantomData<M>,
-    _timestamp: PhantomData<T>,
 }
 
 
-impl<H, M, T> SyslogFormat<H, M, T>
-    where H: FormatHeader<T> + Send + Sync,
-          M: FormatMessage + Send + Sync,
-          T: FormatTimestamp + Send + Sync
+impl<H, M> SyslogFormat<H, M>
+    where H: FormatHeader + Send + Sync,
+          H::Timestamp: FormatTimestamp,
+          M: FormatMessage + Send + Sync
 {
     ///
     pub fn new(hostname: Option<String>,
@@ -260,14 +262,14 @@ impl<H, M, T> SyslogFormat<H, M, T>
                facility: Facility)
                -> Self {
 
-        let header_fields = HeaderFields::<T>::new(hostname, process_name, pid, facility);
+        let header_fields =
+            HeaderFields::<H::Timestamp>::new(hostname, process_name, pid, facility);
         let header = H::new(header_fields);
         // let message = M::default();
 
         SyslogFormat {
             header: header,
             _message: PhantomData,
-            _timestamp: PhantomData,
         }
 
     }
@@ -286,10 +288,10 @@ impl<H, M, T> SyslogFormat<H, M, T>
     }
 }
 
-impl<H, M, T> StreamFormat for SyslogFormat<H, M, T>
-    where H: FormatHeader<T> + Send + Sync,
-          M: FormatMessage + Send + Sync,
-          T: FormatTimestamp + Send + Sync
+impl<H, M> StreamFormat for SyslogFormat<H, M>
+    where H: FormatHeader + Send + Sync,
+          H::Timestamp: FormatTimestamp,
+          M: FormatMessage + Send + Sync
 {
     fn format(&self,
               io: &mut io::Write,

@@ -163,13 +163,11 @@ mod tests {
 
     #[test]
     fn formatter_rfc5424_native() {
-        let formatter =
-            SyslogFormat::<HeaderRFC5424<Timestamp<TimestampISO8601, TimestampUTC>>,
-                           MessageRFC5424,
-                           Timestamp<TimestampISO8601, TimestampUTC>>::new(None,
-                                                                           Some("test".to_owned()),
-                                                                           12345,
-                                                                           Facility::LOG_USER);
+        let formatter = SyslogFormat::<HeaderRFC5424<Timestamp<TimestampISO8601, TimestampUTC>>,
+                                       MessageRFC5424>::new(None,
+                                                            Some("test".to_owned()),
+                                                            12345,
+                                                            Facility::LOG_USER);
 
         let buffer = TestIoBuffer::new(1024);
         let test_drain = TestDrain::new(buffer.io(), formatter);
