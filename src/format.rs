@@ -20,16 +20,14 @@ macro_rules! write_eom { ($io:expr) => ( write!($io, "\0") ) }
 
 
 /// Syslog header fields
-pub struct HeaderFields<T> {
+pub struct HeaderFields {
     hostname: Option<String>,
     process_name: Option<String>,
     pid: i32,
     facility: Facility,
-    _timestamp: PhantomData<T>,
 }
 
-impl<T> HeaderFields<T>
-    where T: FormatTimestamp
+impl HeaderFields
 {
     /// Syslog header fields constructor
     pub fn new(hostname: Option<String>,
@@ -42,7 +40,6 @@ impl<T> HeaderFields<T>
             process_name: process_name,
             pid: pid,
             facility: facility,
-            _timestamp: PhantomData,
         }
     }
 }
@@ -50,7 +47,7 @@ impl<T> HeaderFields<T>
 /// Generic Syslog Header Formatter
 pub trait FormatHeader<T> {
     /// Syslog Header formatter constructor
-    fn new(fields: HeaderFields<T>) -> Self;
+    fn new(fields: HeaderFields) -> Self;
 
     /// Format syslog header
     fn format(&self, io: &mut io::Write, record: &Record) -> io::Result<()>;
@@ -58,19 +55,21 @@ pub trait FormatHeader<T> {
 
 /// RFC3164 Header
 pub struct HeaderRFC3164<T> {
-    fields: HeaderFields<T>,
+    fields: HeaderFields,
+    _timestamp: PhantomData<T>,
 }
 
 /// RFC5424 Header
 pub struct HeaderRFC5424<T> {
-    fields: HeaderFields<T>,
+    fields: HeaderFields,
+    _timestamp: PhantomData<T>,
 }
 
 impl<T> FormatHeader<T> for HeaderRFC3164<T>
     where T: FormatTimestamp
 {
-    fn new(fields: HeaderFields<T>) -> Self {
-        HeaderRFC3164::<T> { fields: fields }
+    fn new(fields: HeaderFields) -> Self {
+        HeaderRFC3164::<T> { fields: fields , _timestamp: PhantomData}
     }
 
     fn format(&self, io: &mut io::Write, record: &Record) -> io::Result<()> {
@@ -104,8 +103,8 @@ impl<T> FormatHeader<T> for HeaderRFC3164<T>
 impl<T> FormatHeader<T> for HeaderRFC5424<T>
     where T: FormatTimestamp
 {
-    fn new(fields: HeaderFields<T>) -> Self {
-        HeaderRFC5424::<T> { fields: fields }
+    fn new(fields: HeaderFields) -> Self {
+        HeaderRFC5424::<T> { fields: fields , _timestamp: PhantomData }
     }
 
     fn format(&self, io: &mut io::Write, record: &Record) -> io::Result<()> {
@@ -260,7 +259,7 @@ impl<H, M, T> SyslogFormat<H, M, T>
                facility: Facility)
                -> Self {
 
-        let header_fields = HeaderFields::<T>::new(hostname, process_name, pid, facility);
+        let header_fields = HeaderFields::new(hostname, process_name, pid, facility);
         let header = H::new(header_fields);
         // let message = M::default();
 
