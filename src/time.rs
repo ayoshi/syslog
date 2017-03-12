@@ -3,16 +3,25 @@ use std::io;
 use std::marker::PhantomData;
 
 
+/// Timestamp in local TZ
 pub struct TimestampLocal {}
+
+/// UTC timestamp
 pub struct TimestampUTC {}
 
+/// RFC3164 compatible timestamp
 pub struct TimestampRFC3164 {}
+
+/// ISO8601 timestamp
 pub struct TimestampISO8601 {}
 
+/// Generic timestamp formatter
 pub trait FormatTimestamp {
+    /// Format timestamp in a given format
     fn format(&mut io::Write) -> io::Result<()>;
 }
 
+/// Timestamp
 #[derive(Default)]
 pub struct Timestamp<TZ, TF> {
     _tz: PhantomData<TZ>,
