@@ -35,13 +35,13 @@ impl<W> KSVSerializer<W>
 macro_rules! impl_serialize_for (
     (T $value_type:ty, $func_name:ident) => (
         fn $func_name(&mut self, key: &str, val: $value_type) -> slog::ser::Result {
-            write!(self.io, "{}{}{}", key, self.separator, val)?;
+            write!(self.io, " {}{}{}", key, self.separator, val)?;
             Ok(())
         }
     );
     (V $value:expr, $func_name:ident) => (
         fn $func_name(&mut self, key: &str) -> slog::ser::Result {
-            write!(self.io, "{}{}{}", key, self.separator, $value)?;
+            write!(self.io, " {}{}{}", key, self.separator, $value)?;
             Ok(())
         }
     );

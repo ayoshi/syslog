@@ -146,7 +146,7 @@ impl SyslogStreamer {
         let syslog_socket = self.syslog_socket.or(get_syslog_socket());
 
         // Connect to socket
-        let mut socket_stream = match  UnixDatagram::bind(&Path::new("/var/run/syslog")) {
+        let mut socket_stream = match UnixDatagram::bind(&Path::new("/var/run/syslog")) {
             Err(_) => panic!("Couldn't connect to socket"),
             Ok(stream) => stream,
         };
