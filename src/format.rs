@@ -6,8 +6,8 @@ use slog::{Record, OwnedKeyValueList};
 use slog_stream::Format as StreamFormat;
 use std::io;
 use syslog::{Facility, Priority};
-use time::TimestampFn;
 use time::FormatTimestamp;
+use std::marker::PhantomData;
 
 // Write separator
 macro_rules! write_separator { ($io:expr) => ( write!($io, " ") ) }
@@ -25,7 +25,7 @@ pub struct HeaderFields<T> {
     process_name: Option<String>,
     pid: i32,
     facility: Facility,
-    timestamp: T
+    _timestamp: PhantomData<T>
 }
 
 impl <T>HeaderFields<T>
@@ -35,14 +35,14 @@ impl <T>HeaderFields<T>
                process_name: Option<String>,
                pid: i32,
                facility: Facility,
-               timestamp: T)
+        )
                -> Self {
         HeaderFields {
             hostname: hostname,
             process_name: process_name,
             pid: pid,
             facility: facility,
-            timestamp: timestamp,
+            _timestamp: PhantomData
         }
     }
 }
@@ -245,7 +245,7 @@ pub struct SyslogFormat<H, M, T>
 {
     header: H,
     message: M,
-    timestamp: T
+    _timestamp: PhantomData<T>
 }
 
 
@@ -261,15 +261,14 @@ impl<H, M, T> SyslogFormat<H, M, T>
                facility: Facility)
                -> Self {
 
-        let timestamp = T::new();
-        let header_fields = HeaderFields::<T>::new(hostname, process_name, pid, facility, T::new());
+        let header_fields = HeaderFields::<T>::new(hostname, process_name, pid, facility);
         let header = H::new(header_fields);
         let message = M::new();
 
         SyslogFormat {
             header: header,
             message: message,
-            timestamp: timestamp
+            _timestamp: PhantomData
         }
 
     }
