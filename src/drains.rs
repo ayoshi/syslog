@@ -79,12 +79,12 @@ impl<F> Drain for UDSDrain<Connected, F>
            logger_values: &OwnedKeyValueList)
            -> std::result::Result<(), io::Error> {
 
-        // Should be thread safe
+        // Should be thread safe - redo the buffering
         let mut buf = Vec::<u8>::with_capacity(4096);
 
-        self.formatter.format(&mut buf, info, logger_values).unwrap();
-
+        self.formatter.format(&mut buf, info, logger_values)?;
         self.connection.socket.send_to(buf.as_slice(), &self.path_to_socket)?;
+
         Ok(())
     }
 }
