@@ -15,6 +15,9 @@ pub struct TimestampRFC3164 {}
 /// ISO8601 timestamp
 pub struct TimestampISO8601 {}
 
+/// Omitted timestamp
+pub struct OmitTimestamp {}
+
 /// Generic timestamp formatter
 pub trait FormatTimestamp {
     /// Format timestamp in a given format
@@ -49,5 +52,11 @@ impl FormatTimestamp for Timestamp<TimestampISO8601, TimestampLocal> {
 impl FormatTimestamp for Timestamp<TimestampISO8601, TimestampUTC> {
     fn format(io: &mut io::Write) -> io::Result<()> {
         write!(io, "{}", chrono::UTC::now().to_rfc3339())
+    }
+}
+
+impl FormatTimestamp for OmitTimestamp {
+    fn format(_: &mut io::Write) -> io::Result<()> {
+        Ok(())
     }
 }

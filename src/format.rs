@@ -7,7 +7,7 @@ use slog_stream::Format as StreamFormat;
 use std::io;
 use std::marker::PhantomData;
 use syslog::{Facility, Priority};
-use time::FormatTimestamp;
+use time::{FormatTimestamp, OmitTimestamp};
 
 // Write separator
 macro_rules! write_separator { ($io:expr) => ( write!($io, " ") ) }
@@ -55,6 +55,11 @@ pub trait FormatHeader {
     fn format(&self, io: &mut io::Write, record: &Record) -> io::Result<()>;
 }
 
+/// Minimal RFC3164 Header
+pub struct HeaderRFC3164Minimal {
+    fields: HeaderFields,
+}
+
 /// RFC3164 Header
 pub struct HeaderRFC3164<T> {
     fields: HeaderFields,
@@ -65,6 +70,34 @@ pub struct HeaderRFC3164<T> {
 pub struct HeaderRFC5424<T> {
     fields: HeaderFields,
     _timestamp: PhantomData<T>,
+}
+
+impl FormatHeader for HeaderRFC3164Minimal
+{
+    type Timestamp = OmitTimestamp;
+
+    fn new(fields: HeaderFields) -> Self {
+        HeaderRFC3164Minimal {
+            fields: fields,
+        }
+    }
+
+    fn format(&self, io: &mut io::Write, record: &Record) -> io::Result<()> {
+        // PRIORITY
+        write!(io,
+               "<{}>",
+               Priority::new(self.fields.facility, record.level().into()))?;
+        write_separator!(io)?;
+
+        // TAG process_name[pid]:
+        match self.fields.process_name {
+            Some(ref process_name) => write!(io, "{}[{}]:", process_name, self.fields.pid)?,
+            None => write!(io, "[{}]:", self.fields.pid)?,
+        }
+        write_separator!(io)?;
+
+        Ok(())
+    }
 }
 
 impl<T> FormatHeader for HeaderRFC3164<T>
@@ -84,11 +117,11 @@ impl<T> FormatHeader for HeaderRFC3164<T>
         write!(io,
                "<{}>",
                Priority::new(self.fields.facility, record.level().into()))?;
-        write_separator!(io)?;
+        // write_separator!(io)?;
 
         // TIMESTAMP
         T::format(io)?;
-        write_separator!(io)?;
+        // write_separator!(io)?;
 
         // HOSTNAME
         if let Some(ref hostname) = self.fields.hostname {

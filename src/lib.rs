@@ -20,6 +20,7 @@ pub mod posix;
 mod time;
 mod format;
 mod serializers;
+mod drains;
 
 pub use self::config::*;
 pub use self::format::*;
@@ -27,6 +28,7 @@ pub use self::posix::{get_pid, get_process_name, get_host_name};
 pub use self::serializers::*;
 pub use self::syslog::*;
 pub use self::time::*;
+pub use self::drains::*;
 
 
 /// Entry point to any further syslog configuration
