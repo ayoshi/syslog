@@ -10,14 +10,17 @@ use std::net::Shutdown;
 use std::os::unix::net::UnixDatagram;
 use std::path::PathBuf;
 
+/// State: Connected for the drain
 #[derive(Default, Debug)]
 pub struct Disconnected {}
 
+/// State: Disconnected for the drain
 #[derive(Debug)]
 pub struct Connected {
     socket: UnixDatagram,
 }
 
+/// Unix domain socket drain
 #[derive(Debug)]
 pub struct UDSDrain<C, F>
     where F: StreamFormat
@@ -30,6 +33,7 @@ pub struct UDSDrain<C, F>
 impl<F> UDSDrain<Disconnected, F>
     where F: StreamFormat
 {
+    /// UDSDrain constructor
     pub fn new(path_to_socket: PathBuf, formatter: F) -> UDSDrain<Disconnected, F> {
         UDSDrain::<Disconnected, F> {
             path_to_socket: path_to_socket,
@@ -42,6 +46,7 @@ impl<F> UDSDrain<Disconnected, F>
 impl<F> UDSDrain<Disconnected, F>
     where F: StreamFormat
 {
+    /// Bind UDS socket
     pub fn connect(self) -> Result<UDSDrain<Connected, F>, io::Error> {
         let socket = UnixDatagram::unbound()?;
         Ok(UDSDrain::<Connected, F> {
@@ -55,6 +60,7 @@ impl<F> UDSDrain<Disconnected, F>
 impl<F> UDSDrain<Connected, F>
     where F: StreamFormat
 {
+    /// Disconnect UDS socket, completing all operations
     pub fn disconnect(&mut self) -> Result<(), io::Error> {
         self.connection.socket.shutdown(Shutdown::Both)
     }
