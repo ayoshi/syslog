@@ -120,6 +120,24 @@ mod tests {
     }
 
     #[test]
+    fn formatter_rfc3164_minimal_ksv() {
+        let formatter = SyslogFormat::<HeaderRFC3164Minimal, MessageKSV>::new(None,
+                                                                              Some("test"
+                                                                                  .to_owned()),
+                                                                              12345,
+                                                                              Facility::LOG_USER);
+
+        let buffer = TestIoBuffer::new(1024);
+        let test_drain = TestDrain::new(buffer.io(), formatter);
+        let logger = Logger::root(test_drain, o!("lk1" => "lv1", "lk2" => "lv2"));
+        info!(logger, "Test message 1"; "mk1" => "mv1", "mk2" => "mv2" );
+        println!("{:?}", buffer.as_vec());
+        println!("{:?}", buffer.as_string());
+        assert!(buffer.as_string().contains("<14>"));
+        assert!(buffer.as_string().contains("Test message 1 mk2=mv2 mk1=mv1 lk2=lv2 lk1=lv1"));
+    }
+
+    #[test]
     fn formatter_rfc3164_ksv() {
         let formatter = SyslogFormat::<HeaderRFC3164<Timestamp<TimestampRFC3164,
                                                                TimestampLocal>>,

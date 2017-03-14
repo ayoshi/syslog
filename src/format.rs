@@ -20,6 +20,7 @@ macro_rules! write_eom { ($io:expr) => ( write!($io, "\0") ) }
 
 
 /// Syslog header fields
+#[derive(Debug)]
 pub struct HeaderFields {
     hostname: Option<String>,
     process_name: Option<String>,
@@ -56,17 +57,20 @@ pub trait FormatHeader {
 }
 
 /// Minimal RFC3164 Header
+#[derive(Debug)]
 pub struct HeaderRFC3164Minimal {
     fields: HeaderFields,
 }
 
 /// RFC3164 Header
+#[derive(Debug)]
 pub struct HeaderRFC3164<T> {
     fields: HeaderFields,
     _timestamp: PhantomData<T>,
 }
 
 /// RFC5424 Header
+#[derive(Debug)]
 pub struct HeaderRFC5424<T> {
     fields: HeaderFields,
     _timestamp: PhantomData<T>,
@@ -87,13 +91,13 @@ impl FormatHeader for HeaderRFC3164Minimal
         write!(io,
                "<{}>",
                Priority::new(self.fields.facility, record.level().into()))?;
-        write_separator!(io)?;
 
         // TAG process_name[pid]:
         match self.fields.process_name {
             Some(ref process_name) => write!(io, "{}[{}]:", process_name, self.fields.pid)?,
             None => write!(io, "[{}]:", self.fields.pid)?,
         }
+
         write_separator!(io)?;
 
         Ok(())
@@ -117,7 +121,6 @@ impl<T> FormatHeader for HeaderRFC3164<T>
         write!(io,
                "<{}>",
                Priority::new(self.fields.facility, record.level().into()))?;
-        // write_separator!(io)?;
 
         // TIMESTAMP
         T::format(io)?;
@@ -199,11 +202,11 @@ pub trait FormatMessage {
 }
 
 /// RFC5424 structured data message
-#[derive(Default)]
+#[derive(Debug)]
 pub struct MessageRFC5424 {}
 
 /// KSV Serialized message
-#[derive(Default)]
+#[derive(Debug)]
 pub struct MessageKSV {}
 
 impl MessageRFC5424 {
@@ -281,6 +284,7 @@ impl FormatMessage for MessageKSV {
 }
 
 /// Generic Syslog Formatter
+#[derive(Debug)]
 pub struct SyslogFormat<H, M>
     where H: FormatHeader,
           H::Timestamp: FormatTimestamp,
@@ -305,7 +309,6 @@ impl<H, M> SyslogFormat<H, M>
 
         let header_fields = HeaderFields::new(hostname, process_name, pid, facility);
         let header = H::new(header_fields);
-        // let message = M::default();
 
         SyslogFormat {
             header: header,
