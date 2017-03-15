@@ -1,5 +1,3 @@
-// use format::SyslogFormatter;
-
 use slog::{Drain, OwnedKeyValueList, Record};
 use slog_stream::Format as StreamFormat;
 use std::io;
@@ -7,28 +5,19 @@ use std::net::{Shutdown, UdpSocket, TcpStream, SocketAddr};
 use std::os::unix::net::UnixDatagram;
 use std::path::PathBuf;
 
-// TODO factor out addr, socket path into Disconnected Type
+// TODO factor out addr, socket path into UDSDisconnected Type
 
-/// State: Disconnected
+/// State: UDSDisconnected
 #[derive(Default, Debug)]
-pub struct Disconnected {}
+pub struct UDSDisconnected {
+    path_to_socket: PathBuf,
+}
 
 /// State: UDSConnected for the UDS drain
 #[derive(Debug)]
 pub struct UDSConnected {
     socket: UnixDatagram,
-}
-
-/// State: UDPConnected for the UDP drain
-#[derive(Debug)]
-pub struct UDPConnected {
-    socket: UdpSocket,
-}
-
-/// State: TCPConnected for the TCP drain
-#[derive(Debug)]
-pub struct TCPConnected {
-    stream: TcpStream,
+    path_to_socket: PathBuf,
 }
 
 /// Unix domain socket drain
@@ -36,20 +25,18 @@ pub struct TCPConnected {
 pub struct UDSDrain<C, F>
     where F: StreamFormat
 {
-    path_to_socket: PathBuf,
     formatter: F,
     connection: C,
 }
 
-impl<F> UDSDrain<Disconnected, F>
+impl<F> UDSDrain<UDSDisconnected, F>
     where F: StreamFormat
 {
     /// UDSDrain constructor
-    pub fn new(path_to_socket: PathBuf, formatter: F) -> UDSDrain<Disconnected, F> {
-        UDSDrain::<Disconnected, F> {
-            path_to_socket: path_to_socket,
+    pub fn new(path_to_socket: PathBuf, formatter: F) -> UDSDrain<UDSDisconnected, F> {
+        UDSDrain::<UDSDisconnected, F> {
             formatter: formatter,
-            connection: Disconnected {},
+            connection: UDSDisconnected { path_to_socket: path_to_socket },
         }
     }
 
@@ -57,9 +44,11 @@ impl<F> UDSDrain<Disconnected, F>
     pub fn connect(self) -> io::Result<UDSDrain<UDSConnected, F>> {
         let socket = UnixDatagram::unbound()?;
         Ok(UDSDrain::<UDSConnected, F> {
-            path_to_socket: self.path_to_socket,
             formatter: self.formatter,
-            connection: UDSConnected { socket: socket },
+            connection: UDSConnected {
+                socket: socket,
+                path_to_socket: self.connection.path_to_socket,
+            },
         })
     }
 }
@@ -82,56 +71,67 @@ impl<F> UDSDrain<UDSConnected, F>
 // }
 
 
-impl <F>Drain for UDSDrain<UDSConnected, F>
+impl<F> Drain for UDSDrain<UDSConnected, F>
     where F: StreamFormat
 {
     type Error = io::Error;
 
-    fn log(&self,
-           info: &Record,
-           logger_values: &OwnedKeyValueList)
-           -> io::Result<()> {
+    fn log(&self, info: &Record, logger_values: &OwnedKeyValueList) -> io::Result<()> {
 
         // Should be thread safe - redo the buffering
         let mut buf = Vec::<u8>::with_capacity(4096);
 
         self.formatter.format(&mut buf, info, logger_values)?;
-        self.connection.socket.send_to(buf.as_slice(), &self.path_to_socket)?;
+        self.connection.socket.send_to(buf.as_slice(), &self.connection.path_to_socket)?;
 
         Ok(())
     }
 }
+
+/// State: UDPConnected for the UDP drain
+#[derive(Debug)]
+pub struct UDPDisconnected {
+    addr: SocketAddr,
+}
+
+/// State: UDPConnected for the UDP drain
+#[derive(Debug)]
+pub struct UDPConnected {
+    socket: UdpSocket,
+    addr: SocketAddr,
+}
+
 
 /// UDP socket drain
 #[derive(Debug)]
 pub struct UDPDrain<C, F>
     where F: StreamFormat
 {
-    addr: SocketAddr,
     formatter: F,
     connection: C,
 }
 
-impl<F> UDPDrain<Disconnected, F>
+impl<F> UDPDrain<UDPDisconnected, F>
     where F: StreamFormat
 {
     /// UDPDrain constructor
-    pub fn new(addr: SocketAddr, formatter: F) -> UDPDrain<Disconnected, F> {
-        UDPDrain::<Disconnected, F> {
-            addr: addr,
+    pub fn new(addr: SocketAddr, formatter: F) -> UDPDrain<UDPDisconnected, F> {
+        UDPDrain::<UDPDisconnected, F> {
             formatter: formatter,
-            connection: Disconnected {},
+            connection: UDPDisconnected { addr: addr },
         }
     }
 
     /// Bind UDP socket
     pub fn connect(self) -> io::Result<UDPDrain<UDPConnected, F>> {
         let socket = UdpSocket::bind("0.0.0.0:31245")?; // TODO: Fix binding
-        socket.connect(self.addr)?;
+        socket.connect(self.connection.addr)?;
         Ok(UDPDrain::<UDPConnected, F> {
-            addr: self.addr,
             formatter: self.formatter,
-            connection: UDPConnected { socket: socket },
+            connection: UDPConnected {
+                socket: socket,
+                addr: self.connection.addr,
+            },
         })
     }
 }
