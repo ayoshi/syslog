@@ -1,5 +1,4 @@
-// use config::UDSConfig;
-// use format::SyslogFormat;
+// use format::SyslogFormatter;
 
 use slog::{Drain, Record, OwnedKeyValueList};
 use slog_stream::Format as StreamFormat;
