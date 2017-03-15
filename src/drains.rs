@@ -5,8 +5,6 @@ use std::net::{Shutdown, UdpSocket, TcpStream, SocketAddr};
 use std::os::unix::net::UnixDatagram;
 use std::path::PathBuf;
 
-// TODO factor out addr, socket path into UDSDisconnected Type
-
 /// State: UDSDisconnected
 #[derive(Default, Debug)]
 pub struct UDSDisconnected {
