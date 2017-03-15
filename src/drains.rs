@@ -122,7 +122,7 @@ impl<F> UDPDrain<UDPDisconnected, F>
 
     /// Bind UDP socket
     pub fn connect(self) -> io::Result<UDPDrain<UDPConnected, F>> {
-        let socket = UdpSocket::bind("0.0.0.0:31245")?; // TODO: Fix binding
+        let socket = UdpSocket::bind("0.0.0.0:0")?;
         socket.connect(self.connection.addr)?;
         Ok(UDPDrain::<UDPConnected, F> {
             formatter: self.formatter,
