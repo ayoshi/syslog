@@ -4,18 +4,23 @@ use std::marker::PhantomData;
 
 
 /// Timestamp in local TZ
+#[derive(Debug)]
 pub struct TimestampLocal {}
 
 /// UTC timestamp
+#[derive(Debug)]
 pub struct TimestampUTC {}
 
 /// RFC3164 compatible timestamp
+#[derive(Debug)]
 pub struct TimestampRFC3164 {}
 
 /// ISO8601 timestamp
+#[derive(Debug)]
 pub struct TimestampISO8601 {}
 
 /// Omitted timestamp
+#[derive(Debug)]
 pub struct OmitTimestamp {}
 
 /// Generic timestamp formatter
@@ -25,7 +30,7 @@ pub trait FormatTimestamp {
 }
 
 /// Timestamp
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Timestamp<TZ, TF> {
     _tz: PhantomData<TZ>,
     _tf: PhantomData<TF>,
