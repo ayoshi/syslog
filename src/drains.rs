@@ -38,7 +38,7 @@ impl<F> UDSDrain<UDSDisconnected, F>
         }
     }
 
-    /// Bind UDS socket
+    /// Connect UDS socket
     pub fn connect(self) -> io::Result<UDSDrain<UDSConnected, F>> {
         let socket = UnixDatagram::unbound()?;
         Ok(UDSDrain::<UDSConnected, F> {
@@ -120,10 +120,9 @@ impl<F> UDPDrain<UDPDisconnected, F>
         }
     }
 
-    /// Bind UDP socket
+    /// Connect UDP socket
     pub fn connect(self) -> io::Result<UDPDrain<UDPConnected, F>> {
         let socket = UdpSocket::bind("0.0.0.0:0")?;
-        socket.connect(self.connection.addr)?;
         Ok(UDPDrain::<UDPConnected, F> {
             formatter: self.formatter,
             connection: UDPConnected {
@@ -140,5 +139,22 @@ impl<F> UDPDrain<UDPConnected, F>
     /// Disconnect UDP socket, completing all operations
     pub fn disconnect(&mut self) -> io::Result<()> {
         Ok(()) // TODO: Fix disconnection
+    }
+}
+
+impl<F> Drain for UDPDrain<UDPConnected, F>
+    where F: StreamFormat
+{
+    type Error = io::Error;
+
+    fn log(&self, info: &Record, logger_values: &OwnedKeyValueList) -> io::Result<()> {
+
+        // Should be thread safe - redo the buffering
+        let mut buf = Vec::<u8>::with_capacity(4096);
+
+        self.formatter.format(&mut buf, info, logger_values)?;
+        self.connection.socket.send_to(buf.as_slice(), &self.connection.addr)?;
+
+        Ok(())
     }
 }
