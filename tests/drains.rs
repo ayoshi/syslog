@@ -49,7 +49,7 @@ mod tests {
 
     #[test]
     fn uds_drain_rfc3164_minimal() {
-        let dest = PathBuf::from("/syslog/log_dgram");
+        let dest = PathBuf::from("/syslog-ng/socket_dgram");
         logger_emit!(UDSDrain,
                      HeaderRFC3164Minimal,
                      MessageKSV,
@@ -59,7 +59,7 @@ mod tests {
 
     #[test]
     fn uds_drain_rfc3164_full() {
-        let dest = PathBuf::from("/syslog/log_dgram");
+        let dest = PathBuf::from("/syslog-ng/socket_dgram");
         logger_emit!(
             UDSDrain,
             HeaderRFC3164<Ts3164Local>,
@@ -71,7 +71,7 @@ mod tests {
 
     #[test]
     fn uds_drain_rfc5424() {
-        let dest = PathBuf::from("/syslog/log_dgram");
+        let dest = PathBuf::from("/syslog-ng/socket_dgram");
         logger_emit!(
             UDSDrain,
             HeaderRFC3164<TsIosLocal>,
