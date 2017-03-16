@@ -1,0 +1,29 @@
+version: '2'
+
+volumes:
+  rust:
+
+services:
+
+  #### Set up syslog-ng host with kernel variables,
+  syslog-ng:
+    build:
+      context: ./
+      dockerfile: Dockerfile.syslog-ng
+    image: syslog-ng
+    privileged: true
+    cap_add:
+    - ALL
+
+  #### test container
+  test:
+    image: scorpil/rust:nightly
+    working_dir: /src
+    depends_on:
+      - syslog-ng
+    volumes_from:
+      - syslog-ng
+    volumes:
+      - ..:/src
+      - rust:/root/.cargo
+    command: "cargo test"
