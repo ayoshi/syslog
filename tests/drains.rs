@@ -16,7 +16,7 @@ mod tests {
     use slog_syslog_ng::*;
     use slog_term;
     use std;
-    use std::net::SocketAddr;
+    use std::net::{SocketAddr, ToSocketAddrs};
     use std::path::PathBuf;
     use std::str::FromStr;
     use std::sync::{Arc, Mutex};
@@ -49,18 +49,17 @@ mod tests {
 
     #[test]
     fn uds_drain_rfc3164_minimal() {
-        let dest = PathBuf::from("/tmp/syslog/rfc3164");
+        let dest = PathBuf::from("/syslog/log_dgram");
         logger_emit!(UDSDrain,
                      HeaderRFC3164Minimal,
                      MessageKSV,
                      dest,
                      "Test message RFC3164 minimal");
-        assert!(false);
     }
 
     #[test]
     fn uds_drain_rfc3164_full() {
-        let dest = PathBuf::from("/tmp/syslog/rfc3164");
+        let dest = PathBuf::from("/syslog/log_dgram");
         logger_emit!(
             UDSDrain,
             HeaderRFC3164<Ts3164Local>,
@@ -68,12 +67,11 @@ mod tests {
             dest,
             "Test message RFC3164 full"
         );
-        assert!(false);
     }
 
     #[test]
     fn uds_drain_rfc5424() {
-        let dest = PathBuf::from("/tmp/syslog/rfc5424");
+        let dest = PathBuf::from("/syslog/log_dgram");
         logger_emit!(
             UDSDrain,
             HeaderRFC3164<TsIosLocal>,
@@ -81,12 +79,14 @@ mod tests {
             dest,
             "Test message RFC5424 Native"
         );
-        assert!(false);
     }
 
     #[test]
     fn udp_drain_rfc3164_minimal() {
-        let dest = SocketAddr::from_str("192.168.99.100:10514").unwrap();
+        let dest = "syslog-ng:10514"
+            .to_socket_addrs()
+            .expect("Unable to resolve host, check that syslog-ng Docker service is up")
+            .collect::<Vec<_>>()[0];
         logger_emit!(
             UDPDrain,
             HeaderRFC3164Minimal,
@@ -94,6 +94,5 @@ mod tests {
             dest,
             "Test message RFC3164 minimal"
         );
-        assert!(false);
     }
 }
