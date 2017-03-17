@@ -9,12 +9,13 @@ extern crate slog_stream;
 #[cfg(test)]
 mod tests {
 
-    use slog::{Logger, Record, OwnedKeyValueList, Drain, Never};
-    use slog_stream;
+    use slog::{Logger, Record, OwnedKeyValueList, Drain, DrainExt};
+    use slog_stream::Format as StreamFormat;
     use slog_syslog_ng::*;
 
-    use std;
+    use std::{io, result};
     use std::net::{SocketAddr, IpAddr, Ipv4Addr};
+    use std::ops::DerefMut;
     use std::path::PathBuf;
     use std::sync::{Arc, Mutex};
 

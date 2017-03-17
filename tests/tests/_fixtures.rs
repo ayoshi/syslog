@@ -32,7 +32,7 @@ macro_rules! logger_emit(
         let logger = Logger::root(duplicate(introspection_drain, test_drain).fuse(),
                                   o!("lk1" => "lv1", "lk2" => "lv2"));
             info!(logger, $event; "mk1" => "mv1", "mk2" => "mv2")
-        }});
+    }});
 
 type SharedIoVec = Arc<Mutex<Vec<u8>>>;
 
@@ -64,14 +64,14 @@ impl TestIoBuffer {
 // Test Drain which accepts a TestIoBuffer::io
 #[derive(Debug)]
 struct TestDrain<F>
-    where F: slog_stream::Format
+    where F: StreamFormat
 {
     io: SharedIoVec,
     formatter: F,
 }
 
 impl<F> TestDrain<F>
-    where F: slog_stream::Format
+    where F: StreamFormat
 {
     fn new(io: SharedIoVec, formatter: F) -> TestDrain<F> {
         TestDrain {
@@ -82,14 +82,25 @@ impl<F> TestDrain<F>
 }
 
 impl<F> Drain for TestDrain<F>
-    where F: slog_stream::Format
+    where F: StreamFormat
 {
-    type Error = Never;
+    type Error = io::Error;
 
-    fn log(&self, record: &Record, values: &OwnedKeyValueList) -> std::result::Result<(), Never> {
-        use std::ops::DerefMut;
+    fn log(&self, record: &Record, values: &OwnedKeyValueList) -> result::Result<(), Self::Error> {
         let mut io = self.io.lock().unwrap();
         self.formatter.format(io.deref_mut(), record, values).unwrap_or(());
         Ok(())
     }
+}
+
+// Create test buffer for introspection, and
+// log defined message to the test drain, returning buffer
+fn emit_test_message_to_buffer<F>(formatter: F) -> TestIoBuffer
+    where F: StreamFormat + 'static
+{
+    let buffer = TestIoBuffer::new(1024);
+    let test_drain = TestDrain::new(buffer.io(), formatter);
+    let logger = Logger::root(test_drain.fuse(), o!("lk1" => "lv1", "lk2" => "lv2"));
+    info!(logger, "Test message 1"; "mk1" => "mv1", "mk2" => "mv2" );
+    return buffer;
 }

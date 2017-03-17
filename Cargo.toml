@@ -27,7 +27,6 @@ hostname = "*"
 
 [dev-dependencies]
 compiletest_rs = "*"
-slog-term = "*"
 
 [features]
 # For testing with live syslog instances, used to enable tests

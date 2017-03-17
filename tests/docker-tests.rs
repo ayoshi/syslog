@@ -5,22 +5,20 @@ extern crate slog_syslog_ng;
 #[macro_use]
 extern crate slog;
 
-extern crate slog_term;
 extern crate slog_stream;
 
 #[cfg(test)]
 #[cfg(feature="full-integration-env")]
 mod tests {
 
-    use slog::{Logger, Record, OwnedKeyValueList, Drain, Never, Discard, DrainExt, duplicate};
-    use slog_stream;
+    use slog::{Logger, Record, OwnedKeyValueList, Drain, DrainExt, duplicate};
+    use slog_stream::Format as StreamFormat;
     use slog_syslog_ng::*;
-    use slog_term;
 
-    use std;
-    use std::net::{SocketAddr, IpAddr, Ipv4Addr, ToSocketAddrs};
+    use std::{io, result};
+    use std::net::ToSocketAddrs;
+    use std::ops::DerefMut;
     use std::path::PathBuf;
-    use std::str::FromStr;
     use std::sync::{Arc, Mutex};
 
     include!("tests/_fixtures.rs");
