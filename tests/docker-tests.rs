@@ -25,7 +25,6 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     include!("tests/_fixtures.rs");
-
     include!("tests/_drains.rs");
 
 }

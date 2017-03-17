@@ -1,6 +1,6 @@
 extern crate compiletest_rs as compiletest;
 
-use std::env::var;
+use std::env;
 use std::path::PathBuf;
 
 fn run_mode(mode: &'static str) {
@@ -8,8 +8,15 @@ fn run_mode(mode: &'static str) {
 
     let cfg_mode = mode.parse().expect("Invalid mode");
 
-    config.target_rustcflags = Some("-L target/debug/ -L target/debug/deps/".to_owned());
-    if let Ok(name) = var::<&str>("TESTNAME") {
+    let target_dir = match env::var("CARGO_TARGET_DIR") {
+        Ok(dir) => dir,
+        Err(_) => "target".to_owned()
+    };
+
+    let rustflags = format!("-L {target}/debug/ -L {target}/debug/deps", target=target_dir);
+
+    config.target_rustcflags = Some(rustflags);
+    if let Ok(name) = env::var::<&str>("TESTNAME") {
         let s: String = name.to_owned();
         config.filter = Some(s)
     }
