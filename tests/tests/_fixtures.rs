@@ -1,3 +1,15 @@
+// All timestamp Invariants
+
+// 1. Shortens tests
+// 2. Helps to catch untested invariants as compiler warnings
+
+type TsIsoUtc = Timestamp<TimestampISO8601, TimestampUTC>;
+type TsIsoLocal = Timestamp<TimestampISO8601, TimestampLocal>;
+type Ts3164Utc = Timestamp<TimestampRFC3164, TimestampUTC>;
+type Ts3164Local = Timestamp<TimestampRFC3164, TimestampLocal>;
+
+// TODO Add all header x timestamp invariant types
+
 // Formater fixture
 macro_rules! formatter(
         ($header: ty, $message: ty) => (
@@ -7,14 +19,17 @@ macro_rules! formatter(
 
 // Emit message Fixture
 macro_rules! logger_emit(
-        ($drain: ident, $header: ty, $message: ty, $dest: expr, $event: expr) => {{
-        let console_drain = slog_term::streamer().full().build();
+    ($drain: ident, $header: ty, $message: ty, $dest: expr, $event: expr) => {{
+
+        let buffer = TestIoBuffer::new(1024);
+        let introspection_drain = TestDrain::new(buffer.io(), formatter!($header, $message));
+
         let test_drain = $drain::new($dest, formatter!($header, $message))
             .connect()
             .unwrap();
 
         println!("{:?}", test_drain);
-        let logger = Logger::root(duplicate(console_drain, test_drain).fuse(),
+        let logger = Logger::root(duplicate(introspection_drain, test_drain).fuse(),
                                   o!("lk1" => "lv1", "lk2" => "lv2"));
             info!(logger, $event; "mk1" => "mv1", "mk2" => "mv2")
         }});
