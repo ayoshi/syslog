@@ -21,3 +21,11 @@
 # slog-term  - Unix terminal drain for [slog-rs]
 
 [slog-rs]: //github.com/slog-rs/slog
+
+## Development
+
+### Running integration test suite in docker
+
+```
+docker-compose -f docker/docker-compose.yml up --abort-on-container-exit
+```

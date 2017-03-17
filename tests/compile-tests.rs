@@ -8,6 +8,7 @@ fn run_mode(mode: &'static str) {
 
     let cfg_mode = mode.parse().expect("Invalid mode");
 
+    // Support for overriding target dir through environment vars
     let target_dir = match env::var("CARGO_TARGET_DIR") {
         Ok(dir) => dir,
         Err(_) => "target".to_owned()
