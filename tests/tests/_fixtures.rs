@@ -38,12 +38,14 @@ type SharedIoVec = Arc<Mutex<Vec<u8>>>;
 
 // Test buffer to hold single message
 // Can be passed to TestDrain, and examined from outside
+#[allow(dead_code)]
 #[derive(Clone)]
 struct TestIoBuffer {
     io: SharedIoVec,
 }
 
 impl TestIoBuffer {
+    #[allow(dead_code)]
     fn new(capacity: usize) -> TestIoBuffer {
         TestIoBuffer { io: Arc::new(Mutex::new(Vec::<u8>::with_capacity(capacity))) }
     }
@@ -52,10 +54,12 @@ impl TestIoBuffer {
         self.io.clone()
     }
 
+    #[allow(dead_code)]
     fn as_vec(&self) -> Vec<u8> {
         self.io.lock().unwrap().clone()
     }
 
+    #[allow(dead_code)]
     fn as_string(&self) -> String {
         String::from_utf8(self.as_vec()).unwrap()
     }
@@ -63,6 +67,7 @@ impl TestIoBuffer {
 
 // Test Drain which accepts a TestIoBuffer::io
 #[derive(Debug)]
+#[allow(dead_code)]
 struct TestDrain<F>
     where F: StreamFormat
 {
@@ -95,6 +100,7 @@ impl<F> Drain for TestDrain<F>
 
 // Create test buffer for introspection, and
 // log defined message to the test drain, returning buffer
+#[allow(dead_code)]
 fn emit_test_message_to_buffer<F>(formatter: F) -> TestIoBuffer
     where F: StreamFormat + 'static
 {
