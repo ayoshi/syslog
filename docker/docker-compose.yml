@@ -1,7 +1,10 @@
 version: '2'
 
 volumes:
+  # Presistent rust dir to keep toolchain updates
   rust:
+  # Presistent target dir to speed up
+  target:
 
 services:
 
@@ -26,4 +29,5 @@ services:
     volumes:
       - ..:/src
       - rust:/root/.cargo
+      - target:/src/target
     command: "cargo test"
