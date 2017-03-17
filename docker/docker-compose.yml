@@ -30,7 +30,7 @@ services:
       - ..:/src
       - rust:/root/.cargo
       - local:/local
-    command: "cargo test"
+    command: "cargo test --features full-integration-env"
     # Separate target dir under docker
     environment:
       - CARGO_TARGET_DIR=/local/target

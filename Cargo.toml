@@ -30,3 +30,6 @@ compiletest_rs = "*"
 slog-term = "*"
 
 [features]
+# For testing with live syslog instances, used to enable tests
+# in docker integration environment
+full-integration-env = []

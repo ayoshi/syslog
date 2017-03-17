@@ -8,9 +8,8 @@ extern crate slog;
 extern crate slog_term;
 extern crate slog_stream;
 
-// TODO: Get IP straight from DOCKER_ENV
-
 #[cfg(test)]
+#[cfg(feature="full-integration-env")]
 mod tests {
 
     use slog::{Logger, Record, OwnedKeyValueList, Drain, Never, Discard, DrainExt, duplicate};
