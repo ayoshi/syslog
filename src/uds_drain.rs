@@ -55,19 +55,16 @@ impl<F> UDSDrain<UDSConnected, F>
     where F: StreamFormat
 {
     /// Disconnect UDS socket, completing all operations
-    pub fn disconnect(&mut self) -> io::Result<()> {
-        self.connection.socket.shutdown(Shutdown::Both)
+    pub fn disconnect(self) -> io::Result<UDSDrain<UDSDisconnected, F>> {
+        self.connection.socket.shutdown(Shutdown::Both)?;
+        Ok(UDSDrain::<UDSDisconnected, F> {
+            formatter: self.formatter,
+            connection: UDSDisconnected {
+                path_to_socket: self.connection.path_to_socket,
+            },
+        })
     }
 }
-
-// TODO: temporary disabled: https://github.com/rust-lang/rust/issues/38868
-// impl <F>Drop for UDSDrain<UDSConnected, F>
-//     where F: StreamFormat {
-//     fn drop(&mut self) {
-//         self.disconnect();
-//     }
-// }
-
 
 impl<F> Drain for UDSDrain<UDSConnected, F>
     where F: StreamFormat
