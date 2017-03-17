@@ -1,5 +1,3 @@
-// TODO: Get IP straight from DOCKER_ENV
-// TODO: Factor out fixtures
 type TsIsoUtc = Timestamp<TimestampISO8601, TimestampUTC>;
 type TsIosLocal = Timestamp<TimestampISO8601, TimestampLocal>;
 type Ts3164Utc = Timestamp<TimestampRFC3164, TimestampUTC>;

@@ -4,7 +4,7 @@ volumes:
   # Presistent rust dir to keep toolchain updates
   rust:
   # Presistent target dir to speed up
-  target:
+  local:
 
 services:
 
@@ -19,7 +19,7 @@ services:
     - ALL
 
   #### test container
-  test:
+  rust:
     image: scorpil/rust:nightly
     working_dir: /src
     depends_on:
@@ -29,5 +29,8 @@ services:
     volumes:
       - ..:/src
       - rust:/root/.cargo
-      - target:/src/target
+      - local:/local
     command: "cargo test"
+    # Separate target dir under docker
+    environment:
+      - CARGO_TARGET_DIR=/local/target

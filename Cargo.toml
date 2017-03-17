@@ -28,3 +28,5 @@ hostname = "*"
 [dev-dependencies]
 compiletest_rs = "*"
 slog-term = "*"
+
+[features]
