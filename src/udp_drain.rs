@@ -54,8 +54,11 @@ impl<F> UDPDrain<UDPConnected, F>
     where F: StreamFormat
 {
     /// Disconnect UDP socket, completing all operations
-    pub fn disconnect(&mut self) -> io::Result<()> {
-        Ok(()) // TODO: Fix disconnection
+    pub fn disconnect(self) -> io::Result<UDPDrain<UDPDisconnected, F>> {
+        Ok(UDPDrain::<UDPDisconnected, F> {
+            formatter: self.formatter,
+            connection: UDPDisconnected { addr: self.connection.addr },
+        })
     }
 }
 

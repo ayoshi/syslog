@@ -1,7 +1,7 @@
 use slog::{Drain, OwnedKeyValueList, Record};
 use slog_stream::Format as StreamFormat;
 use std::io;
-use std::net::{Shutdown};
+use std::net::Shutdown;
 use std::os::unix::net::UnixDatagram;
 use std::path::PathBuf;
 
@@ -59,9 +59,7 @@ impl<F> UDSDrain<UDSConnected, F>
         self.connection.socket.shutdown(Shutdown::Both)?;
         Ok(UDSDrain::<UDSDisconnected, F> {
             formatter: self.formatter,
-            connection: UDSDisconnected {
-                path_to_socket: self.connection.path_to_socket,
-            },
+            connection: UDSDisconnected { path_to_socket: self.connection.path_to_socket },
         })
     }
 }
