@@ -20,7 +20,9 @@ pub mod posix;
 mod time;
 mod format;
 mod serializers;
-mod drains;
+mod uds_drain;
+mod udp_drain;
+mod tcp_drain;
 
 pub use self::config::*;
 pub use self::format::*;
@@ -28,7 +30,9 @@ pub use self::posix::{get_pid, get_process_name, get_host_name};
 pub use self::serializers::*;
 pub use self::syslog::*;
 pub use self::time::*;
-pub use self::drains::*;
+pub use self::uds_drain::*;
+pub use self::udp_drain::*;
+pub use self::udp_drain::*;
 
 
 /// Entry point to any further syslog configuration
