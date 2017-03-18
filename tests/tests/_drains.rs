@@ -5,7 +5,7 @@ fn uds_drain_rfc3164_minimal() {
                  HeaderRFC3164Minimal,
                  MessageKSV,
                  dest,
-                 "Test message RFC3164 minimal");
+                 "UDS Test message RFC3164 MINIMAL KSV");
 }
 
 #[test]
@@ -16,7 +16,7 @@ fn uds_drain_rfc3164_full() {
             HeaderRFC3164<Ts3164Local>,
             MessageKSV,
             dest,
-            "Test message RFC3164 full"
+            "UDS Test message RFC3164 TS3164 LOCAL KSV"
         );
 }
 
@@ -28,7 +28,7 @@ fn uds_drain_rfc5424() {
             HeaderRFC3164<TsIsoLocal>,
             MessageRFC5424,
             dest,
-            "Test message RFC5424 Native"
+            "UDS Test message RFC5424 ISO LOCAL NATIVE"
         );
 }
 
@@ -44,6 +44,54 @@ fn udp_drain_rfc3164_minimal() {
             HeaderRFC3164Minimal,
             MessageKSV,
             dest,
-            "Test message RFC3164 minimal"
+            "UDP Test message RFC3164 MINIMAL KSV"
         );
+}
+
+#[test]
+fn tcp_drain_rfc3164_iso_utc() {
+    let dest = "syslog-ng:10601"
+        .to_socket_addrs()
+        .expect("Unable to resolve host, check that syslog-ng Docker service is up")
+        .collect::<Vec<_>>()
+        [0];
+    logger_emit!(
+        UDPDrain,
+        HeaderRFC3164<TsIsoUtc>,
+        MessageKSV,
+        dest,
+        "TCP Test message RFC3164 ISO UTC KSV"
+    );
+}
+
+#[test]
+fn tcp_drain_rfc3164_ts3164_utc() {
+    let dest = "syslog-ng:10601"
+        .to_socket_addrs()
+        .expect("Unable to resolve host, check that syslog-ng Docker service is up")
+        .collect::<Vec<_>>()
+        [0];
+    logger_emit!(
+        UDPDrain,
+        HeaderRFC3164<Ts3164Utc>,
+        MessageKSV,
+        dest,
+        "TCP Test message RFC3164 TS3164 UTC KSV"
+    );
+}
+
+#[test]
+fn tcp_drain_rfc5424_iso_utc() {
+    let dest = "syslog-ng:10601"
+        .to_socket_addrs()
+        .expect("Unable to resolve host, check that syslog-ng Docker service is up")
+        .collect::<Vec<_>>()
+        [0];
+    logger_emit!(
+        UDPDrain,
+        HeaderRFC3164<TsIsoUtc>,
+        MessageRFC5424,
+        dest,
+        "TCP Test message RFC5424 ISO UTC NATIVE"
+    );
 }

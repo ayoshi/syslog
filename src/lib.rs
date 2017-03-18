@@ -33,6 +33,7 @@ pub use self::time::*;
 pub use self::uds_drain::*;
 pub use self::udp_drain::*;
 pub use self::udp_drain::*;
+pub use self::tcp_drain::*;
 
 
 /// Entry point to any further syslog configuration

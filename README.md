@@ -26,6 +26,14 @@
 
 ### Running integration test suite in docker
 
+Run testsuite on live syslog instances
+
 ```
 docker-compose -f docker/docker-compose.yml up --abort-on-container-exit
+```
+
+Parse syslog-ng messages.json for all messages
+
+```
+docker-compose -f docker/docker-compose.yml run rust cat /syslog-ng/messages.json | jq --slurp '.[] | .MESSAGE'
 ```

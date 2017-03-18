@@ -1,79 +1,87 @@
-// use slog::{Drain, OwnedKeyValueList, Record};
-// use slog_stream::Format as StreamFormat;
-// use std::io;
-// use std::net::{Shutdown, UdpSocket, TcpStream, SocketAddr};
-// use std::os::unix::net::UnixDatagram;
-// use std::path::PathBuf;
+use slog::{Drain, OwnedKeyValueList, Record};
+use slog_stream::Format as StreamFormat;
+use std::io;
+use std::io::Write;
+use std::net::{Shutdown, TcpStream, SocketAddr};
+use std::sync::{Arc, Mutex};
 
-// /// State: UDPConnected for the UDP drain
-// #[derive(Debug)]
-// pub struct UDPDisconnected {
-//     addr: SocketAddr,
-// }
+/// State: TCPConnected for the TCP drain
+#[derive(Debug)]
+pub struct TCPDisconnected {
+    addr: SocketAddr,
+}
 
-// /// State: UDPConnected for the UDP drain
-// #[derive(Debug)]
-// pub struct UDPConnected {
-//     socket: UdpSocket,
-//     addr: SocketAddr,
-// }
+/// State: TCPConnected for the TCP drain
+#[derive(Debug)]
+pub struct TCPConnected {
+    stream: Arc<Mutex<TcpStream>>,
+    addr: SocketAddr,
+}
 
 
-// /// UDP socket drain
-// #[derive(Debug)]
-// pub struct UDPDrain<C, F>
-//     where F: StreamFormat
-// {
-//     formatter: F,
-//     connection: C,
-// }
+/// TCP drain
+#[derive(Debug)]
+pub struct TCPDrain<C, F>
+    where F: StreamFormat
+{
+    formatter: F,
+    connection: C,
+}
 
-// impl<F> UDPDrain<UDPDisconnected, F>
-//     where F: StreamFormat
-// {
-//     /// UDPDrain constructor
-//     pub fn new(addr: SocketAddr, formatter: F) -> UDPDrain<UDPDisconnected, F> {
-//         UDPDrain::<UDPDisconnected, F> {
-//             formatter: formatter,
-//             connection: UDPDisconnected { addr: addr },
-//         }
-//     }
+impl<F> TCPDrain<TCPDisconnected, F>
+    where F: StreamFormat
+{
+    /// TCPDrain constructor
+    pub fn new(addr: SocketAddr, formatter: F) -> TCPDrain<TCPDisconnected, F> {
+        TCPDrain::<TCPDisconnected, F> {
+            formatter: formatter,
+            connection: TCPDisconnected { addr: addr },
+        }
+    }
 
-//     /// Connect UDP socket
-//     pub fn connect(self) -> io::Result<UDPDrain<UDPConnected, F>> {
-//         let socket = UdpSocket::bind("0.0.0.0:0")?;
-//         Ok(UDPDrain::<UDPConnected, F> {
-//             formatter: self.formatter,
-//             connection: UDPConnected {
-//                 socket: socket,
-//                 addr: self.connection.addr,
-//             },
-//         })
-//     }
-// }
+    /// Connect TCP stream
+    pub fn connect(self) -> io::Result<TCPDrain<TCPConnected, F>> {
+        let stream = TcpStream::connect(self.connection.addr)?;
+        Ok(TCPDrain::<TCPConnected, F> {
+            formatter: self.formatter,
+            connection: TCPConnected {
+                stream: Arc::new(Mutex::new(stream)),
+                addr: self.connection.addr,
+            },
+        })
+    }
+}
 
-// impl<F> UDPDrain<UDPConnected, F>
-//     where F: StreamFormat
-// {
-//     /// Disconnect UDP socket, completing all operations
-//     pub fn disconnect(&mut self) -> io::Result<()> {
-//         Ok(()) // TODO: Fix disconnection
-//     }
-// }
+impl<F> TCPDrain<TCPConnected, F>
+    where F: StreamFormat
+{
+    /// Disconnect TCP stream, completing all operations
+    pub fn disconnect(self) -> io::Result<TCPDrain<TCPDisconnected, F>> {
+        self.connection.stream.lock()
+            .map_err(|_| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
+            .and_then(|s| s.shutdown(Shutdown::Both))?;
+        Ok(TCPDrain::<TCPDisconnected, F> {
+            formatter: self.formatter,
+            connection: TCPDisconnected { addr: self.connection.addr },
+        })
+    }
+}
 
-// impl<F> Drain for UDPDrain<UDPConnected, F>
-//     where F: StreamFormat
-// {
-//     type Error = io::Error;
+impl<F> Drain for TCPDrain<TCPConnected, F>
+    where F: StreamFormat
+{
+    type Error = io::Error;
 
-//     fn log(&self, info: &Record, logger_values: &OwnedKeyValueList) -> io::Result<()> {
+    fn log(&self, info: &Record, logger_values: &OwnedKeyValueList) -> io::Result<()> {
 
-//         // Should be thread safe - redo the buffering
-//         let mut buf = Vec::<u8>::with_capacity(4096);
+        // Should be thread safe - redo the buffering
+        let mut buf = Vec::<u8>::with_capacity(4096);
 
-//         self.formatter.format(&mut buf, info, logger_values)?;
-//         self.connection.socket.send_to(buf.as_slice(), &self.connection.addr)?;
+        self.formatter.format(&mut buf, info, logger_values)?;
+        self.connection.stream.lock()
+            .map_err(|_| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
+            .and_then(|mut s| s.write_all(buf.as_slice()))?;
 
-//         Ok(())
-//     }
-// }
+        Ok(())
+    }
+}
