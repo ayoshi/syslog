@@ -1,6 +1,6 @@
 #[test]
-fn uds_drain_rfc3164_minimal() {
-    let dest = PathBuf::from("/syslog-ng/socket_dgram");
+fn uds_drain_rfc3164_ksv_minimal() {
+    let dest = PathBuf::from("/syslog-ng/socket_dgram_rfc3164_ksv");
     logger_emit!(UDSDrain,
                  HeaderRFC3164Minimal,
                  MessageKSV,
@@ -9,8 +9,8 @@ fn uds_drain_rfc3164_minimal() {
 }
 
 #[test]
-fn uds_drain_rfc3164_full() {
-    let dest = PathBuf::from("/syslog-ng/socket_dgram");
+fn uds_drain_rfc3164_ksv_full() {
+    let dest = PathBuf::from("/syslog-ng/socket_dgram_rfc3164_ksv");
     logger_emit!(
             UDSDrain,
             HeaderRFC3164<Ts3164Local>,
@@ -21,8 +21,8 @@ fn uds_drain_rfc3164_full() {
 }
 
 #[test]
-fn uds_drain_rfc5424() {
-    let dest = PathBuf::from("/syslog-ng/socket_dgram");
+fn uds_drain_rfc5424_native() {
+    let dest = PathBuf::from("/syslog-ng/socket_dgram_rfc5424_native");
     logger_emit!(
             UDSDrain,
             HeaderRFC3164<TsIsoLocal>,
@@ -33,7 +33,7 @@ fn uds_drain_rfc5424() {
 }
 
 #[test]
-fn udp_drain_rfc3164_minimal() {
+fn udp_drain_rfc3164_ksv_minimal() {
     let dest = "syslog-ng:10514"
         .to_socket_addrs()
         .expect("Unable to resolve host, check that syslog-ng Docker service is up")
@@ -49,7 +49,7 @@ fn udp_drain_rfc3164_minimal() {
 }
 
 #[test]
-fn tcp_drain_rfc3164_iso_utc() {
+fn tcp_drain_rfc3164_ksv_utc() {
     let dest = "syslog-ng:10601"
         .to_socket_addrs()
         .expect("Unable to resolve host, check that syslog-ng Docker service is up")
@@ -66,7 +66,7 @@ fn tcp_drain_rfc3164_iso_utc() {
 
 #[test]
 fn tcp_drain_rfc3164_ts3164_utc() {
-    let dest = "syslog-ng:10601"
+    let dest = "syslog-ng:20601"
         .to_socket_addrs()
         .expect("Unable to resolve host, check that syslog-ng Docker service is up")
         .collect::<Vec<_>>()
@@ -82,7 +82,7 @@ fn tcp_drain_rfc3164_ts3164_utc() {
 
 #[test]
 fn tcp_drain_rfc5424_iso_utc() {
-    let dest = "syslog-ng:10601"
+    let dest = "syslog-ng:22601"
         .to_socket_addrs()
         .expect("Unable to resolve host, check that syslog-ng Docker service is up")
         .collect::<Vec<_>>()

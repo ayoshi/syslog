@@ -18,7 +18,15 @@ RUN mkdir /syslog-ng
 VOLUME /syslog-ng
 
 EXPOSE 10514/udp
+EXPOSE 11514/udp
+EXPOSE 20514/udp
+EXPOSE 21514/udp
+EXPOSE 22514/udp
 EXPOSE 10601/tcp
+EXPOSE 11601/tcp
+EXPOSE 20601/tcp
+EXPOSE 21601/tcp
+EXPOSE 22601/tcp
 EXPOSE 16514/tcp
 
 ENTRYPOINT ["/usr/sbin/syslog-ng", "-F"]
