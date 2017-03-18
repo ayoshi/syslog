@@ -80,7 +80,7 @@ impl<F> Drain for TCPDrain<TCPConnected, F>
         self.formatter.format(&mut buf, info, logger_values)?;
         self.connection.stream.lock()
             .map_err(|_| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
-            .and_then(|mut s| s.write_all(buf.as_slice()))?;
+            .and_then(|mut s| s.write(buf.as_slice()))?;
 
         Ok(())
     }
