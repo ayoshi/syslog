@@ -89,7 +89,7 @@ fn tcp_drain_rfc5424_iso_utc() {
         [0];
     logger_emit!(
         UDPDrain,
-        HeaderRFC3164<TsIsoUtc>,
+        HeaderRFC5424<TsIsoUtc>,
         MessageRFC5424,
         dest,
         "TCP Test message RFC5424 ISO UTC NATIVE"
