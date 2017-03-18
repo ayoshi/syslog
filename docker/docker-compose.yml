@@ -17,7 +17,6 @@ services:
     privileged: true
     cap_add:
     - ALL
-    command: "rm -f /syslog-ng/messages.json ; /usr/sbin/syslog-ng -F"
 
   #### test container
   rust:
@@ -31,7 +30,7 @@ services:
       - ..:/src
       - rust:/root/.cargo
       - local:/local
-    command: "cargo test --features full-integration-env"
+    command: 'cargo test --features full-integration-env'
     # Separate target dir under docker
     environment:
       - CARGO_TARGET_DIR=/local/target
