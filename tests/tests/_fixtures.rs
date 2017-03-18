@@ -25,8 +25,7 @@ macro_rules! logger_emit(
         let introspection_drain = TestDrain::new(buffer.io(), formatter!($header, $message));
 
         let test_drain = $drain::new($dest, formatter!($header, $message))
-            .connect()
-            .unwrap();
+            .connect().expect("couldn't connect to socket");
 
         println!("{:?}", test_drain);
         let logger = Logger::root(duplicate(introspection_drain, test_drain).fuse(),

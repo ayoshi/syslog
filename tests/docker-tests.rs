@@ -4,7 +4,6 @@ extern crate slog_syslog_ng;
 
 #[macro_use]
 extern crate slog;
-
 extern crate slog_stream;
 
 #[cfg(test)]
