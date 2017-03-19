@@ -56,7 +56,7 @@ pub trait FormatHeader {
     fn format(&self, io: &mut io::Write, record: &Record) -> io::Result<()>;
 }
 
-/// Minimal RFC3164 Header
+/// Minimal RFC3164 Header - used only for logging to UNIX socket
 #[derive(Debug)]
 pub struct HeaderRFC3164Minimal {
     fields: HeaderFields,

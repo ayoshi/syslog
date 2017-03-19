@@ -56,7 +56,7 @@ fn tcp_drain_rfc3164_ksv_utc() {
         .collect::<Vec<_>>()
         [0];
     logger_emit!(
-        UDPDrain,
+        TCPDrain,
         HeaderRFC3164<TsIsoUtc>,
         MessageKSV,
         dest,
@@ -72,7 +72,7 @@ fn tcp_drain_rfc3164_ts3164_utc() {
         .collect::<Vec<_>>()
         [0];
     logger_emit!(
-        UDPDrain,
+        TCPDrain,
         HeaderRFC3164<Ts3164Utc>,
         MessageKSV,
         dest,
@@ -88,7 +88,7 @@ fn tcp_drain_rfc5424_iso_utc() {
         .collect::<Vec<_>>()
         [0];
     logger_emit!(
-        UDPDrain,
+        TCPDrain,
         HeaderRFC5424<TsIsoUtc>,
         MessageRFC5424,
         dest,
