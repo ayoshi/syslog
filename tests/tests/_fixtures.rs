@@ -7,18 +7,23 @@ macro_rules! formatter(
 
 // Emit message Fixture
 macro_rules! logger_emit(
-    ($drain: ident, $header: ty, $message: ty, $dest: expr, $event: expr) => {{
+    ($drain: ident, $format: ident, $dest: expr, $event: expr) => {{
 
         let buffer = TestIoBuffer::new(1024);
-        let introspection_drain = TestDrain::new(buffer.io(), formatter!($header, $message));
+        let introspection_drain = TestDrain::new(buffer.io(), formatter!($format));
 
-        let test_drain = $drain::new($dest, formatter!($header, $message))
+        let test_drain = $drain::new($dest, formatter!($format))
             .connect().expect("couldn't connect to socket");
 
         println!("{:?}", test_drain);
+
         let logger = Logger::root(duplicate(introspection_drain, test_drain).fuse(),
                                   o!("lk1" => "lv1", "lk2" => "lv2"));
-            info!(logger, $event; "mk1" => "mv1", "mk2" => "mv2")
+
+        info!(logger, $event; "mk1" => "mv1", "mk2" => "mv2");
+
+        println!("{:?}", buffer.as_vec());
+        println!("{:?}", buffer.as_string());
     }});
 
 type SharedIoVec = Arc<Mutex<Vec<u8>>>;

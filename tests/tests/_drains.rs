@@ -2,8 +2,7 @@
 fn uds_drain_rfc3164_ksv_minimal() {
     let dest = PathBuf::from("/syslog-ng/socket_dgram_rfc3164_ksv");
     logger_emit!(UDSDrain,
-                 HeaderRFC3164Minimal,
-                 MessageKSV,
+                 Rfc3164MinimalKsv,
                  dest,
                  "UDS Test message RFC3164 MINIMAL KSV");
 }
@@ -11,25 +10,19 @@ fn uds_drain_rfc3164_ksv_minimal() {
 #[test]
 fn uds_drain_rfc3164_ksv_full() {
     let dest = PathBuf::from("/syslog-ng/socket_dgram_rfc3164_ksv");
-    logger_emit!(
-            UDSDrain,
-            HeaderRFC3164<Ts3164Local>,
-            MessageKSV,
-            dest,
-            "UDS Test message RFC3164 TS3164 LOCAL KSV"
-        );
+    logger_emit!(UDSDrain,
+                 Rfc3164KsvTs3164Local,
+                 dest,
+                 "UDS Test message RFC3164 TS3164 LOCAL KSV");
 }
 
 #[test]
 fn uds_drain_rfc5424_native() {
     let dest = PathBuf::from("/syslog-ng/socket_dgram_rfc5424_native");
-    logger_emit!(
-            UDSDrain,
-            HeaderRFC3164<TsIsoLocal>,
-            MessageRFC5424,
-            dest,
-            "UDS Test message RFC5424 ISO LOCAL NATIVE"
-        );
+    logger_emit!(UDSDrain,
+                 Rfc5424NativeTsIsoLocal,
+                 dest,
+                 "UDS Test message RFC5424 ISO LOCAL NATIVE");
 }
 
 #[test]
@@ -39,13 +32,10 @@ fn udp_drain_rfc3164_ksv_minimal() {
         .expect("Unable to resolve host, check that syslog-ng Docker service is up")
         .collect::<Vec<_>>()
                    [0];
-    logger_emit!(
-            UDPDrain,
-            HeaderRFC3164Minimal,
-            MessageKSV,
-            dest,
-            "UDP Test message RFC3164 MINIMAL KSV"
-        );
+    logger_emit!(UDPDrain,
+                 Rfc3164MinimalKsv,
+                 dest,
+                 "UDP Test message RFC3164 MINIMAL KSV");
 }
 
 #[test]
@@ -54,14 +44,11 @@ fn tcp_drain_rfc3164_ksv_utc() {
         .to_socket_addrs()
         .expect("Unable to resolve host, check that syslog-ng Docker service is up")
         .collect::<Vec<_>>()
-        [0];
-    logger_emit!(
-        TCPDrain,
-        HeaderRFC3164<TsIsoUtc>,
-        MessageKSV,
-        dest,
-        "TCP Test message RFC3164 ISO UTC KSV"
-    );
+                   [0];
+    logger_emit!(TCPDrain,
+                 Rfc3164KsvTsIsoUtc,
+                 dest,
+                 "TCP Test message RFC3164 ISO UTC KSV");
 }
 
 #[test]
@@ -70,14 +57,11 @@ fn tcp_drain_rfc3164_ts3164_utc() {
         .to_socket_addrs()
         .expect("Unable to resolve host, check that syslog-ng Docker service is up")
         .collect::<Vec<_>>()
-        [0];
-    logger_emit!(
-        TCPDrain,
-        HeaderRFC3164<Ts3164Utc>,
-        MessageKSV,
-        dest,
-        "TCP Test message RFC3164 TS3164 UTC KSV"
-    );
+                   [0];
+    logger_emit!(TCPDrain,
+                 Rfc3164KsvTs3164Utc,
+                 dest,
+                 "TCP Test message RFC3164 TS3164 UTC KSV");
 }
 
 #[test]
@@ -86,12 +70,9 @@ fn tcp_drain_rfc5424_iso_utc() {
         .to_socket_addrs()
         .expect("Unable to resolve host, check that syslog-ng Docker service is up")
         .collect::<Vec<_>>()
-        [0];
-    logger_emit!(
-        TCPDrain,
-        HeaderRFC5424<TsIsoUtc>,
-        MessageRFC5424,
-        dest,
-        "TCP Test message RFC5424 ISO UTC NATIVE"
-    );
+                   [0];
+    logger_emit!(TCPDrain,
+                 Rfc5424NativeTsIsoUtc,
+                 dest,
+                 "TCP Test message RFC5424 ISO UTC NATIVE");
 }
