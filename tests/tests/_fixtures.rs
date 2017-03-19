@@ -1,28 +1,3 @@
-// All invariants as types
-// 1. Shortens tests
-// 2. Helps to catch untested invariants as compiler warnings
-
-// Message Invariants
-type Rfc3164MinimalKsv = SyslogFormat<HeaderRFC3164Minimal, MessageKSV>;
-type Rfc3164Ksv<T> = SyslogFormat<HeaderRFC3164<T>, MessageKSV>;
-type Rfc5424Ksv<T> = SyslogFormat<HeaderRFC5424<T>, MessageKSV>;
-type Rfc5424Native<T> = SyslogFormat<HeaderRFC5424<T>, MessageRFC5424>;
-
-// Cartesian product
-
-// RFC3164
-type Rfc3164KsvTs3164Local = Rfc3164Ksv<Ts3164Local>;
-type Rfc3164KsvTs3164Utc = Rfc3164Ksv<Ts3164Utc>;
-type Rfc3164KsvTsIsoLocal = Rfc3164Ksv<TsIsoLocal>;
-type Rfc3164KsvTsIsoUtc = Rfc3164Ksv<TsIsoUtc>;
-
-// RFC 5424
-type Rfc5424KsvTsIsoLocal = Rfc5424Ksv<TsIsoLocal>;
-type Rfc5424KsvTsIsoUtc = Rfc5424Ksv<TsIsoUtc>;
-type Rfc5424NativeTsIsoLocal = Rfc5424Native<TsIsoLocal>;
-type Rfc5424NativeTsIsoUtc = Rfc5424Native<TsIsoUtc>;
-
-
 // Formater fixture
 macro_rules! formatter(
         ($format: ident) => (

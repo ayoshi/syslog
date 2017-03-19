@@ -7,7 +7,7 @@ use slog_stream::Format as StreamFormat;
 use std::io;
 use std::marker::PhantomData;
 use syslog::{Facility, Priority};
-use time::{FormatTimestamp, OmitTimestamp};
+use time::{FormatTimestamp, OmitTimestamp, Ts3164Local, Ts3164Utc, TsIsoLocal, TsIsoUtc};
 
 // Write separator
 macro_rules! write_separator { ($io:expr) => ( write!($io, " ") ) }
@@ -17,7 +17,6 @@ macro_rules! write_nilvalue { ($io:expr) => ( write!($io, "-") ) }
 
 // Write end of message
 macro_rules! write_eom { ($io:expr) => ( write!($io, "\0") ) }
-
 
 /// Syslog header fields
 #[derive(Debug)]
@@ -76,14 +75,11 @@ pub struct HeaderRFC5424<T> {
     _timestamp: PhantomData<T>,
 }
 
-impl FormatHeader for HeaderRFC3164Minimal
-{
+impl FormatHeader for HeaderRFC3164Minimal {
     type Timestamp = OmitTimestamp;
 
     fn new(fields: HeaderFields) -> Self {
-        HeaderRFC3164Minimal {
-            fields: fields,
-        }
+        HeaderRFC3164Minimal { fields: fields }
     }
 
     fn format(&self, io: &mut io::Write, record: &Record) -> io::Result<()> {
@@ -283,6 +279,22 @@ impl FormatMessage for MessageKSV {
     }
 }
 
+// SyslogFormat invariants
+
+/// RFC3164 message formatter without timestamp and hostname with KSV serialized data
+/// for logging to Unix domain socket only
+pub type Rfc3164MinimalKsv = SyslogFormat<HeaderRFC3164Minimal, MessageKSV>;
+
+/// RFC3164 message formatter with KSV serialized data
+pub type Rfc3164Ksv<T> = SyslogFormat<HeaderRFC3164<T>, MessageKSV>;
+
+/// RFC5424 message formatter with KSV serialized data
+pub type Rfc5424Ksv<T> = SyslogFormat<HeaderRFC5424<T>, MessageKSV>;
+
+/// RFC5424 message formatter with RFC5424 structured data
+pub type Rfc5424Native<T> = SyslogFormat<HeaderRFC5424<T>, MessageRFC5424>;
+
+
 /// Generic Syslog Formatter
 #[derive(Debug)]
 pub struct SyslogFormat<H, M>
@@ -345,3 +357,33 @@ impl<H, M> StreamFormat for SyslogFormat<H, M>
         Ok(())
     }
 }
+
+// SyslogFormat invariants with timestamps
+
+// RFC3164
+
+/// RFC13614, KSV, Local TZ
+pub type Rfc3164KsvTs3164Local = Rfc3164Ksv<Ts3164Local>;
+
+/// RFC13614, KSV, UTC
+pub type Rfc3164KsvTs3164Utc = Rfc3164Ksv<Ts3164Utc>;
+
+/// RFC13614, KSV, ISO8601, Local TZ
+pub type Rfc3164KsvTsIsoLocal = Rfc3164Ksv<TsIsoLocal>;
+
+/// RFC13614, KSV, ISO8601, UTC
+pub type Rfc3164KsvTsIsoUtc = Rfc3164Ksv<TsIsoUtc>;
+
+// RFC 5424
+
+/// RFC5424, KSV, Local TZ
+pub type Rfc5424KsvTsIsoLocal = Rfc5424Ksv<TsIsoLocal>;
+
+/// RFC5424, KSV, UTC
+pub type Rfc5424KsvTsIsoUtc = Rfc5424Ksv<TsIsoUtc>;
+
+/// RFC5424, Local TZ
+pub type Rfc5424NativeTsIsoLocal = Rfc5424Native<TsIsoLocal>;
+
+/// RFC5424, UTC
+pub type Rfc5424NativeTsIsoUtc = Rfc5424Native<TsIsoUtc>;
