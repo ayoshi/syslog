@@ -2,7 +2,6 @@ use chrono;
 use std::io;
 use std::marker::PhantomData;
 
-
 /// Timestamp in local TZ
 #[derive(Debug)]
 pub struct TimestampLocal {}
@@ -29,6 +28,20 @@ pub trait FormatTimestamp {
     fn format(&mut io::Write) -> io::Result<()>;
 }
 
+// All timestamp Invariants
+
+/// ISO8601(RFC339) timestamp in UTC
+pub type TsIsoUtc = Timestamp<TimestampISO8601, TimestampUTC>;
+
+/// ISO8601(RFC339) timestamp in local TZ
+pub type TsIsoLocal = Timestamp<TimestampISO8601, TimestampLocal>;
+
+/// RFC3164 timestamp in UTC
+pub type Ts3164Utc = Timestamp<TimestampRFC3164, TimestampUTC>;
+
+/// RFC3164 timestamp in local TZ
+pub type Ts3164Local = Timestamp<TimestampRFC3164, TimestampLocal>;
+
 /// Timestamp
 #[derive(Default, Debug)]
 pub struct Timestamp<TZ, TF> {
@@ -36,25 +49,25 @@ pub struct Timestamp<TZ, TF> {
     _tf: PhantomData<TF>,
 }
 
-impl FormatTimestamp for Timestamp<TimestampRFC3164, TimestampLocal> {
+impl FormatTimestamp for Ts3164Local {
     fn format(io: &mut io::Write) -> io::Result<()> {
         write!(io, "{}", chrono::Local::now().format("%b %d %T"))
     }
 }
 
-impl FormatTimestamp for Timestamp<TimestampRFC3164, TimestampUTC> {
+impl FormatTimestamp for Ts3164Utc {
     fn format(io: &mut io::Write) -> io::Result<()> {
         write!(io, "{}", chrono::UTC::now().format("%b %d %T"))
     }
 }
 
-impl FormatTimestamp for Timestamp<TimestampISO8601, TimestampLocal> {
+impl FormatTimestamp for TsIsoLocal {
     fn format(io: &mut io::Write) -> io::Result<()> {
         write!(io, "{}", chrono::Local::now().to_rfc3339())
     }
 }
 
-impl FormatTimestamp for Timestamp<TimestampISO8601, TimestampUTC> {
+impl FormatTimestamp for TsIsoUtc {
     fn format(io: &mut io::Write) -> io::Result<()> {
         write!(io, "{}", chrono::UTC::now().to_rfc3339())
     }

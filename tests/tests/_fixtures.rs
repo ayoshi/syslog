@@ -2,12 +2,6 @@
 // 1. Shortens tests
 // 2. Helps to catch untested invariants as compiler warnings
 
-// All timestamp Invariants
-type TsIsoUtc = Timestamp<TimestampISO8601, TimestampUTC>;
-type TsIsoLocal = Timestamp<TimestampISO8601, TimestampLocal>;
-type Ts3164Utc = Timestamp<TimestampRFC3164, TimestampUTC>;
-type Ts3164Local = Timestamp<TimestampRFC3164, TimestampLocal>;
-
 // Message Invariants
 type Rfc3164MinimalKsv = SyslogFormat<HeaderRFC3164Minimal, MessageKSV>;
 type Rfc3164Ksv<T> = SyslogFormat<HeaderRFC3164<T>, MessageKSV>;
