@@ -8,12 +8,33 @@ type TsIsoLocal = Timestamp<TimestampISO8601, TimestampLocal>;
 type Ts3164Utc = Timestamp<TimestampRFC3164, TimestampUTC>;
 type Ts3164Local = Timestamp<TimestampRFC3164, TimestampLocal>;
 
+// Message Invariants
+type FormatRfc3164MinimalKsv = SyslogFormat<HeaderRFC3164Minimal, MessageKSV>;
+type FormatRfc3164Ksv<T> = SyslogFormat<HeaderRFC3164<T>, MessageKSV>;
+type FormatRfc5424Ksv<T> = SyslogFormat<HeaderRFC5424<T>, MessageKSV>;
+type FormatRfc5424Native<T> = SyslogFormat<HeaderRFC5424<T>, MessageRFC5424>;
+
+// Cartesian product
+
+// RFC3164
+type FormatRfc3164KsvTs3164Local = FormatRfc3164Ksv<Ts3164Local>;
+type FormatRfc3164KsvTs3164Utc = FormatRfc3164Ksv<Ts3164Utc>;
+type FormatRfc3164KsvTsIsoLocal = FormatRfc3164Ksv<TsIsoLocal>;
+type FormatRfc3164KsvTsIsoUtc = FormatRfc3164Ksv<TsIsoUtc>;
+
+// RFC 5424
+type FormatRfc5424KsvTsIsoLocal = FormatRfc5424Ksv<TsIsoLocal>;
+type FormatRfc5424KsvTsIsoUtc = FormatRfc5424Ksv<TsIsoUtc>;
+type FormatRfc5424NativeTsIsoLocal = FormatRfc5424Native<TsIsoLocal>;
+type FormatRfc5424NativeTsIsoUtc = FormatRfc5424Native<TsIsoUtc>;
+
+
 // TODO Add all header x timestamp invariant types
 
 // Formater fixture
 macro_rules! formatter(
-        ($header: ty, $message: ty) => (
-            SyslogFormat::<$header, $message>::new(
+        ($format: ident) => (
+            $format::new(
                 None, Some("test" .to_owned()), 12345, Facility::LOG_USER)
     ));
 
