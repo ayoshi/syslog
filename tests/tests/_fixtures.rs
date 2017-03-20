@@ -1,47 +1,3 @@
-// Formater fixture
-macro_rules! formatter(
-        ($format: ident) => (
-            $format::new(
-                None, Some("test" .to_owned()), 12345, Facility::LOG_USER)
-    ));
-
-// Emit message Fixture
-macro_rules! logger_emit(
-    ($drain: ident, $format: ident, $dest: expr, $event: expr) => {{
-
-        let buffer = TestIoBuffer::new(1024);
-        let introspection_drain = TestDrain::new(buffer.io(), formatter!($format));
-
-        let test_drain = $drain::new($dest.clone(), formatter!($format))
-            .connect().expect("couldn't connect to socket");
-
-        let logger = Logger::root(duplicate(introspection_drain, test_drain).fuse(),
-                                  o!("lk1" => "lv1", "lk2" => "lv2"));
-
-        info!(logger, $event; "mk1" => "mv1", "mk2" => "mv2");
-
-        println!("{:?}", buffer.as_vec());
-        println!("{:?}", buffer.as_string());
-        println!("{} -> {:?} -> {:?}", buffer.as_string(), buffer.as_vec(), $dest);
-    }});
-
-// Generate a test for a specific drain
-macro_rules! generate_drain_tests {
-    ($([$name:ident, $drain:ident, $format:ident, $path:expr]),*) =>
-        ($(
-            #[test]
-            fn $name() {
-                let dest = PathBuf::from($path);
-                let message = format!(
-                    "{} {} message to {}",
-                    stringify!($drain),
-                    stringify!($format),
-                    $path);
-                logger_emit!($drain, $format, dest, message);
-            }
-        )*)
-}
-
 type SharedIoVec = Arc<Mutex<Vec<u8>>>;
 
 // Test buffer to hold single message
@@ -117,4 +73,48 @@ fn emit_test_message_to_buffer<F>(formatter: F) -> TestIoBuffer
     let logger = Logger::root(test_drain.fuse(), o!("lk1" => "lv1", "lk2" => "lv2"));
     info!(logger, "Test message 1"; "mk1" => "mv1", "mk2" => "mv2" );
     return buffer;
+}
+
+// Formater fixture
+macro_rules! formatter(
+        ($format: ident) => (
+            $format::new(
+                None, Some("test" .to_owned()), 12345, Facility::LOG_USER)
+    ));
+
+// Emit message Fixture
+macro_rules! logger_emit(
+    ($drain: ident, $format: ident, $dest: expr, $event: expr) => {{
+
+        let buffer = TestIoBuffer::new(1024);
+        let introspection_drain = TestDrain::new(buffer.io(), formatter!($format));
+
+        let test_drain = $drain::new($dest.clone(), formatter!($format))
+            .connect().expect("couldn't connect to socket");
+
+        let logger = Logger::root(duplicate(introspection_drain, test_drain).fuse(),
+                                  o!("lk1" => "lv1", "lk2" => "lv2"));
+
+        info!(logger, $event; "mk1" => "mv1", "mk2" => "mv2");
+
+        println!("{:?}", buffer.as_vec());
+        println!("{:?}", buffer.as_string());
+        println!("{} -> {:?} -> {:?}", buffer.as_string(), buffer.as_vec(), $dest);
+    }});
+
+// Generate a test for a specific drain
+macro_rules! generate_drain_tests {
+    ($([$name:ident, $drain:ident, $format:ident, $path:expr]),*) =>
+        ($(
+            #[test]
+            fn $name() {
+                let dest = PathBuf::from($path);
+                let message = format!(
+                    "{} {} message to {}",
+                    stringify!($drain),
+                    stringify!($format),
+                    $path);
+                logger_emit!($drain, $format, dest, message);
+            }
+        )*)
 }
