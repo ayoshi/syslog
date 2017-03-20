@@ -37,3 +37,12 @@ Parse syslog-ng messages.json for all messages
 ```
 docker-compose -f docker/docker-compose.yml run rust cat /syslog-ng/messages.json | jq --slurp '.[] | .MESSAGE'
 ```
+
+Full clean integration test run
+
+```
+docker-compose -f docker/docker-compose.yml run syslog-ng rm /syslog-ng/messages.json
+docker-compose -f docker/docker-compose.yml stop
+docker-compose -f docker/docker-compose.yml run rust cargo clean
+docker-compose -f docker/docker-compose.yml run rust cargo test --features full-integration-env
+```
