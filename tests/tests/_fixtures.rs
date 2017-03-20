@@ -127,12 +127,12 @@ macro_rules! generate_udp_tests {
             fn $name() {
                 let dest = $addr
                     .to_socket_addrs()
-                    .expect(format!("Couldn't to connect to {}", $addr))
+                    .expect(format!("Couldn't to connect to {}", $addr).as_str())
                     .collect::<Vec<_>>()
                                 [0];
                 let message = format!(
                     "{} {} message to {}",
-                    stringify!($drain),
+                    stringify!(UDPDrain),
                     stringify!($format),
                     $addr);
                 logger_emit!(UDPDrain, $format, dest, message);
@@ -141,19 +141,19 @@ macro_rules! generate_udp_tests {
 }
 
 // Generate tests for TCP drain
-macro_rules! generate_udp_tests {
+macro_rules! generate_tcp_tests {
     ($([$name:ident, $format:ident, $addr:expr]),*) =>
         ($(
             #[test]
             fn $name() {
                 let dest = $addr
                     .to_socket_addrs()
-                    .expect(format!("Couldn't to connect to {}", $addr))
+                    .expect(format!("Couldn't to connect to {}", $addr).as_str())
                     .collect::<Vec<_>>()
                     [0];
                 let message = format!(
                     "{} {} message to {}",
-                    stringify!($drain),
+                    stringify!(TCPDrain),
                     stringify!($format),
                     $addr);
                 logger_emit!(TCPDrain, $format, dest, message);

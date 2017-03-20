@@ -1,14 +1,3 @@
-//fn formatter_rfc3164_minimal_ksv()
-//fn formatter_rfc3164_ksv_ts3164_local()
-//fn formatter_rfc3164_ksv_ts3164_utc()
-//fn formatter_rfc3164_ksv_tsiso_local()
-//fn formatter_rfc3164_ksv_tsiso_utc()
-//fn formatter_rfc5424_ksv_tsiso_local()
-//fn formatter_rfc5424_ksv_tsiso_utc()
-//fn formatter_rfc5424_native_tsiso_local()
-//fn formatter_rfc5424_native_tsiso_utc()
-
-
 generate_uds_tests!([uds_rfc3164_minimal_ksv,
                      Rfc3164MinimalKsv,
                      "/syslog-ng/socket_dgram_rfc3164_ksv"],
@@ -36,6 +25,16 @@ generate_uds_tests!([uds_rfc3164_minimal_ksv,
                     [uds_rfc5424_tsiso_utc_native,
                      Rfc5424NativeTsIsoUtc,
                      "/syslog-ng/socket_dgram_rfc5424_native"]);
+
+generate_udp_tests!([udp_rfc3164_minimal_ksv, Rfc3164MinimalKsv, "syslog-ng:10514"],
+                    [udp_rfc3164_ts3164_local_ksv, Rfc3164KsvTs3164Local, "syslog-ng:10514"],
+                    [udp_rfc3164_ts3164_utc_ksv, Rfc3164KsvTs3164Utc, "syslog-ng:10514"],
+                    [udp_rfc3164_tsiso_local_ksv, Rfc3164KsvTsIsoLocal, "syslog-ng:10514"],
+                    [udp_rfc3164_tsiso_utc_ksv, Rfc3164KsvTsIsoUtc, "syslog-ng:10514"],
+                    [udp_rfc5424_tsiso_local_ksv, Rfc5424KsvTsIsoLocal, "syslog-ng:20514"],
+                    [udp_rfc5424_tsiso_utc_ksv, Rfc5424KsvTsIsoUtc, "syslog-ng:20514"],
+                    [udp_rfc5424_tsiso_local_native, Rfc5424NativeTsIsoLocal, "syslog-ng:22514"],
+                    [udp_rfc5424_tsiso_utc_native, Rfc5424NativeTsIsoUtc, "syslog-ng:22514"]);
 
 // RFC3164
 
