@@ -102,19 +102,61 @@ macro_rules! logger_emit(
         println!("{} -> {:?} -> {:?}", buffer.as_string(), buffer.as_vec(), $dest);
     }});
 
-// Generate a test for a specific drain
-macro_rules! generate_drain_tests {
-    ($([$name:ident, $drain:ident, $format:ident, $path:expr]),*) =>
+// Generate tests for unix socket drain
+macro_rules! generate_uds_tests {
+    ($([$name:ident, $format:ident, $path:expr]),*) =>
         ($(
             #[test]
             fn $name() {
                 let dest = PathBuf::from($path);
                 let message = format!(
                     "{} {} message to {}",
-                    stringify!($drain),
+                    stringify!(UDSDrain),
                     stringify!($format),
                     $path);
-                logger_emit!($drain, $format, dest, message);
+                logger_emit!(UDSDrain, $format, dest, message);
+            }
+        )*)
+}
+
+// Generate tests for UDP drain
+macro_rules! generate_udp_tests {
+    ($([$name:ident, $format:ident, $addr:expr]),*) =>
+        ($(
+            #[test]
+            fn $name() {
+                let dest = $addr
+                    .to_socket_addrs()
+                    .expect(format!("Couldn't to connect to {}", $addr))
+                    .collect::<Vec<_>>()
+                                [0];
+                let message = format!(
+                    "{} {} message to {}",
+                    stringify!($drain),
+                    stringify!($format),
+                    $addr);
+                logger_emit!(UDPDrain, $format, dest, message);
+            }
+        )*)
+}
+
+// Generate tests for TCP drain
+macro_rules! generate_udp_tests {
+    ($([$name:ident, $format:ident, $addr:expr]),*) =>
+        ($(
+            #[test]
+            fn $name() {
+                let dest = $addr
+                    .to_socket_addrs()
+                    .expect(format!("Couldn't to connect to {}", $addr))
+                    .collect::<Vec<_>>()
+                    [0];
+                let message = format!(
+                    "{} {} message to {}",
+                    stringify!($drain),
+                    stringify!($format),
+                    $addr);
+                logger_emit!(TCPDrain, $format, dest, message);
             }
         )*)
 }
