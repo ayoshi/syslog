@@ -63,13 +63,13 @@ impl FormatTimestamp for Ts3164Utc {
 
 impl FormatTimestamp for TsIsoLocal {
     fn format(io: &mut io::Write) -> io::Result<()> {
-        write!(io, "{}", chrono::Local::now().to_rfc3339())
+        write!(io, "{}", chrono::Local::now().format("%Y-%m-%dT%H:%M:%S%.6f%:z"))
     }
 }
 
 impl FormatTimestamp for TsIsoUtc {
     fn format(io: &mut io::Write) -> io::Result<()> {
-        write!(io, "{}", chrono::UTC::now().to_rfc3339())
+        write!(io, "{}", chrono::UTC::now().format("%Y-%m-%dT%H:%M:%S%.6f%:z"))
     }
 }
 
