@@ -296,7 +296,7 @@ pub type Rfc5424Native<T> = SyslogFormat<HeaderRFC5424<T>, MessageRFC5424>;
 
 
 /// Generic Syslog Formatter
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SyslogFormat<H, M>
     where H: FormatHeader,
           H::Timestamp: FormatTimestamp,

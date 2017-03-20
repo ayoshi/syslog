@@ -26,6 +26,33 @@ macro_rules! logger_emit(
         println!("{:?}", buffer.as_string());
     }});
 
+macro_rules! generate_drain_tests {
+    ($([$name:ident, $drain:ident, $format:ident, $path:expr]),*) =>
+        ($(
+            #[test]
+            fn $name() {
+                let dest = PathBuf::from($path);
+                let buffer = TestIoBuffer::new(1024);
+
+                let introspection_drain = TestDrain::new(buffer.io(), formatter!($format));
+                let test_drain = $drain::new(dest, formatter!($format))
+                    .connect().expect("couldn't connect to socket");
+                let fused_drain = duplicate(introspection_drain, test_drain).fuse();
+
+                let logger = Logger::root(fused_drain, o!("lk1" => "lv1", "lk2" => "lv2"));
+
+                let message = format!(
+                    "{} {} message to {}",
+                    stringify!($drain),
+                    stringify!($format),
+                    $path);
+                info!(logger, message; "mk1" => "mv1", "mk2" => "mv2");
+
+                println!("{} -> {:?} -> {:?}", buffer.as_string(), buffer.as_vec(), $path);
+            }
+        )*)
+}
+
 type SharedIoVec = Arc<Mutex<Vec<u8>>>;
 
 // Test buffer to hold single message
