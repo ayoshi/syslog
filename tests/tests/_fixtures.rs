@@ -25,6 +25,7 @@ macro_rules! logger_emit(
         println!("{} -> {:?} -> {:?}", buffer.as_string(), buffer.as_vec(), $dest);
     }});
 
+// Generate a test for a specific drain
 macro_rules! generate_drain_tests {
     ($([$name:ident, $drain:ident, $format:ident, $path:expr]),*) =>
         ($(
