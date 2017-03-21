@@ -1,6 +1,6 @@
 // use fields::{SerializationFormat, FormatMode};
 
-use serializers::KSVSerializer;
+use serializers::{KsvSerializerQuotedValue, KsvSerializerUnquoted};
 
 use slog::{Record, OwnedKeyValueList};
 use slog_stream::Format as StreamFormat;
@@ -201,9 +201,9 @@ pub trait FormatMessage {
 #[derive(Debug)]
 pub struct MessageRFC5424 {}
 
-/// KSV Serialized message
+/// Ksv Serialized message
 #[derive(Debug)]
-pub struct MessageKSV {}
+pub struct MessageKsv {}
 
 impl MessageRFC5424 {
     fn format_sd_element(io: &mut io::Write,
@@ -219,6 +219,7 @@ impl MessageRFC5424 {
 }
 
 impl FormatMessage for MessageRFC5424 {
+
     fn format(io: &mut io::Write,
               record: &Record,
               logger_values: &OwnedKeyValueList)
@@ -228,7 +229,7 @@ impl FormatMessage for MessageRFC5424 {
         MessageRFC5424::format_sd_element(io,
                                           format!("{}@{}", "logger", record.line()),
                                           &|io| {
-            let mut serializer = KSVSerializer::new(io, "=");
+            let mut serializer = KsvSerializerQuotedValue::new(io, "=");
             for &(k, v) in record.values().iter().rev() {
                 serializer.emit_delimiter()?;
                 v.serialize(record, k, &mut serializer)?;
@@ -239,7 +240,7 @@ impl FormatMessage for MessageRFC5424 {
         MessageRFC5424::format_sd_element(io,
                                           format!("{}@{}", "msg", record.line()),
                                           &|io| {
-            let mut serializer = KSVSerializer::new(io, "=");
+            let mut serializer = KsvSerializerQuotedValue::new(io, "=");
             for (k, v) in logger_values.iter() {
                 serializer.emit_delimiter()?;
                 v.serialize(record, k, &mut serializer)?;
@@ -257,7 +258,7 @@ impl FormatMessage for MessageRFC5424 {
     }
 }
 
-impl FormatMessage for MessageKSV {
+impl FormatMessage for MessageKsv {
     fn format(io: &mut io::Write,
               record: &Record,
               logger_values: &OwnedKeyValueList)
@@ -267,7 +268,7 @@ impl FormatMessage for MessageKSV {
         write!(io, "{}", record.msg())?;
 
         // MESSAGE STRUCTURED_DATA
-        let mut serializer = KSVSerializer::new(io, "=");
+        let mut serializer = KsvSerializerUnquoted::new(io, "=");
 
         for &(k, v) in record.values().iter().rev() {
             serializer.emit_delimiter()?;
@@ -285,15 +286,15 @@ impl FormatMessage for MessageKSV {
 
 // SyslogFormat invariants
 
-/// RFC3164 message formatter without timestamp and hostname with KSV serialized data
+/// RFC3164 message formatter without timestamp and hostname with Ksv serialized data
 /// for logging to Unix domain socket only
-pub type Rfc3164MinimalKsv = SyslogFormat<HeaderRFC3164Minimal, MessageKSV>;
+pub type Rfc3164MinimalKsv = SyslogFormat<HeaderRFC3164Minimal, MessageKsv>;
 
-/// RFC3164 message formatter with KSV serialized data
-pub type Rfc3164Ksv<T> = SyslogFormat<HeaderRFC3164<T>, MessageKSV>;
+/// RFC3164 message formatter with Ksv serialized data
+pub type Rfc3164Ksv<T> = SyslogFormat<HeaderRFC3164<T>, MessageKsv>;
 
-/// RFC5424 message formatter with KSV serialized data
-pub type Rfc5424Ksv<T> = SyslogFormat<HeaderRFC5424<T>, MessageKSV>;
+/// RFC5424 message formatter with Ksv serialized data
+pub type Rfc5424Ksv<T> = SyslogFormat<HeaderRFC5424<T>, MessageKsv>;
 
 /// RFC5424 message formatter with RFC5424 structured data
 pub type Rfc5424Native<T> = SyslogFormat<HeaderRFC5424<T>, MessageRFC5424>;
@@ -366,24 +367,24 @@ impl<H, M> StreamFormat for SyslogFormat<H, M>
 
 // RFC3164
 
-/// RFC13614, KSV, Local TZ
+/// RFC13614, Ksv, Local TZ
 pub type Rfc3164KsvTs3164Local = Rfc3164Ksv<Ts3164Local>;
 
-/// RFC13614, KSV, UTC
+/// RFC13614, Ksv, UTC
 pub type Rfc3164KsvTs3164Utc = Rfc3164Ksv<Ts3164Utc>;
 
-/// RFC13614, KSV, ISO8601, Local TZ
+/// RFC13614, Ksv, ISO8601, Local TZ
 pub type Rfc3164KsvTsIsoLocal = Rfc3164Ksv<TsIsoLocal>;
 
-/// RFC13614, KSV, ISO8601, UTC
+/// RFC13614, Ksv, ISO8601, UTC
 pub type Rfc3164KsvTsIsoUtc = Rfc3164Ksv<TsIsoUtc>;
 
 // RFC 5424
 
-/// RFC5424, KSV, Local TZ
+/// RFC5424, Ksv, Local TZ
 pub type Rfc5424KsvTsIsoLocal = Rfc5424Ksv<TsIsoLocal>;
 
-/// RFC5424, KSV, UTC
+/// RFC5424, Ksv, UTC
 pub type Rfc5424KsvTsIsoUtc = Rfc5424Ksv<TsIsoUtc>;
 
 /// RFC5424, Local TZ
