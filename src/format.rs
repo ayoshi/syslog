@@ -230,6 +230,7 @@ impl FormatMessage for MessageRFC5424 {
                                           &|io| {
             let mut serializer = KSVSerializer::new(io, "=");
             for &(k, v) in record.values().iter().rev() {
+                serializer.emit_delimiter()?;
                 v.serialize(record, k, &mut serializer)?;
             }
             Ok(())
@@ -240,6 +241,7 @@ impl FormatMessage for MessageRFC5424 {
                                           &|io| {
             let mut serializer = KSVSerializer::new(io, "=");
             for (k, v) in logger_values.iter() {
+                serializer.emit_delimiter()?;
                 v.serialize(record, k, &mut serializer)?;
             }
             Ok(())
@@ -268,10 +270,12 @@ impl FormatMessage for MessageKSV {
         let mut serializer = KSVSerializer::new(io, "=");
 
         for &(k, v) in record.values().iter().rev() {
+            serializer.emit_delimiter()?;
             v.serialize(record, k, &mut serializer)?;
         }
 
         for (k, v) in logger_values.iter() {
+            serializer.emit_delimiter()?;
             v.serialize(record, k, &mut serializer)?;
         }
 

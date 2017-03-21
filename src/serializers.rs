@@ -30,18 +30,24 @@ impl<W> KSVSerializer<W>
     pub fn finish(self) -> W {
         self.io
     }
+
+    /// Emit k/v delimiter, in case of syslog it's always space.
+    pub fn emit_delimiter(&mut self) -> slog::ser::Result {
+        write!(self.io, " ")?;
+        Ok(())
+    }
 }
 
 macro_rules! impl_serialize_for (
     (T $value_type:ty, $func_name:ident) => (
         fn $func_name(&mut self, key: &str, val: $value_type) -> slog::ser::Result {
-            write!(self.io, " {}{}{}", key, self.separator, val)?;
+            write!(self.io, "{}{}{}", key, self.separator, val)?;
             Ok(())
         }
     );
     (V $value:expr, $func_name:ident) => (
         fn $func_name(&mut self, key: &str) -> slog::ser::Result {
-            write!(self.io, " {}{}{}", key, self.separator, $value)?;
+            write!(self.io, "{}{}{}", key, self.separator, $value)?;
             Ok(())
         }
     );
