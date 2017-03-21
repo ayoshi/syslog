@@ -1,5 +1,3 @@
-// use fields::{SerializationFormat, FormatMode};
-
 use serializers::{KsvSerializerQuotedValue, KsvSerializerUnquoted};
 
 use slog::{Record, OwnedKeyValueList};
@@ -15,8 +13,9 @@ macro_rules! write_separator { ($io:expr) => ( write!($io, " ") ) }
 // Write RFC5424 NILVALUE
 macro_rules! write_nilvalue { ($io:expr) => ( write!($io, "-") ) }
 
-// Write end of message
-macro_rules! write_eom { ($io:expr) => ( write!($io, "\0") ) }
+// Write end of message some server implementation need NULL Termination, some need LF
+// some need both, so let's send both
+macro_rules! write_eom { ($io:expr) => ( write!($io, "\n\0") ) }
 
 /// Syslog header fields
 #[derive(Debug)]
@@ -52,7 +51,7 @@ pub trait FormatHeader {
     fn new(fields: HeaderFields) -> Self;
 
     /// Format syslog header
-    fn format(&self, io: &mut io::Write, record: &Record) -> io::Result<()>;
+    fn format(&self, io: &mut io::Write, record: &Record, logger_values: &OwnedKeyValueList) -> io::Result<()>;
 }
 
 /// Minimal RFC3164 Header - used only for logging to UNIX socket
@@ -82,7 +81,7 @@ impl FormatHeader for HeaderRFC3164Minimal {
         HeaderRFC3164Minimal { fields: fields }
     }
 
-    fn format(&self, io: &mut io::Write, record: &Record) -> io::Result<()> {
+    fn format(&self, io: &mut io::Write, record: &Record, logger_values: &OwnedKeyValueList) -> io::Result<()> {
         // PRIORITY
         write!(io,
                "<{}>",
@@ -112,7 +111,7 @@ impl<T> FormatHeader for HeaderRFC3164<T>
         }
     }
 
-    fn format(&self, io: &mut io::Write, record: &Record) -> io::Result<()> {
+    fn format(&self, io: &mut io::Write, record: &Record, logger_values: &OwnedKeyValueList) -> io::Result<()> {
         // PRIORITY
         write!(io,
                "<{}>",
@@ -151,7 +150,7 @@ impl<T> FormatHeader for HeaderRFC5424<T>
         }
     }
 
-    fn format(&self, io: &mut io::Write, record: &Record) -> io::Result<()> {
+    fn format(&self, io: &mut io::Write, record: &Record, logger_values: &OwnedKeyValueList) -> io::Result<()> {
         // <PRIORITY>VERSION
         write!(io,
                "<{}>1",
@@ -184,6 +183,29 @@ impl<T> FormatHeader for HeaderRFC5424<T>
         write_nilvalue!(io)?;
         write_separator!(io)?;
 
+        // MESSAGE STRUCTURED_DATA
+        write!(io, "{}", "[")?;
+        write!(io, "{}{}", "msg@", record.line())?;
+        let mut serializer = KsvSerializerQuotedValue::new(io, "=");
+        for &(k, v) in record.values().iter().rev() {
+            serializer.emit_delimiter()?;
+            v.serialize(record, k, &mut serializer)?;
+        }
+        let mut io = serializer.finish();
+        write!(io, "{}", "]")?;
+
+        write!(io, "{}", "[")?;
+        write!(io, "{}{}", "logger@", record.line())?;
+        let mut serializer = KsvSerializerQuotedValue::new(io, "=");
+        for (k, v) in logger_values.iter() {
+            serializer.emit_delimiter()?;
+            v.serialize(record, k, &mut serializer)?;
+        }
+        let mut io = serializer.finish();
+        write!(io, "{}", "]")?;
+
+        write_separator!(io)?;
+
         Ok(())
     }
 }
@@ -205,50 +227,11 @@ pub struct MessageRFC5424 {}
 #[derive(Debug)]
 pub struct MessageKsv {}
 
-impl MessageRFC5424 {
-    fn format_sd_element(io: &mut io::Write,
-                         sd_id: String,
-                         f: &Fn(&mut io::Write) -> io::Result<()>)
-                         -> io::Result<()> {
-        write!(io, "{}", "[")?;
-        write!(io, "{}", sd_id)?;
-        f(io)?;
-        write!(io, "{}", "]")?;
-        Ok(())
-    }
-}
-
 impl FormatMessage for MessageRFC5424 {
-
     fn format(io: &mut io::Write,
               record: &Record,
               logger_values: &OwnedKeyValueList)
               -> io::Result<()> {
-
-        // MESSAGE STRUCTURED_DATA
-        MessageRFC5424::format_sd_element(io,
-                                          format!("{}@{}", "logger", record.line()),
-                                          &|io| {
-            let mut serializer = KsvSerializerQuotedValue::new(io, "=");
-            for &(k, v) in record.values().iter().rev() {
-                serializer.emit_delimiter()?;
-                v.serialize(record, k, &mut serializer)?;
-            }
-            Ok(())
-        })?;
-
-        MessageRFC5424::format_sd_element(io,
-                                          format!("{}@{}", "msg", record.line()),
-                                          &|io| {
-            let mut serializer = KsvSerializerQuotedValue::new(io, "=");
-            for (k, v) in logger_values.iter() {
-                serializer.emit_delimiter()?;
-                v.serialize(record, k, &mut serializer)?;
-            }
-            Ok(())
-        })?;
-
-        write_separator!(io)?;
 
         // MESSAGE
         write!(io, "{}", record.msg())?;
@@ -340,7 +323,7 @@ impl<H, M> SyslogFormat<H, M>
               logger_values: &OwnedKeyValueList)
               -> io::Result<()> {
         // HEADER
-        self.header.format(io, record)?;
+        self.header.format(io, record, logger_values)?;
         // MESSAGE
         M::format(io, record, logger_values)?;
         write_eom!(io)?;
