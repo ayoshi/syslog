@@ -16,6 +16,8 @@ services:
     image: syslog-ng
     cap_add:
     - ALL
+    entrypoint: ''
+    command: '/usr/sbin/syslog-ng -F -d -v'
 
   #### test container
   rust:
@@ -29,6 +31,7 @@ services:
       - ..:/src
       - rust:/root/.cargo
       - local:/local
+    entrypoint: ''
     command: 'cargo test --features full-integration-env'
     # Separate target dir under docker
     environment:
