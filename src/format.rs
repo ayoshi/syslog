@@ -8,7 +8,7 @@ use syslog::{Facility, Priority};
 use time::{FormatTimestamp, OmitTimestamp, Ts3164Local, Ts3164Utc, TsIsoLocal, TsIsoUtc};
 
 // Write separator
-macro_rules! write_separator { ($io:expr) => ( write!($io, " ") ) }
+macro_rules! write_sp { ($io:expr) => ( write!($io, " ") ) }
 
 // Write RFC5424 NILVALUE
 macro_rules! write_nilvalue { ($io:expr) => ( write!($io, "-") ) }
@@ -51,7 +51,11 @@ pub trait FormatHeader {
     fn new(fields: HeaderFields) -> Self;
 
     /// Format syslog header
-    fn format(&self, io: &mut io::Write, record: &Record, logger_values: &OwnedKeyValueList) -> io::Result<()>;
+    fn format(&self,
+              io: &mut io::Write,
+              record: &Record,
+              logger_values: &OwnedKeyValueList)
+              -> io::Result<()>;
 }
 
 /// Minimal RFC3164 Header - used only for logging to UNIX socket
@@ -81,7 +85,11 @@ impl FormatHeader for HeaderRFC3164Minimal {
         HeaderRFC3164Minimal { fields: fields }
     }
 
-    fn format(&self, io: &mut io::Write, record: &Record, logger_values: &OwnedKeyValueList) -> io::Result<()> {
+    fn format(&self,
+              io: &mut io::Write,
+              record: &Record,
+              logger_values: &OwnedKeyValueList)
+              -> io::Result<()> {
         // PRIORITY
         write!(io,
                "<{}>",
@@ -93,7 +101,7 @@ impl FormatHeader for HeaderRFC3164Minimal {
             None => write!(io, "[{}]:", self.fields.pid)?,
         }
 
-        write_separator!(io)?;
+        write_sp!(io)?;
 
         Ok(())
     }
@@ -111,7 +119,11 @@ impl<T> FormatHeader for HeaderRFC3164<T>
         }
     }
 
-    fn format(&self, io: &mut io::Write, record: &Record, logger_values: &OwnedKeyValueList) -> io::Result<()> {
+    fn format(&self,
+              io: &mut io::Write,
+              record: &Record,
+              logger_values: &OwnedKeyValueList)
+              -> io::Result<()> {
         // PRIORITY
         write!(io,
                "<{}>",
@@ -119,20 +131,20 @@ impl<T> FormatHeader for HeaderRFC3164<T>
 
         // TIMESTAMP
         T::format(io)?;
-        // write_separator!(io)?;
+        // write_sp!(io)?;
 
         // HOSTNAME
         if let Some(ref hostname) = self.fields.hostname {
             write!(io, "{}", hostname)?
         }
-        write_separator!(io)?;
+        write_sp!(io)?;
 
         // TAG process_name[pid]:
         match self.fields.process_name {
             Some(ref process_name) => write!(io, "{}[{}]:", process_name, self.fields.pid)?,
             None => write!(io, "[{}]:", self.fields.pid)?,
         }
-        write_separator!(io)?;
+        write_sp!(io)?;
 
         Ok(())
     }
@@ -150,38 +162,52 @@ impl<T> FormatHeader for HeaderRFC5424<T>
         }
     }
 
-    fn format(&self, io: &mut io::Write, record: &Record, logger_values: &OwnedKeyValueList) -> io::Result<()> {
+    fn format(&self,
+              io: &mut io::Write,
+              record: &Record,
+              logger_values: &OwnedKeyValueList)
+              -> io::Result<()> {
         // <PRIORITY>VERSION
         write!(io,
                "<{}>1",
                Priority::new(self.fields.facility, record.level().into()))?;
-        write_separator!(io)?;
+
+        // SP
+        write_sp!(io)?;
 
         // TIMESTAMP (ISOTIMESTAMP)
         T::format(io)?;
-        write_separator!(io)?;
+
+        // SP
+        write_sp!(io)?;
 
         // HOSTNAME
         match self.fields.hostname {
             Some(ref hostname) => write!(io, "{}", hostname)?,
             None => write_nilvalue!(io)?,
         }
-        write_separator!(io)?;
+
+        // SP
+        write_sp!(io)?;
 
         // APPLICATION
         match self.fields.process_name {
             Some(ref process_name) => write!(io, "{}", process_name)?,
             None => write_nilvalue!(io)?,
         }
-        write_separator!(io)?;
+
+        // SP
+        write_sp!(io)?;
 
         // PID
         write!(io, "{}", self.fields.pid)?;
-        write_separator!(io)?;
+        write_sp!(io)?;
 
         // MESSAGEID
         write_nilvalue!(io)?;
-        write_separator!(io)?;
+
+        // SP
+        write_sp!(io)?;
 
         // MESSAGE STRUCTURED_DATA
         write!(io, "{}", "[")?;
@@ -204,7 +230,8 @@ impl<T> FormatHeader for HeaderRFC5424<T>
         let mut io = serializer.finish();
         write!(io, "{}", "]")?;
 
-        write_separator!(io)?;
+        // SP
+        write_sp!(io)?;
 
         Ok(())
     }
@@ -235,7 +262,6 @@ impl FormatMessage for MessageRFC5424 {
 
         // MESSAGE
         write!(io, "{}", record.msg())?;
-        write_separator!(io)?;
 
         Ok(())
     }
@@ -322,11 +348,16 @@ impl<H, M> SyslogFormat<H, M>
               record: &Record,
               logger_values: &OwnedKeyValueList)
               -> io::Result<()> {
+
         // HEADER
         self.header.format(io, record, logger_values)?;
+
         // MESSAGE
         M::format(io, record, logger_values)?;
+
+        // EOM
         write_eom!(io)?;
+
         Ok(())
     }
 }
