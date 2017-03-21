@@ -100,8 +100,9 @@ fn formatter_rfc5424_native_tsiso_local() {
     assert!(buffer.as_string().contains("Test message 1"));
     assert!(buffer.as_string().contains("[logger@"));
     assert!(buffer.as_string().contains("[msg@"));
-    assert!(buffer.as_string().contains("mk2=mv2 mk1=mv1]"));
-    assert!(buffer.as_string().contains("lk2=lv2 lk1=lv1]"));
+    assert!(buffer.as_string().contains("mk2=\"mv2\" mk1=\"mv1\"]"));
+    assert!(buffer.as_string().contains("lk2=\"lv2\" lk1=\"lv1\"]"));
+    assert!(buffer.as_string().contains("]["));
 }
 
 #[test]
@@ -111,10 +112,10 @@ fn formatter_rfc5424_native_tsiso_utc() {
     println!("{:?}", buffer.as_vec());
     println!("{:?}", buffer.as_string());
     assert!(buffer.as_string().contains("<14>1"));
-    assert!(buffer.as_string().contains("+00:00"));
     assert!(buffer.as_string().contains("Test message 1"));
     assert!(buffer.as_string().contains("[logger@"));
     assert!(buffer.as_string().contains("[msg@"));
-    assert!(buffer.as_string().contains("mk2=mv2 mk1=mv1]"));
-    assert!(buffer.as_string().contains("lk2=lv2 lk1=lv1]"));
+    assert!(buffer.as_string().contains("mk2=\"mv2\" mk1=\"mv1\"]"));
+    assert!(buffer.as_string().contains("lk2=\"lv2\" lk1=\"lv1\"]"));
+    assert!(buffer.as_string().contains("]["));
 }
