@@ -1,12 +1,11 @@
 
-use format::{HeaderRFC5424, HeaderRFC3164, SyslogFormat, FormatMessage};
 use slog::{Drain, OwnedKeyValueList, Record};
 use slog_stream::Format as StreamFormat;
 use std::io;
 use std::io::{Write, Cursor};
 use std::net::{Shutdown, TcpStream, SocketAddr};
 use std::sync::{Arc, Mutex};
-use time::FormatTimestamp;
+use std::marker::PhantomData;
 
 
 /// State: TCPConnected for the TCP drain
@@ -22,61 +21,70 @@ pub struct TCPConnected {
     addr: SocketAddr,
 }
 
+/// Delimited messages
+pub struct DelimitedMessages {}
+
+/// Framed messages
+pub struct FramedMessages {}
+
 
 /// TCP drain
 #[derive(Debug)]
-pub struct TCPDrain<C, F>
+pub struct TCPDrain<T, C, F>
     where F: StreamFormat
 {
     formatter: F,
     connection: C,
+    _message_type: PhantomData<T>
 }
 
-impl<F> TCPDrain<TCPDisconnected, F>
+impl<T, F> TCPDrain<T, TCPDisconnected, F>
     where F: StreamFormat
 {
     /// TCPDrain constructor
-    pub fn new(addr: SocketAddr, formatter: F) -> TCPDrain<TCPDisconnected, F> {
-        TCPDrain::<TCPDisconnected, F> {
+    pub fn new(addr: SocketAddr, formatter: F) -> TCPDrain<T, TCPDisconnected, F> {
+        TCPDrain::<T, TCPDisconnected, F> {
             formatter: formatter,
             connection: TCPDisconnected { addr: addr },
+            _message_type: PhantomData
         }
     }
 
     /// Connect TCP stream
-    pub fn connect(self) -> io::Result<TCPDrain<TCPConnected, F>> {
+    pub fn connect(self) -> io::Result<TCPDrain<T, TCPConnected, F>> {
         let stream = TcpStream::connect(self.connection.addr)?;
-        Ok(TCPDrain::<TCPConnected, F> {
+        Ok(TCPDrain::<T, TCPConnected, F> {
             formatter: self.formatter,
             connection: TCPConnected {
                 stream: Arc::new(Mutex::new(stream)),
                 addr: self.connection.addr,
             },
+            _message_type: PhantomData
         })
     }
 }
 
-impl<F> TCPDrain<TCPConnected, F>
+impl<T, F> TCPDrain<T, TCPConnected, F>
     where F: StreamFormat
 {
     /// Disconnect TCP stream, completing all operations
-    pub fn disconnect(self) -> io::Result<TCPDrain<TCPDisconnected, F>> {
+    pub fn disconnect(self) -> io::Result<TCPDrain<T, TCPDisconnected, F>> {
         self.connection
             .stream
             .lock()
             .map_err(|_| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
             .and_then(|s| s.shutdown(Shutdown::Both))?;
-        Ok(TCPDrain::<TCPDisconnected, F> {
+        Ok(TCPDrain::<T, TCPDisconnected, F> {
             formatter: self.formatter,
-            connection: TCPDisconnected { addr: self.connection.addr },
+            connection: TCPDisconnected { addr: self.connection.addr},
+            _message_type: PhantomData
         })
     }
 }
 
 // RFC3164 messages over TCP don't require framed headers
-impl<M, T> Drain for TCPDrain<TCPConnected, SyslogFormat<HeaderRFC3164<T>, M>>
-    where M: FormatMessage + Sync + Send,
-          T: FormatTimestamp + Sync + Send
+impl<F> Drain for TCPDrain<DelimitedMessages, TCPConnected, F>
+    where F: StreamFormat
 {
     type Error = io::Error;
 
@@ -98,9 +106,8 @@ impl<M, T> Drain for TCPDrain<TCPConnected, SyslogFormat<HeaderRFC3164<T>, M>>
 
 // RFC5424 messages require framed delimition, first we need to send
 // the length of the message in octets
-impl<M, T> Drain for TCPDrain<TCPConnected, SyslogFormat<HeaderRFC5424<T>, M>>
-    where M: FormatMessage + Sync + Send,
-          T: FormatTimestamp + Sync + Send
+impl<F> Drain for TCPDrain<FramedMessages, TCPConnected, F>
+    where F: StreamFormat
 {
     type Error = io::Error;
 
@@ -125,3 +132,12 @@ impl<M, T> Drain for TCPDrain<TCPConnected, SyslogFormat<HeaderRFC5424<T>, M>>
         Ok(())
     }
 }
+
+/// TCPDrain sending delimited messages
+/// RFC3164 over TCP is generally used this way
+/// but some servers accepting RFC5424 work with it too
+pub type TcpDrainDelimited<C, F> = TCPDrain<DelimitedMessages, C, F>;
+
+/// TCPDrain sending framed messages
+/// Mostly for sending RFC5424 messages - rsyslog, syslog-ng will use this format
+pub type TcpDrainFramed<C, F> = TCPDrain<DelimitedMessages, C, F>;

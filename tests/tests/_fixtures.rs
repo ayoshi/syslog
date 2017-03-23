@@ -103,7 +103,7 @@ macro_rules! logger_emit(
     }});
 
 // Generate tests for unix socket drain
-macro_rules! generate_uds_tests {
+macro_rules! uds_tests {
     ($([$name:ident, $format:ident, $path:expr]),*) =>
         ($(
             #[test]
@@ -120,7 +120,7 @@ macro_rules! generate_uds_tests {
 }
 
 // Generate tests for UDP drain
-macro_rules! generate_udp_tests {
+macro_rules! udp_tests {
     ($([$name:ident, $format:ident, $addr:expr]),*) =>
         ($(
             #[test]
@@ -141,7 +141,7 @@ macro_rules! generate_udp_tests {
 }
 
 // Generate tests for TCP drain
-macro_rules! generate_tcp_tests {
+macro_rules! tcp_delimited_tests {
     ($([$name:ident, $format:ident, $addr:expr]),*) =>
         ($(
             #[test]
@@ -153,10 +153,31 @@ macro_rules! generate_tcp_tests {
                     [0];
                 let message = format!(
                     "{} {} message to {}",
-                    stringify!(TCPDrain),
+                    stringify!(TcpDrainDelimited),
                     stringify!($format),
                     $addr);
-                logger_emit!(TCPDrain, $format, dest, message);
+                logger_emit!(TcpDrainDelimited, $format, dest, message);
+            }
+        )*)
+}
+
+// Generate tests for TCP drain
+macro_rules! tcp_framed_tests {
+    ($([$name:ident, $format:ident, $addr:expr]),*) =>
+        ($(
+            #[test]
+            fn $name() {
+                let dest = $addr
+                    .to_socket_addrs()
+                    .expect(format!("Couldn't to connect to {}", $addr).as_str())
+                    .collect::<Vec<_>>()
+                    [0];
+                let message = format!(
+                    "{} {} message to {}",
+                    stringify!(TcpDrainFramed),
+                    stringify!($format),
+                    $addr);
+                logger_emit!(TcpDrainFramed, $format, dest, message);
             }
         )*)
 }
