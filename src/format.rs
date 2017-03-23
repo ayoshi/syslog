@@ -204,7 +204,7 @@ impl<T> FormatHeader for HeaderRFC5424<T>
         write_sp!(io)?;
 
         // MESSAGEID
-        write_nilvalue!(io)?;
+        write!(io, "{}", record.level().to_string())?;
 
         // SP
         write_sp!(io)?;

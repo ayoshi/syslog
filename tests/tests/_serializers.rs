@@ -67,7 +67,7 @@ fn formatter_rfc5424_ksv_tsiso_local() {
     println!("{:?}", buffer.as_vec());
     println!("{:?}", buffer.as_string());
     assert!(buffer.as_string().contains("<14>1"));
-    assert!(buffer.as_string().contains("Test message 1"));
+    assert!(buffer.as_string().contains("test 12345 INFO"));
     assert!(buffer.as_string().contains("mk1=mv1"));
     assert!(buffer.as_string().contains("mk2=mv2"));
     assert!(buffer.as_string().contains("lk1=lv1"));
@@ -81,6 +81,7 @@ fn formatter_rfc5424_ksv_tsiso_utc() {
     println!("{:?}", buffer.as_vec());
     println!("{:?}", buffer.as_string());
     assert!(buffer.as_string().contains("<14>1"));
+    assert!(buffer.as_string().contains("test 12345 INFO"));
     assert!(buffer.as_string().contains("Test message 1"));
     assert!(buffer.as_string().contains("mk1=mv1"));
     assert!(buffer.as_string().contains("mk2=mv2"));
@@ -97,6 +98,7 @@ fn formatter_rfc5424_native_tsiso_local() {
     println!("{:?}", buffer.as_vec());
     println!("{:?}", buffer.as_string());
     assert!(buffer.as_string().contains("<14>1"));
+    assert!(buffer.as_string().contains("test 12345 INFO"));
     assert!(buffer.as_string().contains("Test message 1"));
     assert!(buffer.as_string().contains("[logger@"));
     assert!(buffer.as_string().contains("[msg@"));
@@ -112,6 +114,7 @@ fn formatter_rfc5424_native_tsiso_utc() {
     println!("{:?}", buffer.as_vec());
     println!("{:?}", buffer.as_string());
     assert!(buffer.as_string().contains("<14>1"));
+    assert!(buffer.as_string().contains("test 12345 INFO"));
     assert!(buffer.as_string().contains("Test message 1"));
     assert!(buffer.as_string().contains("[logger@"));
     assert!(buffer.as_string().contains("[msg@"));
