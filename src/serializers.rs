@@ -9,18 +9,17 @@ use std::{io, fmt};
 // use std::fmt::Write;
 use std::marker::PhantomData;
 
-/// Unquoted key=value
+/// `Unquoted` key=value
 pub struct Unquoted {}
 
-///  QuotedValue key="value"
+///  `QuotedValue` key="value"
 pub struct QuotedValue {}
 
 /// Key Separator Value Serializer
-pub struct KsvSerializer<W, Q>
-{
+pub struct KsvSerializer<W, Q> {
     io: W,
     separator: String,
-    _quoting: PhantomData<Q>
+    _quoting: PhantomData<Q>,
 }
 
 impl<W, Q> KsvSerializer<W, Q>
@@ -31,7 +30,7 @@ impl<W, Q> KsvSerializer<W, Q>
         KsvSerializer {
             io: io,
             separator: separator.to_owned(),
-            _quoting: PhantomData
+            _quoting: PhantomData,
         }
     }
 

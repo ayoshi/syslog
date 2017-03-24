@@ -29,11 +29,11 @@ pub use self::format::*;
 pub use self::posix::{get_pid, get_process_name, get_host_name};
 pub use self::serializers::*;
 pub use self::syslog::*;
-pub use self::time::*;
-pub use self::uds_drain::*;
-pub use self::udp_drain::*;
-pub use self::udp_drain::*;
 pub use self::tcp_drain::*;
+pub use self::time::*;
+pub use self::udp_drain::*;
+pub use self::udp_drain::*;
+pub use self::uds_drain::*;
 
 
 /// Entry point to any further syslog configuration

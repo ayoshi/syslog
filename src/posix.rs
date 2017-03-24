@@ -13,9 +13,9 @@ pub fn locate_default_uds_socket() -> Result<PathBuf, String> {
         .map(PathBuf::from)
         .find(|p| p.exists())
         .ok_or_else(|| {
-            format!("Couldn't find socket file (tried {:?})",
-                    SYSLOG_DEFAULT_UDS_LOCATIONS)
-        })
+                        format!("Couldn't find socket file (tried {:?})",
+                                SYSLOG_DEFAULT_UDS_LOCATIONS)
+                    })
 }
 
 /// Get current process name

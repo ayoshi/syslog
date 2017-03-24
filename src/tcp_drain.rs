@@ -1,20 +1,19 @@
-
 use slog::{Drain, OwnedKeyValueList, Record};
 use slog_stream::Format as StreamFormat;
 use std::io;
 use std::io::{Write, Cursor};
+use std::marker::PhantomData;
 use std::net::{Shutdown, TcpStream, SocketAddr};
 use std::sync::{Arc, Mutex};
-use std::marker::PhantomData;
 
 
-/// State: TCPConnected for the TCP drain
+/// State: `TCPDisconnected`` for the TCP drain
 #[derive(Debug)]
 pub struct TCPDisconnected {
     addr: SocketAddr,
 }
 
-/// State: TCPConnected for the TCP drain
+/// State: `TCPConnected` for the TCP drain
 #[derive(Debug)]
 pub struct TCPConnected {
     stream: Arc<Mutex<TcpStream>>,
@@ -35,7 +34,7 @@ pub struct TCPDrain<T, C, F>
 {
     formatter: F,
     connection: C,
-    _message_type: PhantomData<T>
+    _message_type: PhantomData<T>,
 }
 
 impl<T, F> TCPDrain<T, TCPDisconnected, F>
@@ -46,7 +45,7 @@ impl<T, F> TCPDrain<T, TCPDisconnected, F>
         TCPDrain::<T, TCPDisconnected, F> {
             formatter: formatter,
             connection: TCPDisconnected { addr: addr },
-            _message_type: PhantomData
+            _message_type: PhantomData,
         }
     }
 
@@ -54,13 +53,13 @@ impl<T, F> TCPDrain<T, TCPDisconnected, F>
     pub fn connect(self) -> io::Result<TCPDrain<T, TCPConnected, F>> {
         let stream = TcpStream::connect(self.connection.addr)?;
         Ok(TCPDrain::<T, TCPConnected, F> {
-            formatter: self.formatter,
-            connection: TCPConnected {
-                stream: Arc::new(Mutex::new(stream)),
-                addr: self.connection.addr,
-            },
-            _message_type: PhantomData
-        })
+               formatter: self.formatter,
+               connection: TCPConnected {
+                   stream: Arc::new(Mutex::new(stream)),
+                   addr: self.connection.addr,
+               },
+               _message_type: PhantomData,
+           })
     }
 }
 
@@ -75,10 +74,10 @@ impl<T, F> TCPDrain<T, TCPConnected, F>
             .map_err(|_| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
             .and_then(|s| s.shutdown(Shutdown::Both))?;
         Ok(TCPDrain::<T, TCPDisconnected, F> {
-            formatter: self.formatter,
-            connection: TCPDisconnected { addr: self.connection.addr},
-            _message_type: PhantomData
-        })
+               formatter: self.formatter,
+               connection: TCPDisconnected { addr: self.connection.addr },
+               _message_type: PhantomData,
+           })
     }
 }
 
@@ -88,6 +87,7 @@ impl<F> Drain for TCPDrain<DelimitedMessages, TCPConnected, F>
 {
     type Error = io::Error;
 
+    #[allow(dead_code)]
     fn log(&self, info: &Record, logger_values: &OwnedKeyValueList) -> io::Result<()> {
 
         // Should be thread safe - redo the buffering
@@ -124,20 +124,20 @@ impl<F> Drain for TCPDrain<FramedMessages, TCPConnected, F>
             .lock()
             .map_err(|_| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
             .and_then(|mut s| {
-                // Space spearated frame length
-                s.write_fmt(format_args!("{} ", length))?;
-                s.write(buf.into_inner().as_slice())
-            })?;
+                          // Space spearated frame length
+                          s.write_fmt(format_args!("{} ", length))?;
+                          s.write(buf.into_inner().as_slice())
+                      })?;
 
         Ok(())
     }
 }
 
-/// TCPDrain sending delimited messages
+/// `TCPDrain` sending delimited messages
 /// RFC3164 over TCP is generally used this way
 /// but some servers accepting RFC5424 work with it too
 pub type TcpDrainDelimited<C, F> = TCPDrain<DelimitedMessages, C, F>;
 
-/// TCPDrain sending framed messages
+/// `TCPDrain` sending framed messages
 /// Mostly for sending RFC5424 messages - rsyslog, syslog-ng will use this format
 pub type TcpDrainFramed<C, F> = TCPDrain<DelimitedMessages, C, F>;

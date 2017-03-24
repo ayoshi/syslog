@@ -51,6 +51,7 @@ pub trait FormatHeader {
     fn new(fields: HeaderFields) -> Self;
 
     /// Format syslog header
+    #[allow(dead_code)]
     fn format(&self,
               io: &mut io::Write,
               record: &Record,
@@ -85,6 +86,7 @@ impl FormatHeader for HeaderRFC3164Minimal {
         HeaderRFC3164Minimal { fields: fields }
     }
 
+    #[allow(unused_variables)]
     fn format(&self,
               io: &mut io::Write,
               record: &Record,
@@ -119,6 +121,7 @@ impl<T> FormatHeader for HeaderRFC3164<T>
         }
     }
 
+    #[allow(unused_variables)]
     fn format(&self,
               io: &mut io::Write,
               record: &Record,
@@ -255,6 +258,7 @@ pub struct MessageRFC5424 {}
 pub struct MessageKsv {}
 
 impl FormatMessage for MessageRFC5424 {
+    #[allow(unused_variables)]
     fn format(io: &mut io::Write,
               record: &Record,
               logger_values: &OwnedKeyValueList)

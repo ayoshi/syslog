@@ -11,10 +11,11 @@ fn run_mode(mode: &'static str) {
     // Support for overriding target dir through environment vars
     let target_dir = match env::var("CARGO_TARGET_DIR") {
         Ok(dir) => dir,
-        Err(_) => "target".to_owned()
+        Err(_) => "target".to_owned(),
     };
 
-    let rustflags = format!("-L {target}/debug/ -L {target}/debug/deps", target=target_dir);
+    let rustflags = format!("-L {target}/debug/ -L {target}/debug/deps",
+                            target = target_dir);
 
     config.target_rustcflags = Some(rustflags);
     if let Ok(name) = env::var::<&str>("TESTNAME") {

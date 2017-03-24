@@ -3,13 +3,13 @@ use slog_stream::Format as StreamFormat;
 use std::io;
 use std::net::{UdpSocket, SocketAddr};
 
-/// State: UDPConnected for the UDP drain
+/// State: `UDPDisconnected` for the UDP drain
 #[derive(Debug)]
 pub struct UDPDisconnected {
     addr: SocketAddr,
 }
 
-/// State: UDPConnected for the UDP drain
+/// State: `UDPConnected` for the UDP drain
 #[derive(Debug)]
 pub struct UDPConnected {
     socket: UdpSocket,
@@ -41,12 +41,12 @@ impl<F> UDPDrain<UDPDisconnected, F>
     pub fn connect(self) -> io::Result<UDPDrain<UDPConnected, F>> {
         let socket = UdpSocket::bind("0.0.0.0:0")?;
         Ok(UDPDrain::<UDPConnected, F> {
-            formatter: self.formatter,
-            connection: UDPConnected {
-                socket: socket,
-                addr: self.connection.addr,
-            },
-        })
+               formatter: self.formatter,
+               connection: UDPConnected {
+                   socket: socket,
+                   addr: self.connection.addr,
+               },
+           })
     }
 }
 
@@ -56,9 +56,9 @@ impl<F> UDPDrain<UDPConnected, F>
     /// Disconnect UDP socket, completing all operations
     pub fn disconnect(self) -> io::Result<UDPDrain<UDPDisconnected, F>> {
         Ok(UDPDrain::<UDPDisconnected, F> {
-            formatter: self.formatter,
-            connection: UDPDisconnected { addr: self.connection.addr },
-        })
+               formatter: self.formatter,
+               connection: UDPDisconnected { addr: self.connection.addr },
+           })
     }
 }
 
@@ -73,7 +73,9 @@ impl<F> Drain for UDPDrain<UDPConnected, F>
         let mut buf = Vec::<u8>::with_capacity(4096);
 
         self.formatter.format(&mut buf, info, logger_values)?;
-        self.connection.socket.send_to(buf.as_slice(), &self.connection.addr)?;
+        self.connection
+            .socket
+            .send_to(buf.as_slice(), &self.connection.addr)?;
 
         Ok(())
     }

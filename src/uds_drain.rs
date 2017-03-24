@@ -5,13 +5,13 @@ use std::net::Shutdown;
 use std::os::unix::net::UnixDatagram;
 use std::path::PathBuf;
 
-/// State: UDSDisconnected
+/// State: `UDSDisconnected`
 #[derive(Default, Debug)]
 pub struct UDSDisconnected {
     path_to_socket: PathBuf,
 }
 
-/// State: UDSConnected for the UDS drain
+/// State: `UDSConnected` for the UDS drain
 #[derive(Debug)]
 pub struct UDSConnected {
     socket: UnixDatagram,
@@ -42,12 +42,12 @@ impl<F> UDSDrain<UDSDisconnected, F>
     pub fn connect(self) -> io::Result<UDSDrain<UDSConnected, F>> {
         let socket = UnixDatagram::unbound()?;
         Ok(UDSDrain::<UDSConnected, F> {
-            formatter: self.formatter,
-            connection: UDSConnected {
-                socket: socket,
-                path_to_socket: self.connection.path_to_socket,
-            },
-        })
+               formatter: self.formatter,
+               connection: UDSConnected {
+                   socket: socket,
+                   path_to_socket: self.connection.path_to_socket,
+               },
+           })
     }
 }
 
@@ -56,11 +56,13 @@ impl<F> UDSDrain<UDSConnected, F>
 {
     /// Disconnect UDS socket, completing all operations
     pub fn disconnect(self) -> io::Result<UDSDrain<UDSDisconnected, F>> {
-        self.connection.socket.shutdown(Shutdown::Both)?;
+        self.connection
+            .socket
+            .shutdown(Shutdown::Both)?;
         Ok(UDSDrain::<UDSDisconnected, F> {
-            formatter: self.formatter,
-            connection: UDSDisconnected { path_to_socket: self.connection.path_to_socket },
-        })
+               formatter: self.formatter,
+               connection: UDSDisconnected { path_to_socket: self.connection.path_to_socket },
+           })
     }
 }
 
@@ -75,7 +77,9 @@ impl<F> Drain for UDSDrain<UDSConnected, F>
         let mut buf = Vec::<u8>::with_capacity(4096);
 
         self.formatter.format(&mut buf, info, logger_values)?;
-        self.connection.socket.send_to(buf.as_slice(), &self.connection.path_to_socket)?;
+        self.connection
+            .socket
+            .send_to(buf.as_slice(), &self.connection.path_to_socket)?;
 
         Ok(())
     }
