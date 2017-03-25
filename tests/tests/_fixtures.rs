@@ -156,10 +156,10 @@ macro_rules! tcp_delimited_tests {
                     [0];
                 let message = format!(
                     "{} {} message to {}",
-                    stringify!(TcpDrainDelimited),
+                    stringify!(TCPDrainDelimited),
                     stringify!($format),
                     $addr);
-                logger_emit!(TcpDrainDelimited, $format, dest, message);
+                logger_emit!(TCPDrainDelimited, $format, dest, message);
             }
         )*)
 }
@@ -177,10 +177,10 @@ macro_rules! tcp_framed_tests {
                     [0];
                 let message = format!(
                     "{} {} message to {}",
-                    stringify!(TcpDrainFramed),
+                    stringify!(TCPDrainFramed),
                     stringify!($format),
                     $addr);
-                logger_emit!(TcpDrainFramed, $format, dest, message);
+                logger_emit!(TCPDrainFramed, $format, dest, message);
             }
         )*)
 }

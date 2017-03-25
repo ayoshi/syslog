@@ -135,8 +135,8 @@ impl<F> Drain for TCPDrain<FramedMessages, TCPConnected, F>
 /// `TCPDrain` sending delimited messages
 /// RFC3164 over TCP is generally used this way
 /// but some servers accepting RFC5424 work with it too
-pub type TcpDrainDelimited<C, F> = TCPDrain<DelimitedMessages, C, F>;
+pub type TCPDrainDelimited<C, F> = TCPDrain<DelimitedMessages, C, F>;
 
 /// `TCPDrain` sending framed messages
 /// Mostly for sending RFC5424 messages - rsyslog, syslog-ng will use this format
-pub type TcpDrainFramed<C, F> = TCPDrain<FramedMessages, C, F>;
+pub type TCPDrainFramed<C, F> = TCPDrain<FramedMessages, C, F>;
