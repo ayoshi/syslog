@@ -17,7 +17,7 @@ services:
     cap_add:
     - ALL
     entrypoint: '/bin/bash -l -c'
-    command: '"rm -rf /syslog-ng/message.json /syslog-ng/syslog && /usr/sbin/syslog-ng -F -d -v"'
+    command: '/usr/sbin/syslog-ng -F -d -v"'
 
   #### test container
   rust:
@@ -32,7 +32,7 @@ services:
       - rust:/root/.cargo
       - local:/local
     entrypoint: ''
-    command: 'cargo test --features full-integration-env'
+    command: 'cargo test-all'
     # Separate target dir under docker
     environment:
       - CARGO_TARGET_DIR=/local/target

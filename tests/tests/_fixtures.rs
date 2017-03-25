@@ -20,7 +20,10 @@ impl TestIoBuffer {
 
     #[allow(dead_code)]
     fn as_vec(&self) -> Vec<u8> {
-        self.io.lock().unwrap().clone()
+        self.io
+            .lock()
+            .unwrap()
+            .clone()
     }
 
     #[allow(dead_code)]
