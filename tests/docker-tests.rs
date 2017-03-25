@@ -24,7 +24,6 @@ mod tests {
     use std::net::ToSocketAddrs;
     use std::ops::DerefMut;
     use std::path::PathBuf;
-    use std::process::{Command, Output};
     use std::sync::{Arc, Mutex};
 
     include!("tests/_fixtures.rs");
@@ -33,11 +32,8 @@ mod tests {
     // Empty messages.json and syslog-ng log files
     fn reset_syslog_ng() {
 
-        File::create("/syslog-ng/messages.json")
-            .expect("Failed to empty messages.json");
-
-        File::create("/syslog-ng/syslog-ng")
-            .expect("Failed to empty syslog-ng");
+        File::create("/syslog-ng/messages.json").expect("Failed to empty messages.json");
+        File::create("/syslog-ng/syslog-ng").expect("Failed to empty syslog-ng");
     }
 
     // Fetch syslog-ng ouput

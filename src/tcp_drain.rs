@@ -7,6 +7,12 @@ use std::net::{Shutdown, TcpStream, SocketAddr};
 use std::sync::{Arc, Mutex};
 
 
+/// Delimited messages
+pub struct DelimitedMessages {}
+
+/// Framed messages
+pub struct FramedMessages {}
+
 /// State: `TCPDisconnected`` for the TCP drain
 #[derive(Debug)]
 pub struct TCPDisconnected {
@@ -19,13 +25,6 @@ pub struct TCPConnected {
     stream: Arc<Mutex<TcpStream>>,
     addr: SocketAddr,
 }
-
-/// Delimited messages
-pub struct DelimitedMessages {}
-
-/// Framed messages
-pub struct FramedMessages {}
-
 
 /// TCP drain
 #[derive(Debug)]
@@ -140,4 +139,4 @@ pub type TcpDrainDelimited<C, F> = TCPDrain<DelimitedMessages, C, F>;
 
 /// `TCPDrain` sending framed messages
 /// Mostly for sending RFC5424 messages - rsyslog, syslog-ng will use this format
-pub type TcpDrainFramed<C, F> = TCPDrain<DelimitedMessages, C, F>;
+pub type TcpDrainFramed<C, F> = TCPDrain<FramedMessages, C, F>;
