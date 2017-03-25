@@ -16,8 +16,8 @@ services:
     image: syslog-ng
     cap_add:
     - ALL
-    entrypoint: '/bin/bash -l -c'
-    command: '/usr/sbin/syslog-ng -F -d -v"'
+    # entrypoint: '/bin/bash -l -c'
+    command: '/usr/sbin/syslog-ng -F -d -v'
 
   #### test container
   rust:
