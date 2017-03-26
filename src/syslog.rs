@@ -31,12 +31,13 @@ pub enum Severity {
 
 impl From<slog::Level> for Severity {
     fn from(level: slog::Level) -> Severity {
+        use slog::Level::*;
         match level {
-            slog::Level::Critical => Severity::LOG_CRIT,
-            slog::Level::Error => Severity::LOG_ERR,
-            slog::Level::Warning => Severity::LOG_WARN,
-            slog::Level::Info => Severity::LOG_INFO,
-            slog::Level::Debug | slog::Level::Trace => Severity::LOG_DEBUG,
+            Critical => Severity::LOG_CRIT,
+            Error => Severity::LOG_ERR,
+            Warning => Severity::LOG_WARN,
+            Info => Severity::LOG_INFO,
+            Debug | slog::Level::Trace => Severity::LOG_DEBUG,
         }
     }
 }

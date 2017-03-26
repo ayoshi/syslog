@@ -8,10 +8,10 @@ use std::sync::{Arc, Mutex};
 
 
 /// Delimited messages
-pub struct DelimitedMessages {}
+pub struct DelimitedMessages;
 
 /// Framed messages
-pub struct FramedMessages {}
+pub struct FramedMessages;
 
 /// State: `TCPDisconnected`` for the TCP drain
 #[derive(Debug)]

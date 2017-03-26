@@ -10,10 +10,10 @@ use std::{io, fmt};
 use std::marker::PhantomData;
 
 /// `Unquoted` key=value
-pub struct Unquoted {}
+pub struct Unquoted;
 
 ///  `QuotedValue` key="value"
-pub struct QuotedValue {}
+pub struct QuotedValue;
 
 /// Key Separator Value Serializer
 pub struct KsvSerializer<W, Q> {

@@ -251,11 +251,11 @@ pub trait FormatMessage {
 
 /// RFC5424 structured data message
 #[derive(Debug)]
-pub struct MessageRFC5424 {}
+pub struct MessageRFC5424;
 
 /// Ksv Serialized message
 #[derive(Debug)]
-pub struct MessageKsv {}
+pub struct MessageKsv;
 
 impl FormatMessage for MessageRFC5424 {
     #[allow(unused_variables)]

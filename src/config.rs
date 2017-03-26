@@ -104,7 +104,7 @@ impl Default for TimestampFormat {
 
 /// Empty configuration
 #[derive(Debug, Clone, PartialEq, Default)]
-pub struct DefaultConfig {}
+pub struct DefaultConfig;
 
 
 /// Unix domain socket specific configuration
