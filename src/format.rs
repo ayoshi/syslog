@@ -297,25 +297,25 @@ impl FormatMessage for MessageKsv {
     }
 }
 
-// SyslogFormat invariants
+// SyslogFormatter invariants
 
 /// RFC3164 message formatter without timestamp and hostname with Ksv serialized data
 /// for logging to Unix domain socket only
-pub type Rfc3164MinimalKsv = SyslogFormat<HeaderRFC3164Minimal, MessageKsv>;
+pub type Rfc3164MinimalKsv = SyslogFormatter<HeaderRFC3164Minimal, MessageKsv>;
 
 /// RFC3164 message formatter with Ksv serialized data
-pub type Rfc3164Ksv<T> = SyslogFormat<HeaderRFC3164<T>, MessageKsv>;
+pub type Rfc3164Ksv<T> = SyslogFormatter<HeaderRFC3164<T>, MessageKsv>;
 
 /// RFC5424 message formatter with Ksv serialized data
-pub type Rfc5424Ksv<T> = SyslogFormat<HeaderRFC5424<T>, MessageKsv>;
+pub type Rfc5424Ksv<T> = SyslogFormatter<HeaderRFC5424<T>, MessageKsv>;
 
 /// RFC5424 message formatter with RFC5424 structured data
-pub type Rfc5424Native<T> = SyslogFormat<HeaderRFC5424<T>, MessageRFC5424>;
+pub type Rfc5424Native<T> = SyslogFormatter<HeaderRFC5424<T>, MessageRFC5424>;
 
 
 /// Generic Syslog Formatter
 #[derive(Debug, Clone)]
-pub struct SyslogFormat<H, M>
+pub struct SyslogFormatter<H, M>
     where H: FormatHeader,
           H::Timestamp: FormatTimestamp,
           M: FormatMessage
@@ -325,7 +325,7 @@ pub struct SyslogFormat<H, M>
 }
 
 
-impl<H, M> SyslogFormat<H, M>
+impl<H, M> SyslogFormatter<H, M>
     where H: FormatHeader + Send + Sync,
           H::Timestamp: FormatTimestamp,
           M: FormatMessage + Send + Sync
@@ -340,7 +340,7 @@ impl<H, M> SyslogFormat<H, M>
         let header_fields = HeaderFields::new(hostname, process_name, pid, facility);
         let header = H::new(header_fields);
 
-        SyslogFormat {
+        SyslogFormatter {
             header: header,
             _message: PhantomData,
         }
@@ -366,7 +366,7 @@ impl<H, M> SyslogFormat<H, M>
     }
 }
 
-impl<H, M> StreamFormat for SyslogFormat<H, M>
+impl<H, M> StreamFormat for SyslogFormatter<H, M>
     where H: FormatHeader + Send + Sync,
           H::Timestamp: FormatTimestamp,
           M: FormatMessage + Send + Sync
@@ -381,7 +381,7 @@ impl<H, M> StreamFormat for SyslogFormat<H, M>
     }
 }
 
-// SyslogFormat invariants with timestamps
+// SyslogFormatter invariants with timestamps
 
 // RFC3164
 
