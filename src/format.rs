@@ -59,31 +59,64 @@ pub trait FormatHeader {
               -> io::Result<()>;
 }
 
-/// Minimal RFC3164 Header - used only for logging to UNIX socket
-#[derive(Debug)]
-pub struct HeaderRFC3164Minimal {
-    fields: HeaderFields,
-}
+/// RFC3164 Minimal header (PRIORITY HOSTNAME TAG)
+pub struct Minimal;
+
+/// RFC3164 Full header (PRIORITY TIMESTAMP TAG)
+pub struct Full;
+
+pub trait Rfc3164Header {}
+
+impl Rfc3164Header for Minimal {}
+impl Rfc3164Header for Full {}
+
 
 /// RFC3164 Header
 #[derive(Debug)]
-pub struct HeaderRFC3164<T> {
+pub struct HeaderRFC3164<T, F>
+    where T: FormatTimestamp,
+          F: Rfc3164Header
+{
     fields: HeaderFields,
     _timestamp: PhantomData<T>,
+    _header_format: PhantomData<F>,
 }
 
-/// RFC5424 Header
-#[derive(Debug)]
-pub struct HeaderRFC5424<T> {
-    fields: HeaderFields,
-    _timestamp: PhantomData<T>,
+impl<T, F> HeaderRFC3164<T, F>
+    where T: FormatTimestamp,
+          F: Rfc3164Header
+{
+    fn format_prioriy(&self, io: &mut io::Write, record: &Record) -> io::Result<()> {
+        let priority = Priority::new(self.fields.facility, record.level().into());
+        write!(io, "<{}>", priority)?;
+        Ok(())
+    }
+
+    fn format_tag(&self, io: &mut io::Write) -> io::Result<()> {
+        match self.fields.process_name {
+            Some(ref process_name) => write!(io, "{}[{}]:", process_name, self.fields.pid)?,
+            None => write!(io, "[{}]:", self.fields.pid)?,
+        }
+        Ok(())
+    }
+
+    fn format_timestamp(&self, io: &mut io::Write) -> io::Result<()> {
+        T::format(io)?;
+        Ok(())
+    }
+
 }
 
-impl FormatHeader for HeaderRFC3164Minimal {
+impl FormatHeader for HeaderRFC3164<OmitTimestamp, Minimal> {
+
     type Timestamp = OmitTimestamp;
 
     fn new(fields: HeaderFields) -> Self {
-        HeaderRFC3164Minimal { fields: fields }
+        HeaderRFC3164::<OmitTimestamp, Minimal> {
+            fields: fields,
+            _timestamp: PhantomData,
+            _header_format: PhantomData,
+        }
     }
 
     #[allow(unused_variables)]
@@ -93,15 +126,10 @@ impl FormatHeader for HeaderRFC3164Minimal {
               logger_values: &OwnedKeyValueList)
               -> io::Result<()> {
         // PRIORITY
-        write!(io,
-               "<{}>",
-               Priority::new(self.fields.facility, record.level().into()))?;
+        HeaderRFC3164::format_prioriy(&self, io, record)?;
 
         // TAG process_name[pid]:
-        match self.fields.process_name {
-            Some(ref process_name) => write!(io, "{}[{}]:", process_name, self.fields.pid)?,
-            None => write!(io, "[{}]:", self.fields.pid)?,
-        }
+        self.format_tag(io)?;
 
         write_sp!(io)?;
 
@@ -109,15 +137,17 @@ impl FormatHeader for HeaderRFC3164Minimal {
     }
 }
 
-impl<T> FormatHeader for HeaderRFC3164<T>
+impl<T> FormatHeader for HeaderRFC3164<T, Full>
     where T: FormatTimestamp
 {
+
     type Timestamp = T;
 
     fn new(fields: HeaderFields) -> Self {
-        HeaderRFC3164::<T> {
+        HeaderRFC3164::<T, Full> {
             fields: fields,
             _timestamp: PhantomData,
+            _header_format: PhantomData,
         }
     }
 
@@ -128,12 +158,10 @@ impl<T> FormatHeader for HeaderRFC3164<T>
               logger_values: &OwnedKeyValueList)
               -> io::Result<()> {
         // PRIORITY
-        write!(io,
-               "<{}>",
-               Priority::new(self.fields.facility, record.level().into()))?;
+        self.format_prioriy(io, record)?;
 
         // TIMESTAMP
-        T::format(io)?;
+        self.format_timestamp(io)?;
         // write_sp!(io)?;
 
         // HOSTNAME
@@ -143,15 +171,20 @@ impl<T> FormatHeader for HeaderRFC3164<T>
         write_sp!(io)?;
 
         // TAG process_name[pid]:
-        match self.fields.process_name {
-            Some(ref process_name) => write!(io, "{}[{}]:", process_name, self.fields.pid)?,
-            None => write!(io, "[{}]:", self.fields.pid)?,
-        }
+        self.format_tag(io)?;
         write_sp!(io)?;
 
         Ok(())
     }
 }
+
+/// RFC5424 Header
+#[derive(Debug)]
+pub struct HeaderRFC5424<T> {
+    fields: HeaderFields,
+    _timestamp: PhantomData<T>,
+}
+
 
 impl<T> FormatHeader for HeaderRFC5424<T>
     where T: FormatTimestamp
@@ -301,17 +334,10 @@ impl FormatMessage for MessageKsv {
 
 /// RFC3164 message formatter without timestamp and hostname with Ksv serialized data
 /// for logging to Unix domain socket only
-pub type Rfc3164MinimalKsv = SyslogFormatter<HeaderRFC3164Minimal, MessageKsv>;
+pub type Rfc3164MinimalKsv = SyslogFormatter<HeaderRFC3164<OmitTimestamp, Minimal>, MessageKsv>;
 
 /// RFC3164 message formatter with Ksv serialized data
-pub type Rfc3164Ksv<T> = SyslogFormatter<HeaderRFC3164<T>, MessageKsv>;
-
-/// RFC5424 message formatter with Ksv serialized data
-pub type Rfc5424Ksv<T> = SyslogFormatter<HeaderRFC5424<T>, MessageKsv>;
-
-/// RFC5424 message formatter with RFC5424 structured data
-pub type Rfc5424Native<T> = SyslogFormatter<HeaderRFC5424<T>, MessageRFC5424>;
-
+pub type Rfc3164Ksv<T> = SyslogFormatter<HeaderRFC3164<T, Full>, MessageKsv>;
 
 /// Generic Syslog Formatter
 #[derive(Debug, Clone)]
@@ -324,6 +350,17 @@ pub struct SyslogFormatter<H, M>
     _message: PhantomData<M>,
 }
 
+/// Format syslog message
+pub trait SyslogFormat {
+    // type FormatHeader;
+    // type FormatMessage;
+
+    fn format(&self,
+              io: &mut io::Write,
+              record: &Record,
+              logger_values: &OwnedKeyValueList)
+              -> io::Result<()>;
+}
 
 impl<H, M> SyslogFormatter<H, M>
     where H: FormatHeader + Send + Sync,
@@ -346,7 +383,14 @@ impl<H, M> SyslogFormatter<H, M>
         }
 
     }
+}
 
+impl<H, M> SyslogFormat for SyslogFormatter<H, M>
+    where H: FormatHeader + Send + Sync,
+          H::Timestamp: FormatTimestamp + Send + Sync,
+          M: FormatMessage + Send + Sync
+{
+    /// Format syslog message
     fn format(&self,
               io: &mut io::Write,
               record: &Record,
@@ -354,7 +398,7 @@ impl<H, M> SyslogFormatter<H, M>
               -> io::Result<()> {
 
         // HEADER
-        self.header.format(io, record, logger_values)?;
+        H::format(&self.header, io, record, logger_values)?;
 
         // MESSAGE
         M::format(io, record, logger_values)?;
@@ -368,7 +412,7 @@ impl<H, M> SyslogFormatter<H, M>
 
 impl<H, M> StreamFormat for SyslogFormatter<H, M>
     where H: FormatHeader + Send + Sync,
-          H::Timestamp: FormatTimestamp,
+          H::Timestamp: FormatTimestamp + Send + Sync,
           M: FormatMessage + Send + Sync
 {
     fn format(&self,
@@ -376,10 +420,17 @@ impl<H, M> StreamFormat for SyslogFormatter<H, M>
               record: &Record,
               logger_values: &OwnedKeyValueList)
               -> io::Result<()> {
-        self.format(io, record, logger_values)?;
+
+        (self as &SyslogFormat).format(io, record, logger_values)?;
         Ok(())
     }
 }
+
+/// RFC5424 message formatter with Ksv serialized data
+pub type Rfc5424Ksv<T> = SyslogFormatter<HeaderRFC5424<T>, MessageKsv>;
+
+/// RFC5424 message formatter with RFC5424 structured data
+pub type Rfc5424Native<T> = SyslogFormatter<HeaderRFC5424<T>, MessageRFC5424>;
 
 // SyslogFormatter invariants with timestamps
 
