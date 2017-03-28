@@ -1,11 +1,9 @@
-use super::{HeaderFields, FormatHeader, FormatMessage, SyslogFormat, SyslogFormatter, MessageWithKsv};
-use serializers::{KsvSerializerQuotedValue, KsvSerializerUnquoted};
+use super::{HeaderFields, FormatHeader};
 use slog::{Record, OwnedKeyValueList};
-use slog_stream::Format as StreamFormat;
 use std::io;
 use std::marker::PhantomData;
-use syslog::{Facility, Priority};
-use time::{FormatTimestamp, OmitTimestamp, Ts3164Local, Ts3164Utc, TsIsoLocal, TsIsoUtc};
+use syslog::Priority;
+use time::{FormatTimestamp, OmitTimestamp};
 
 // Write separator
 macro_rules! write_sp { ($io:expr) => ( write!($io, " ") ) }
@@ -18,10 +16,10 @@ macro_rules! write_nilvalue { ($io:expr) => ( write!($io, "-") ) }
 // some need both, so let's send both
 macro_rules! write_eom { ($io:expr) => ( write!($io, "\n\0") ) }
 
-/// RFC3164 RFC3164Short header (PRIORITY HOSTNAME TAG)
+/// RFC3164 `RFC3164Short` header (PRIORITY HOSTNAME TAG)
 pub struct Rfc3164Short;
 
-/// RFC3164 RFC3164Full header (PRIORITY TIMESTAMP TAG)
+/// RFC3164 `RFC3164Full` header (PRIORITY TIMESTAMP TAG)
 pub struct Rfc3164Full;
 
 /// RFC3164 Header Format

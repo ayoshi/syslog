@@ -135,9 +135,8 @@ pub struct SyslogFormatter<H, M>
 
 /// Format syslog message
 pub trait SyslogFormat {
-    // type FormatHeader;
-    // type FormatMessage;
 
+    /// Format Syslog Message
     fn format(&self,
               io: &mut io::Write,
               record: &Record,

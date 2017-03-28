@@ -1,10 +1,10 @@
-use super::{HeaderFields, FormatHeader, SyslogFormatter, MessageOnly, MessageWithKsv};
-use serializers::{KsvSerializerQuotedValue, KsvSerializerUnquoted};
+use super::{HeaderFields, FormatHeader};
+use serializers::{KsvSerializerQuotedValue};
 use slog::{Record, OwnedKeyValueList};
 use std::io;
 use std::marker::PhantomData;
 use syslog::Priority;
-use time::{FormatTimestamp, TsIsoLocal, TsIsoUtc};
+use time::{FormatTimestamp};
 
 // RFC5424 ABNF
 
@@ -73,10 +73,10 @@ pub struct Rfc5424<T, F> {
 
 impl<T, F> Rfc5424<T, F> {}
 
-/// Rfc5424 header without structured data section
+/// RFC5424 header without structured data section
 pub struct Rfc5424Short;
 
-/// Rfc5424 header with structured data
+/// RFC5424 header with structured data
 pub struct Rfc5424Full;
 
 pub trait Rfc5424Header {}
@@ -125,6 +125,7 @@ impl<T, F> Rfc5424<T, F>
         Ok(())
     }
 
+    #[allow(unused_variables)]
     fn format_header(&self,
                      io: &mut io::Write,
                      record: &Record,
@@ -141,7 +142,7 @@ impl<T, F> Rfc5424<T, F>
         write_sp!(io)?; // SP
         self.format_pid(io)?; // PID
         write_sp!(io)?;
-        self.format_message_id(io, record); // MESSAGEID
+        self.format_message_id(io, record)?; // MESSAGEID
         Ok(())
     }
 }
