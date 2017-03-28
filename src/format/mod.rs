@@ -1,26 +1,33 @@
-mod rfc3164;
+
+// Macros used by childred
+// Write separator
+#[macro_export]
+macro_rules! write_sp { ($io:expr) => ( write!($io, " ") ) }
+
+// Write Rfc5424 NILVALUE
+#[macro_export]
+macro_rules! write_nilvalue { ($io:expr) => ( write!($io, "-") ) }
+
+// Write end of message some server implementation need NULL Termination, some need LF
+// some need both, so let's send both
+#[macro_export]
+macro_rules! write_eom { ($io:expr) => ( write!($io, "\n\0") ) }
+
+
 mod rfc5424;
+mod rfc3164;
 
 use self::rfc3164::{Rfc3164, Rfc3164Short, Rfc3164Full};
 use self::rfc5424::{Rfc5424, Rfc5424Short, Rfc5424Full};
-use serializers::{KsvSerializerUnquoted};
+use serializers::KsvSerializerUnquoted;
 
 use slog::{Record, OwnedKeyValueList};
 use slog_stream::Format as StreamFormat;
 use std::io;
 use std::marker::PhantomData;
-use syslog::{Facility};
+use syslog::Facility;
 use time::{FormatTimestamp, OmitTimestamp, Ts3164Local, Ts3164Utc, TsIsoLocal, TsIsoUtc};
 
-// Write separator
-macro_rules! write_sp { ($io:expr) => ( write!($io, " ") ) }
-
-// Write Rfc5424 NILVALUE
-macro_rules! write_nilvalue { ($io:expr) => ( write!($io, "-") ) }
-
-// Write end of message some server implementation need NULL Termination, some need LF
-// some need both, so let's send both
-macro_rules! write_eom { ($io:expr) => ( write!($io, "\n\0") ) }
 
 /// Syslog header fields
 #[derive(Debug)]
@@ -135,7 +142,6 @@ pub struct SyslogFormatter<H, M>
 
 /// Format syslog message
 pub trait SyslogFormat {
-
     /// Format Syslog Message
     fn format(&self,
               io: &mut io::Write,

@@ -5,17 +5,6 @@ use std::marker::PhantomData;
 use syslog::Priority;
 use time::{FormatTimestamp, OmitTimestamp};
 
-// Write separator
-macro_rules! write_sp { ($io:expr) => ( write!($io, " ") ) }
-
-// Write Rfc5424 NILVALUE
-macro_rules! write_nilvalue { ($io:expr) => ( write!($io, "-") ) }
-
-// Write end of message some server implementation
-// need NULL Termination, some need LF
-// some need both, so let's send both
-macro_rules! write_eom { ($io:expr) => ( write!($io, "\n\0") ) }
-
 /// RFC3164 `RFC3164Short` header (PRIORITY HOSTNAME TAG)
 pub struct Rfc3164Short;
 
@@ -44,7 +33,6 @@ impl<T, F> Rfc3164<T, F>
     where T: FormatTimestamp,
           F: Rfc3164Header
 {
-
     fn format_prioriy(&self, io: &mut io::Write, record: &Record) -> io::Result<()> {
         let priority = Priority::new(self.fields.facility, record.level().into());
         write!(io, "<{}>", priority)?;
@@ -70,7 +58,6 @@ impl<T, F> Rfc3164<T, F>
         }
         Ok(())
     }
-
 }
 
 impl FormatHeader for Rfc3164<OmitTimestamp, Rfc3164Short> {

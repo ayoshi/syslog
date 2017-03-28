@@ -1,10 +1,10 @@
 use super::{HeaderFields, FormatHeader};
-use serializers::{KsvSerializerQuotedValue};
+use serializers::KsvSerializerQuotedValue;
 use slog::{Record, OwnedKeyValueList};
 use std::io;
 use std::marker::PhantomData;
 use syslog::Priority;
-use time::{FormatTimestamp};
+use time::FormatTimestamp;
 
 // RFC5424 ABNF
 
@@ -53,15 +53,6 @@ use time::{FormatTimestamp};
 //       MSG-UTF8        = BOM UTF-8-STRING
 //       BOM             = %xEF.BB.BF
 
-// Write separator
-macro_rules! write_sp { ($io:expr) => ( write!($io, " ") ) }
-
-// Write Rfc5424 NILVALUE
-macro_rules! write_nilvalue { ($io:expr) => ( write!($io, "-") ) }
-
-// Write end of message some server implementation need NULL Termination, some need LF
-// some need both, so let's send both
-macro_rules! write_eom { ($io:expr) => ( write!($io, "\n\0") ) }
 
 /// Rfc5424 Header
 #[derive(Debug)]
