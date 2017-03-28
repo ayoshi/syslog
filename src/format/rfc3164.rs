@@ -13,7 +13,8 @@ macro_rules! write_sp { ($io:expr) => ( write!($io, " ") ) }
 // Write Rfc5424 NILVALUE
 macro_rules! write_nilvalue { ($io:expr) => ( write!($io, "-") ) }
 
-// Write end of message some server implementation need NULL Termination, some need LF
+// Write end of message some server implementation
+// need NULL Termination, some need LF
 // some need both, so let's send both
 macro_rules! write_eom { ($io:expr) => ( write!($io, "\n\0") ) }
 
@@ -45,13 +46,6 @@ impl<T, F> Rfc3164<T, F>
     where T: FormatTimestamp,
           F: Rfc3164Header
 {
-    fn new(fields: HeaderFields) -> Self {
-        Rfc3164::<T, F> {
-            fields: fields,
-            _timestamp: PhantomData,
-            _header_format: PhantomData,
-        }
-    }
 
     fn format_prioriy(&self, io: &mut io::Write, record: &Record) -> io::Result<()> {
         let priority = Priority::new(self.fields.facility, record.level().into());
@@ -84,6 +78,14 @@ impl<T, F> Rfc3164<T, F>
 impl FormatHeader for Rfc3164<OmitTimestamp, Rfc3164Short> {
     type Timestamp = OmitTimestamp;
 
+    fn new(fields: HeaderFields) -> Self {
+        Rfc3164::<OmitTimestamp, Rfc3164Short> {
+            fields: fields,
+            _timestamp: PhantomData,
+            _header_format: PhantomData,
+        }
+    }
+
     #[allow(unused_variables)]
     fn format(&self,
               io: &mut io::Write,
@@ -109,6 +111,14 @@ impl<T> FormatHeader for Rfc3164<T, Rfc3164Full>
     where T: FormatTimestamp
 {
     type Timestamp = T;
+
+    fn new(fields: HeaderFields) -> Self {
+        Rfc3164::<T, Rfc3164Full> {
+            fields: fields,
+            _timestamp: PhantomData,
+            _header_format: PhantomData,
+        }
+    }
 
     #[allow(unused_variables)]
     fn format(&self,
@@ -138,24 +148,3 @@ impl<T> FormatHeader for Rfc3164<T, Rfc3164Full>
         Ok(())
     }
 }
-
-// RFC3164 formatter invariants
-
-/// Rfc3164 message formatter without timestamp and hostname with Ksv serialized data
-/// for logging to Unix domain socket only
-pub type Rfc3164ShortKsv = SyslogFormatter<Rfc3164<OmitTimestamp, Rfc3164Short>, MessageWithKsv>;
-
-/// Rfc3164 message formatter with Ksv serialized data
-pub type Rfc3164FullKsv<T> = SyslogFormatter<Rfc3164<T, Rfc3164Full>, MessageWithKsv>;
-
-/// Rfc13614, Ksv, Local TZ
-pub type Rfc3164KsvTs3164Local = Rfc3164FullKsv<Ts3164Local>;
-
-/// Rfc13614, Ksv, UTC
-pub type Rfc3164KsvTs3164Utc = Rfc3164FullKsv<Ts3164Utc>;
-
-/// Rfc13614, Ksv, ISO8601, Local TZ
-pub type Rfc3164KsvTsIsoLocal = Rfc3164FullKsv<TsIsoLocal>;
-
-/// Rfc13614, Ksv, ISO8601, UTC
-pub type Rfc3164KsvTsIsoUtc = Rfc3164FullKsv<TsIsoUtc>;

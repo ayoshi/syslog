@@ -2,7 +2,7 @@
 
 #[test]
 fn formatter_rfc3164_minimal_ksv() {
-    let formatter = formatter!(Rfc3164MinimalKsv);
+    let formatter = formatter!(Rfc3164ShortKsv);
     let buffer = emit_test_message_to_buffer(formatter);
     println!("{:?}", buffer.as_vec());
     println!("{:?}", buffer.as_string());
