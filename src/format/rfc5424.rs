@@ -111,6 +111,8 @@ impl<T, F> Rfc5424<T, F>
         Ok(())
     }
 
+    // Though MESSAGEID exact content is not specified in RFC5424,
+    // we'll use it to pass SLOG record Level
     fn format_message_id(&self, io: &mut io::Write, record: &Record) -> io::Result<()> {
         write!(io, "{}", record.level().to_string())?;
         Ok(())
@@ -136,6 +138,7 @@ impl<T, F> Rfc5424<T, F>
         self.format_message_id(io, record)?; // MESSAGEID
         Ok(())
     }
+
 }
 
 impl<T> FormatHeader for Rfc5424<T, Rfc5424Short>
