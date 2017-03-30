@@ -139,6 +139,14 @@ macro_rules! udp_tests {
                     stringify!($format),
                     $addr);
                 logger_emit!(UDPDrain, $format, dest, message);
+
+                let logged_messages = filter_syslog_messages(message);
+
+                // Message is logged
+                assert_eq!(logged_messages.len(), 1);
+
+                let ref logged_message = logged_messages[0];
+                println!("{}", logged_message)
             }
         )*)
 }

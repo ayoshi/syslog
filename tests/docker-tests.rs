@@ -48,4 +48,19 @@ mod tests {
             .collect::<Vec<serde_json::Value>>()
     }
 
+    // Fetch records for message in syslog-ng ouput
+    // Matching a filter
+    fn filter_syslog_messages(message: String) -> Vec<serde_json::Value> {
+
+        File::open("/syslog-ng/messages.json")
+            .map(|f| BufReader::new(f))
+            .expect("Couldn't open messages file")
+            .lines()
+            .map(|l| l.expect("Couldn't get line"))
+            .filter(|l| l.as_str().contains(message.as_str()))
+            .map(|l| serde_json::from_str(l.as_str()).unwrap())
+            .collect::<Vec<serde_json::Value>>()
+    }
+
+
 }
