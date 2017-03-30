@@ -140,13 +140,18 @@ macro_rules! udp_tests {
                     $addr);
                 logger_emit!(UDPDrain, $format, dest, message);
 
+                // Timing issue here - we need to wait for logger to log
+
                 let logged_messages = filter_syslog_messages(message);
 
                 // Message is logged
                 assert_eq!(logged_messages.len(), 1);
 
                 let ref logged_message = logged_messages[0];
-                println!("{}", logged_message)
+                println!("{}", logged_message);
+
+                // Truncate file after the test
+                reset_syslog_ng();
             }
         )*)
 }
