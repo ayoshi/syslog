@@ -17,7 +17,7 @@ mod tests {
     use slog_stream::Format as StreamFormat;
     use slog_syslog_ng::*;
 
-    use std::{io, result};
+    use std::{io, result, thread, time};
     use std::fs::File;
     use std::io::BufRead;
     use std::io::BufReader;

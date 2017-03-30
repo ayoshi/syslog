@@ -105,6 +105,23 @@ macro_rules! logger_emit(
         println!("{} -> {:?} -> {:?}", buffer.as_string(), buffer.as_vec(), $dest);
     }});
 
+// Fetch and verify recieved message from syslog-ng
+macro_rules! verify_syslog_ng_message {
+    ($message: ident) =>
+        (
+            // Timing issue here - we need to wait for logger to log,
+            thread::sleep(time::Duration::from_millis(500));
+
+            let logged_messages = filter_syslog_messages($message);
+
+            // Message is logged, once and only once
+            assert_eq!(logged_messages.len(), 1);
+
+            let ref logged_message = logged_messages[0];
+            println!("{}", logged_message);
+        )
+}
+
 // Generate tests for unix socket drain
 macro_rules! uds_tests {
     ($([$name:ident, $format:ident, $path:expr]),*) =>
@@ -118,6 +135,7 @@ macro_rules! uds_tests {
                     stringify!($format),
                     $path);
                 logger_emit!(UDSDrain, $format, dest, message);
+                verify_syslog_ng_message!(message);
             }
         )*)
 }
@@ -139,19 +157,7 @@ macro_rules! udp_tests {
                     stringify!($format),
                     $addr);
                 logger_emit!(UDPDrain, $format, dest, message);
-
-                // Timing issue here - we need to wait for logger to log
-
-                let logged_messages = filter_syslog_messages(message);
-
-                // Message is logged
-                assert_eq!(logged_messages.len(), 1);
-
-                let ref logged_message = logged_messages[0];
-                println!("{}", logged_message);
-
-                // Truncate file after the test
-                reset_syslog_ng();
+                verify_syslog_ng_message!(message);
             }
         )*)
 }
@@ -173,6 +179,7 @@ macro_rules! tcp_delimited_tests {
                     stringify!($format),
                     $addr);
                 logger_emit!(TCPDrainDelimited, $format, dest, message);
+                verify_syslog_ng_message!(message);
             }
         )*)
 }
@@ -194,6 +201,7 @@ macro_rules! tcp_framed_tests {
                     stringify!($format),
                     $addr);
                 logger_emit!(TCPDrainFramed, $format, dest, message);
+                verify_syslog_ng_message!(message);
             }
         )*)
 }
