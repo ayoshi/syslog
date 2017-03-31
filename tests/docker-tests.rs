@@ -25,6 +25,6 @@ mod tests {
     use std::net::ToSocketAddrs;
     use std::path::PathBuf;
 
-    include!("tests/_drains.rs");
+    include!("tests/drains.rs");
 
 }

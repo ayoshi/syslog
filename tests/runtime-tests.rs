@@ -24,10 +24,9 @@ mod tests {
     use std::net::{SocketAddr, IpAddr, Ipv4Addr};
     use std::path::PathBuf;
 
-    // include!("tests/_fixtures.rs");
-    include!("tests/_basic.rs");
-    include!("tests/_config.rs");
-    include!("tests/_serializers.rs");
+    include!("tests/helpers.rs");
+    include!("tests/config.rs");
+    include!("tests/serializers.rs");
 
 
 }
