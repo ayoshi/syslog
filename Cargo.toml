@@ -27,6 +27,8 @@ hostname = "*"
 
 [dev-dependencies]
 compiletest_rs = "*"
+pretty_assertions = "*"
+# itertools = "*"
 
 [features]
 # For testing with live syslog instances, used to enable tests

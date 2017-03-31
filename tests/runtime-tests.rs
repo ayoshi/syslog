@@ -1,4 +1,8 @@
 // Tests to be run
+#[cfg(test)]
+#[macro_use]
+extern crate pretty_assertions;
+
 extern crate slog_syslog_ng;
 
 #[macro_use]
