@@ -1,25 +1,33 @@
-type SharedIoVec = Arc<Mutex<Vec<u8>>>;
+use slog::{Logger, Record, OwnedKeyValueList, Drain, DrainExt};
+use slog_stream::Format as StreamFormat;
+// use slog_syslog_ng::*;
+
+use std::{io, result};
+use std::ops::DerefMut;
+use std::sync::{Arc, Mutex};
+
+
+pub type SharedIoVec = Arc<Mutex<Vec<u8>>>;
 
 // Test buffer to hold single message
 // Can be passed to TestDrain, and examined from outside
 #[allow(dead_code)]
 #[derive(Clone)]
-struct TestIoBuffer {
+pub struct TestIoBuffer {
     io: SharedIoVec,
 }
 
 impl TestIoBuffer {
-    #[allow(dead_code)]
-    fn new(capacity: usize) -> TestIoBuffer {
+    pub fn new(capacity: usize) -> TestIoBuffer {
         TestIoBuffer { io: Arc::new(Mutex::new(Vec::<u8>::with_capacity(capacity))) }
     }
 
-    fn io(&self) -> SharedIoVec {
+    pub fn io(&self) -> SharedIoVec {
         self.io.clone()
     }
 
     #[allow(dead_code)]
-    fn as_vec(&self) -> Vec<u8> {
+    pub fn as_vec(&self) -> Vec<u8> {
         self.io
             .lock()
             .unwrap()
@@ -27,7 +35,7 @@ impl TestIoBuffer {
     }
 
     #[allow(dead_code)]
-    fn as_string(&self) -> String {
+    pub fn as_string(&self) -> String {
         String::from_utf8(self.as_vec()).unwrap()
     }
 }
@@ -35,7 +43,7 @@ impl TestIoBuffer {
 // Test Drain which accepts a TestIoBuffer::io
 #[derive(Debug)]
 #[allow(dead_code)]
-struct TestDrain<F>
+pub struct TestDrain<F>
     where F: StreamFormat
 {
     io: SharedIoVec,
@@ -45,7 +53,7 @@ struct TestDrain<F>
 impl<F> TestDrain<F>
     where F: StreamFormat
 {
-    fn new(io: SharedIoVec, formatter: F) -> TestDrain<F> {
+    pub fn new(io: SharedIoVec, formatter: F) -> TestDrain<F> {
         TestDrain {
             io: io,
             formatter: formatter,
@@ -67,8 +75,7 @@ impl<F> Drain for TestDrain<F>
 
 // Create test buffer for introspection, and
 // log defined message to the test drain, returning buffer
-#[allow(dead_code)]
-fn emit_test_message_to_buffer<F>(formatter: F) -> TestIoBuffer
+pub fn emit_test_message_to_buffer<F>(formatter: F) -> TestIoBuffer
     where F: StreamFormat + 'static
 {
     let buffer = TestIoBuffer::new(1024);
@@ -79,6 +86,7 @@ fn emit_test_message_to_buffer<F>(formatter: F) -> TestIoBuffer
 }
 
 // Formater fixture
+#[macro_export]
 macro_rules! formatter(
         ($format: ident) => (
             $format::new(
@@ -86,6 +94,7 @@ macro_rules! formatter(
     ));
 
 // Emit message Fixture
+#[macro_export]
 macro_rules! logger_emit(
     ($drain: ident, $format: ident, $dest: expr, $event: expr) => {{
 
@@ -106,6 +115,7 @@ macro_rules! logger_emit(
     }});
 
 // Fetch and verify recieved message from syslog-ng
+#[macro_export]
 macro_rules! verify_syslog_ng_message {
     ($message: ident) =>
         (
@@ -123,6 +133,7 @@ macro_rules! verify_syslog_ng_message {
 }
 
 // Generate tests for unix socket drain
+#[macro_export]
 macro_rules! uds_tests {
     ($([$name:ident, $format:ident, $path:expr]),*) =>
         ($(
@@ -141,6 +152,7 @@ macro_rules! uds_tests {
 }
 
 // Generate tests for UDP drain
+#[macro_export]
 macro_rules! udp_tests {
     ($([$name:ident, $format:ident, $addr:expr]),*) =>
         ($(
@@ -163,6 +175,7 @@ macro_rules! udp_tests {
 }
 
 // Generate tests for TCP drain
+#[macro_export]
 macro_rules! tcp_delimited_tests {
     ($([$name:ident, $format:ident, $addr:expr]),*) =>
         ($(
@@ -185,6 +198,7 @@ macro_rules! tcp_delimited_tests {
 }
 
 // Generate tests for TCP drain
+#[macro_export]
 macro_rules! tcp_framed_tests {
     ($([$name:ident, $format:ident, $addr:expr]),*) =>
         ($(

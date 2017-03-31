@@ -7,28 +7,28 @@ extern crate pretty_assertions;
 extern crate slog;
 extern crate slog_stream;
 extern crate slog_syslog_ng;
-
 extern crate serde_json;
+
+#[macro_use]
+mod common;
 
 #[cfg(test)]
 #[cfg(feature="full-integration-env")]
 mod tests {
 
+    use common::{TestDrain, TestIoBuffer};
     use serde_json;
-    use slog::{Logger, Record, OwnedKeyValueList, Drain, DrainExt, duplicate};
-    use slog_stream::Format as StreamFormat;
+    use slog::{Logger, DrainExt, duplicate};
     use slog_syslog_ng::*;
 
-    use std::{io, result, thread, time};
+    use std::{thread, time};
     use std::fs::File;
     use std::io::BufRead;
     use std::io::BufReader;
-    use std::net::ToSocketAddrs;
-    use std::ops::DerefMut;
-    use std::path::PathBuf;
-    use std::sync::{Arc, Mutex};
 
-    include!("tests/_fixtures.rs");
+    use std::net::ToSocketAddrs;
+    use std::path::PathBuf;
+
     include!("tests/_drains.rs");
 
     // Empty messages.json and syslog-ng log files
