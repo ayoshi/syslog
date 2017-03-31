@@ -1,3 +1,7 @@
+#![allow(dead_code)]
+pub mod syslog_ng;
+
+pub use self::syslog_ng::{fetch_syslog_messages, filter_syslog_messages, reset_syslog_ng};
 use slog::{Logger, Record, OwnedKeyValueList, Drain, DrainExt};
 use slog_stream::Format as StreamFormat;
 // use slog_syslog_ng::*;
