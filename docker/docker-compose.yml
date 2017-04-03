@@ -21,7 +21,9 @@ services:
 
   #### test container
   rust:
-    image: scorpil/rust:nightly
+    build:
+      context: ./
+      dockerfile: Dockerfile.rust
     working_dir: /src
     depends_on:
       - syslog-ng

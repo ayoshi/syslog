@@ -24,6 +24,7 @@ isatty = "0.1"
 thread_local = "^0.3"
 libc = "*"
 hostname = "*"
+native-tls = "*"
 
 [dev-dependencies]
 compiletest_rs = "*"
