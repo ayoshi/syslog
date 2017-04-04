@@ -52,7 +52,7 @@ impl<T, F> TLSDrain<T, TLSDisconnected, F>
     pub fn connect(self) -> io::Result<TLSDrain<T, TLSConnected, F>> {
         // TODO Fix all unwraps
         // TODO Fix domain name validation
-        let connector = TlsConnector::builder().unwrap().build().unwrap();
+        let connector = TlsConnector::builder().expect("Builder 1").build().expect("Builder 2");
         let stream = TcpStream::connect(self.connection.addr)?;
         // let mut stream = connector.connect("google.com", stream).unwrap();
         let stream = connector.danger_connect_without_providing_domain_for_certificate_verification_and_server_name_indication(
