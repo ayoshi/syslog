@@ -9,6 +9,8 @@ const UDP_5424_NATIVE: &'static str = "syslog-ng:22514";
 const TCP_3164_KSV: &'static str = "syslog-ng:10601";
 const TCP_5424_KSV: &'static str = "syslog-ng:20601";
 const TCP_5424_NATIVE: &'static str = "syslog-ng:22601";
+const TLS_5424_KSV: &'static str = "syslog-ng:16514";
+const TLS_5424_NATIVE: &'static str = "syslog-ng:26514";
 
 uds_tests!([uds_rfc3164_minimal_ksv, Rfc3164ShortKsv, SOCK_3164_KSV],
            [uds_rfc3164_ts3164_local_ksv, Rfc3164KsvTs3164Local, SOCK_3164_KSV],
@@ -39,3 +41,8 @@ tcp_framed_tests!([tcp_rfc5424_tsiso_local_ksv, Rfc5424KsvTsIsoLocal, TCP_5424_K
                   [tcp_rfc5424_tsiso_utc_ksv, Rfc5424KsvTsIsoUtc, TCP_5424_KSV],
                   [tcp_rfc5424_tsiso_local_native, Rfc5424NativeTsIsoLocal, TCP_5424_NATIVE],
                   [tcp_rfc5424_tsiso_utc_native, Rfc5424NativeTsIsoUtc, TCP_5424_NATIVE]);
+
+tls_framed_tests!([tls_rfc5424_tsiso_local_ksv, Rfc5424KsvTsIsoLocal, TLS_5424_KSV],
+                  [tls_rfc5424_tsiso_utc_ksv, Rfc5424KsvTsIsoUtc, TLS_5424_KSV],
+                  [tls_rfc5424_tsiso_local_native, Rfc5424NativeTsIsoLocal, TLS_5424_NATIVE],
+                  [tls_rfc5424_tsiso_utc_native, Rfc5424NativeTsIsoUtc, TLS_5424_NATIVE]);

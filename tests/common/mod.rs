@@ -223,3 +223,26 @@ macro_rules! tcp_framed_tests {
             }
         )*)
 }
+
+// Generate tests for TCP drain
+#[macro_export]
+macro_rules! tls_framed_tests {
+    ($([$name:ident, $format:ident, $addr:expr]),*) =>
+        ($(
+            #[test]
+            fn $name() {
+                let dest = $addr
+                    .to_socket_addrs()
+                    .expect(format!("Couldn't to connect to {}", $addr).as_str())
+                    .collect::<Vec<_>>()
+                    [0];
+                let message = format!(
+                    "{} {} message to {}",
+                    stringify!(TLSDrainFramed),
+                    stringify!($format),
+                    $addr);
+                logger_emit!(TLSDrainFramed, $format, dest, message);
+                verify_syslog_ng_message!(message);
+            }
+        )*)
+}

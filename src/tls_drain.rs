@@ -3,9 +3,9 @@ use slog_stream::Format as StreamFormat;
 use std::io;
 use std::io::{Write, Cursor};
 use std::marker::PhantomData;
-use std::net::{Shutdown, TcpStream, SocketAddr};
+use std::net::{TcpStream, SocketAddr};
 use std::sync::{Arc, Mutex};
-use native_tls::TlsConnector;
+use native_tls::{TlsConnector, TlsStream};
 
 /// Delimited messages
 pub struct DelimitedMessages;
@@ -22,7 +22,7 @@ pub struct TLSDisconnected {
 /// State: `TLSConnected` for the TLS drain
 #[derive(Debug)]
 pub struct TLSConnected {
-    stream: Arc<Mutex<TlsStream>>,
+    stream: Arc<Mutex<TlsStream<TcpStream>>>,
     addr: SocketAddr,
 }
 
@@ -55,8 +55,8 @@ impl<T, F> TLSDrain<T, TLSDisconnected, F>
         let connector = TlsConnector::builder().unwrap().build().unwrap();
         let stream = TcpStream::connect(self.connection.addr)?;
         // let mut stream = connector.connect("google.com", stream).unwrap();
-        let mut stream = connector.danger_connect_without_providing_domain_for_certificate_verification_and_server_name_indication(
-            stream).unwrap()?;
+        let stream = connector.danger_connect_without_providing_domain_for_certificate_verification_and_server_name_indication(
+            stream).unwrap();
         Ok(TLSDrain::<T, TLSConnected, F> {
                formatter: self.formatter,
                connection: TLSConnected {
@@ -77,7 +77,7 @@ impl<T, F> TLSDrain<T, TLSConnected, F>
             .stream
             .lock()
             .map_err(|_| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
-            .and_then(|s| s.shutdown(Shutdown::Both))?;
+            .and_then(|mut s| s.shutdown())?;
         Ok(TLSDrain::<T, TLSDisconnected, F> {
                formatter: self.formatter,
                connection: TLSDisconnected { addr: self.connection.addr },

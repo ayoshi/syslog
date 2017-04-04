@@ -9,6 +9,7 @@ extern crate libc;
 extern crate serde;
 extern crate serde_json;
 extern crate slog_stream;
+extern crate native_tls;
 
 /// TODO
 pub mod config;
@@ -23,6 +24,7 @@ mod serializers;
 mod uds_drain;
 mod udp_drain;
 mod tcp_drain;
+mod tls_drain;
 
 pub use self::config::*;
 pub use self::format::*;
@@ -31,6 +33,7 @@ pub use self::serializers::*;
 pub use self::syslog::*;
 pub use self::tcp_drain::*;
 pub use self::time::*;
+pub use self::tls_drain::*;
 pub use self::udp_drain::*;
 pub use self::udp_drain::*;
 pub use self::uds_drain::*;
