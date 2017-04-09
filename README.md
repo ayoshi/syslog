@@ -18,31 +18,39 @@
   </a>
 </p>
 
-# slog-term  - Unix terminal drain for [slog-rs]
-
-[slog-rs]: //github.com/slog-rs/slog
+# syslog-ng  - Syslog drain for [slog-rs](http://github.com/slog-rs/slog)
 
 ## Development
 
 ### Running integration test suite in docker
 
-Run testsuite on live syslog instances
+All the Docker files are under `docker/` directory
 
 ```
-docker-compose -f docker/docker-compose.yml up --abort-on-container-exit
+cd docker
 ```
 
-Parse syslog-ng messages.json for all messages
+Full clean integration test run (reubilds all the crates),
+display parsed JSON syslog output
 
 ```
-docker-compose -f docker/docker-compose.yml run rust cat /syslog-ng/messages.json | jq --slurp '.[] | .MESSAGE'
+docker-compose run rust
 ```
 
-Full clean integration test run
+Full clean run
 
 ```
-docker-compose -f docker/docker-compose.yml run syslog-ng rm /syslog-ng/messages.json
-docker-compose -f docker/docker-compose.yml stop
-docker-compose -f docker/docker-compose.yml run rust cargo clean
-docker-compose -f docker/docker-compose.yml run rust cargo test --features full-integration-env
+docker-compose  up --abort-on-container-exit
+```
+
+Run testsuite and inspect parsed JSON output
+
+```
+docker-compose run rust test-inspect
+```
+
+Inspect failed tests with backtraces (doesn't rebuild dependencies)
+
+```
+docker-compose run rust test-debug
 ```

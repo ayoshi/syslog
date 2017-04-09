@@ -52,6 +52,11 @@ impl<T, F> TLSDrain<T, TLSDisconnected, F>
     pub fn connect(self) -> io::Result<TLSDrain<T, TLSConnected, F>> {
         // TODO Fix all unwraps
         // TODO Fix domain name validation
+        // let mut file = File::open("/syslog-ng/pfx").unwrap();
+        // let mut pkcs12 = vec![];
+        // file.read_to_end(&mut pkcs12).unwrap();
+        // let pkcs12 = Pkcs12::from_der(&pkcs12, "hunter2").unwrap();
+
         let connector = TlsConnector::builder().expect("Builder 1").build().expect("Builder 2");
         let stream = TcpStream::connect(self.connection.addr)?;
         // let mut stream = connector.connect("google.com", stream).unwrap();

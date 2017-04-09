@@ -1,3 +1,0 @@
-[alias]
-test-all = "test --features full-integration-env"
-test-debug = "test --features full-integration-env -- --nocapture"
