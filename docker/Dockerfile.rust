@@ -8,7 +8,7 @@ RUN apt-get update && \
     apt-get install \
        ca-certificates \
        curl \
-       gcc \
+       build-essential \
        libc6-dev \
        libssl-dev \
        jq \
