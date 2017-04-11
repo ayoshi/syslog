@@ -25,4 +25,7 @@ RUN openssl req -new -x509 -out cacert.pem -days 1095 -nodes \
 
 EXPOSE 10514/udp 11514/udp  20514/udp  21514/udp  22514/udp  10601/tcp  11601/tcp  20601/tcp  21601/tcp  22601/tcp  16514/tcp 26514/tcp
 
-CMD ["/usr/sbin/syslog-ng", "-F"]
+COPY configs/syslog-ng-entrypoint.sh /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["syslog-ng-debug"]

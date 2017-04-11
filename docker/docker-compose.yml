@@ -16,8 +16,6 @@ services:
     image: syslog-ng
     cap_add:
     - ALL
-    # entrypoint: '/bin/bash -l -c'
-    command: '/usr/sbin/syslog-ng -F -d -v'
 
   #### test container
   rust:
@@ -33,8 +31,6 @@ services:
       - ..:/src
       - rust:/root/.cargo
       - local:/local
-    # entrypoint: ''
-    # command: 'cargo test-all'
     # Separate target dir under docker
     environment:
       - CARGO_TARGET_DIR=/local/target
