@@ -5,7 +5,10 @@ use std::io::{Write, Cursor};
 use std::marker::PhantomData;
 use std::net::{TcpStream, SocketAddr};
 use std::sync::{Arc, Mutex};
-use native_tls::{TlsConnector, TlsStream};
+// use native_tls::{TlsConnector, TlsStream};
+use tls_client::TlsClient;
+use rustls;
+use webpki_roots;
 
 /// Delimited messages
 pub struct DelimitedMessages;
@@ -22,7 +25,7 @@ pub struct TLSDisconnected {
 /// State: `TLSConnected` for the TLS drain
 #[derive(Debug)]
 pub struct TLSConnected {
-    stream: Arc<Mutex<TlsStream<TcpStream>>>,
+    stream: Arc<Mutex<TlsClient>>,
     addr: SocketAddr,
 }
 
@@ -57,11 +60,17 @@ impl<T, F> TLSDrain<T, TLSDisconnected, F>
         // file.read_to_end(&mut pkcs12).unwrap();
         // let pkcs12 = Pkcs12::from_der(&pkcs12, "hunter2").unwrap();
 
-        let connector = TlsConnector::builder().expect("Builder 1").build().expect("Builder 2");
+        let mut config = rustls::ClientConfig::new();
+        config.root_store.add_trust_anchors(&webpki_roots::ROOTS);
+
         let stream = TcpStream::connect(self.connection.addr)?;
+        let mut stream = TlsClient::new(stream, "syslog-ng", Arc::new(config));
+
+        // let connector = TlsConnector::builder().expect("Builder 1").build().expect("Builder 2");
+        // let stream = TcpStream::connect(self.connection.addr)?;
         // let mut stream = connector.connect("google.com", stream).unwrap();
-        let stream = connector.danger_connect_without_providing_domain_for_certificate_verification_and_server_name_indication(
-            stream).unwrap();
+        // let stream = connector.danger_connect_without_providing_domain_for_certificate_verification_and_server_name_indication(
+        //     stream).unwrap();
         Ok(TLSDrain::<T, TLSConnected, F> {
                formatter: self.formatter,
                connection: TLSConnected {
@@ -78,11 +87,12 @@ impl<T, F> TLSDrain<T, TLSConnected, F>
 {
     /// Disconnect TLS stream, completing all operations
     pub fn disconnect(self) -> io::Result<TLSDrain<T, TLSDisconnected, F>> {
-        self.connection
-            .stream
-            .lock()
-            .map_err(|_| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
-            .and_then(|mut s| s.shutdown())?;
+        //TODO: Fix
+        // self.connection
+        //     .stream
+        //     .lock()
+        //     .map_err(|_| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
+        //     .and_then(|mut s| s.shutdown())?;
         Ok(TLSDrain::<T, TLSDisconnected, F> {
                formatter: self.formatter,
                connection: TLSDisconnected { addr: self.connection.addr },

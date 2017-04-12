@@ -24,7 +24,9 @@ isatty = "0.1"
 thread_local = "^0.3"
 libc = "*"
 hostname = "*"
-native-tls = "*"
+rustls = "*"
+webpki = "0.10"
+webpki-roots = "0.7"
 
 [dev-dependencies]
 compiletest_rs = "*"

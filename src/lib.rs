@@ -9,7 +9,9 @@ extern crate libc;
 extern crate serde;
 extern crate serde_json;
 extern crate slog_stream;
-extern crate native_tls;
+extern crate rustls;
+extern crate webpki;
+extern crate webpki_roots;
 
 /// TODO
 pub mod config;
@@ -25,6 +27,7 @@ mod uds_drain;
 mod udp_drain;
 mod tcp_drain;
 mod tls_drain;
+mod tls_client;
 
 pub use self::config::*;
 pub use self::format::*;
