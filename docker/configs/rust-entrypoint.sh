@@ -2,8 +2,13 @@
 CMD=$1
 
 case "$CMD" in
+
     "build" )
         exec cargo build
+        ;;
+
+    "clippy" )
+        exec cargo clippy
         ;;
 
     "test" )
@@ -29,7 +34,7 @@ case "$CMD" in
     "test-clean" )
         echo > /syslog-ng/messages.json
         cargo clean
-        env RUST_BACKTRACE=full cargo test --features full-integration-env
+        env RUST_BACKTRACE=full cargo test --features full-integration-env ${@:2}
         cat /syslog-ng/messages.json | jq --slurp '.[]'
         ;;
 
