@@ -6,7 +6,7 @@ use std::marker::PhantomData;
 use std::net::{TcpStream, SocketAddr};
 use std::sync::{Arc, Mutex};
 // use native_tls::{TlsConnector, TlsStream};
-use tls_client::TlsClient;
+use tls_client::{TlsClient, lookup_suites, load_key_and_cert};
 use rustls;
 use webpki_roots;
 
@@ -62,6 +62,7 @@ impl<T, F> TLSDrain<T, TLSDisconnected, F>
 
         let mut config = rustls::ClientConfig::new();
         config.root_store.add_trust_anchors(&webpki_roots::ROOTS);
+        load_key_and_cert(&mut config, "/syslog-ng/privkey.pem", "/syslog-ng/cacert.pem");
 
         let stream = TcpStream::connect(self.connection.addr)?;
         let mut stream = TlsClient::new(stream, "syslog-ng", Arc::new(config));

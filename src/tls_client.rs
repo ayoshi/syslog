@@ -168,7 +168,7 @@ fn find_suite(name: &str) -> Option<&'static rustls::SupportedCipherSuite> {
 }
 
 /// Make a vector of ciphersuites named in `suites`
-fn lookup_suites(suites: &[String]) -> Vec<&'static rustls::SupportedCipherSuite> {
+pub fn lookup_suites(suites: &[String]) -> Vec<&'static rustls::SupportedCipherSuite> {
     let mut out = Vec::new();
 
     for csname in suites {
@@ -182,21 +182,22 @@ fn lookup_suites(suites: &[String]) -> Vec<&'static rustls::SupportedCipherSuite
     out
 }
 
-fn load_certs(filename: &str) -> Vec<rustls::Certificate> {
+pub fn load_certs(filename: &str) -> Vec<rustls::Certificate> {
     let certfile = fs::File::open(filename).expect("cannot open certificate file");
     let mut reader = BufReader::new(certfile);
     rustls::internal::pemfile::certs(&mut reader).unwrap()
 }
 
-fn load_private_key(filename: &str) -> rustls::PrivateKey {
+pub fn load_private_key(filename: &str) -> rustls::PrivateKey {
     let keyfile = fs::File::open(filename).expect("cannot open private key file");
     let mut reader = BufReader::new(keyfile);
     let keys = rustls::internal::pemfile::rsa_private_keys(&mut reader).unwrap();
+    println!("{:?}", keys);
     assert!(keys.len() == 1);
     keys[0].clone()
 }
 
-fn load_key_and_cert(config: &mut rustls::ClientConfig, keyfile: &str, certsfile: &str) {
+pub fn load_key_and_cert(config: &mut rustls::ClientConfig, keyfile: &str, certsfile: &str) {
     let certs = load_certs(certsfile);
     let privkey = load_private_key(keyfile);
 
@@ -204,7 +205,7 @@ fn load_key_and_cert(config: &mut rustls::ClientConfig, keyfile: &str, certsfile
 }
 
 /// Build a `ClientConfig` from our arguments
-pub fn make_config(args: &Args) -> Arc<rustls::ClientConfig> {
+fn make_config(args: &Args) -> Arc<rustls::ClientConfig> {
     let mut config = rustls::ClientConfig::new();
 
     if !args.flag_suite.is_empty() {
