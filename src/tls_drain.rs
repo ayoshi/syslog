@@ -5,10 +5,7 @@ use std::io::{Write, Cursor};
 use std::marker::PhantomData;
 use std::net::{TcpStream, SocketAddr};
 use std::sync::{Arc, Mutex};
-// use native_tls::{TlsConnector, TlsStream};
-use tls_client::{TlsClient, lookup_suites, load_key_and_cert};
-use rustls;
-use webpki_roots;
+use tls_client::{TlsClient, TLSSessionConfig, make_config};
 
 /// Delimited messages
 pub struct DelimitedMessages;
@@ -53,25 +50,13 @@ impl<T, F> TLSDrain<T, TLSDisconnected, F>
 
     /// Connect TLS stream
     pub fn connect(self) -> io::Result<TLSDrain<T, TLSConnected, F>> {
-        // TODO Fix all unwraps
-        // TODO Fix domain name validation
-        // let mut file = File::open("/syslog-ng/pfx").unwrap();
-        // let mut pkcs12 = vec![];
-        // file.read_to_end(&mut pkcs12).unwrap();
-        // let pkcs12 = Pkcs12::from_der(&pkcs12, "hunter2").unwrap();
 
-        let mut config = rustls::ClientConfig::new();
-        config.root_store.add_trust_anchors(&webpki_roots::ROOTS);
-        load_key_and_cert(&mut config, "/syslog-ng/privkey.pem", "/syslog-ng/cacert.pem");
+        let session_config = TLSSessionConfig::default();
+        let config = make_config(&session_config);
 
         let stream = TcpStream::connect(self.connection.addr)?;
-        let mut stream = TlsClient::new(stream, "syslog-ng", Arc::new(config));
+        let stream = TlsClient::new(stream, "syslog-ng", config);
 
-        // let connector = TlsConnector::builder().expect("Builder 1").build().expect("Builder 2");
-        // let stream = TcpStream::connect(self.connection.addr)?;
-        // let mut stream = connector.connect("google.com", stream).unwrap();
-        // let stream = connector.danger_connect_without_providing_domain_for_certificate_verification_and_server_name_indication(
-        //     stream).unwrap();
         Ok(TLSDrain::<T, TLSConnected, F> {
                formatter: self.formatter,
                connection: TLSConnected {
