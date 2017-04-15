@@ -12,6 +12,7 @@ RUN apt-get update && \
        libc6-dev \
        libssl-dev \
        jq \
+       sslscan \
        pkgconf \
        -qqy \
        --no-install-recommends \
