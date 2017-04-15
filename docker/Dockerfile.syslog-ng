@@ -20,7 +20,7 @@ VOLUME /syslog-ng
 # Generate test certificates for syslog-ng
 WORKDIR /etc/syslog-ng
 RUN openssl req -new -x509 -out cacert.pem -days 1095 -nodes \
-    -subj "/C=US/ST=NL/L=Locality/O=organization/OU=ou/CN=tet/emailAddress=test@test.com"
+    -subj "/C=US/ST=NL/L=Locality/O=organization/OU=ou/CN=syslog-ng/emailAddress=test@test.com"
 
 
 EXPOSE 10514/udp 11514/udp  20514/udp  21514/udp  22514/udp  10601/tcp  11601/tcp  20601/tcp  21601/tcp  22601/tcp  16514/tcp 26514/tcp

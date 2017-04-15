@@ -51,7 +51,16 @@ impl<T, F> TLSDrain<T, TLSDisconnected, F>
     /// Connect TLS stream
     pub fn connect(self) -> io::Result<TLSDrain<T, TLSConnected, F>> {
 
-        let session_config = TLSSessionConfig::default();
+        let session_config = TLSSessionConfig {
+            suite: Vec::<String>::new(),
+            proto: Vec::<String>::new(),
+            mtu: None,
+            cafile: Some(String::from("/syslog-ng/cacert.pem")),
+            no_tickets: false,
+            auth_key: None,
+            auth_certs: None
+        };
+
         let config = make_config(&session_config);
 
         let stream = TcpStream::connect(self.connection.addr)?;

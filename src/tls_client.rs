@@ -53,13 +53,13 @@ impl TlsClient {
 
 #[derive(Debug, Default)]
 pub struct TLSSessionConfig {
-    suite: Vec<String>,
-    proto: Vec<String>,
-    mtu: Option<usize>,
-    cafile: Option<String>,
-    no_tickets: bool,
-    auth_key: Option<String>,
-    auth_certs: Option<String>,
+    pub suite: Vec<String>,
+    pub proto: Vec<String>,
+    pub mtu: Option<usize>,
+    pub cafile: Option<String>,
+    pub no_tickets: bool,
+    pub auth_key: Option<String>,
+    pub auth_certs: Option<String>,
 }
 
 
