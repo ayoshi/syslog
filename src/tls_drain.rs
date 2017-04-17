@@ -6,7 +6,7 @@ use std::marker::PhantomData;
 use std::net::{TcpStream, SocketAddr};
 use std::sync::{Arc, Mutex};
 // use tls_client::{TlsClient, TLSSessionConfig, make_config};
-use tls_client::{TlsClient, TLSSessionConfig};
+use tls_client::{TlsClient, TlsSessionConfig, TlsClientConnected, TlsClientDisconnected};
 
 /// Delimited messages
 pub struct DelimitedMessages;
@@ -23,7 +23,7 @@ pub struct TLSDisconnected {
 /// State: `TLSConnected` for the TLS drain
 #[derive(Debug)]
 pub struct TLSConnected {
-    stream: Arc<Mutex<TlsClient>>,
+    stream: Arc<Mutex<TlsClient<TlsClientConnected>>>,
     addr: SocketAddr,
 }
 
@@ -34,6 +34,7 @@ pub struct TLSDrain<T, C, F>
 {
     formatter: F,
     connection: C,
+    session_config: TlsSessionConfig,
     _message_type: PhantomData<T>,
 }
 
@@ -41,10 +42,15 @@ impl<T, F> TLSDrain<T, TLSDisconnected, F>
     where F: StreamFormat
 {
     /// TLSDrain constructor
-    pub fn new(addr: SocketAddr, formatter: F) -> TLSDrain<T, TLSDisconnected, F> {
+    pub fn new(addr: SocketAddr,
+               hostname: String,
+               session_config: TlsSessionConfig,
+               formatter: F)
+               -> TLSDrain<T, TLSDisconnected, F> {
         TLSDrain::<T, TLSDisconnected, F> {
             formatter: formatter,
             connection: TLSDisconnected { addr: addr },
+            session_config: session_config,
             _message_type: PhantomData,
         }
     }
@@ -52,20 +58,11 @@ impl<T, F> TLSDrain<T, TLSDisconnected, F>
     /// Connect TLS stream
     pub fn connect(self) -> io::Result<TLSDrain<T, TLSConnected, F>> {
 
-        let session_config = TLSSessionConfig {
-            suite: Vec::<String>::new(),
-            proto: Vec::<String>::new(),
-            mtu: None,
-            cafile: Some(String::from("/syslog-ng/cacert.pem")),
-            no_tickets: false,
-            auth_key: None,
-            auth_certs: None
-        };
-
-        // let config = make_config(&session_config);
-
+        // TODO convert errors properly
         let stream = TcpStream::connect(self.connection.addr)?;
-        let stream = TlsClient::new(stream, "syslog-ng");
+        let stream = TlsClient::<TlsClientDisconnected>::new()
+            .configure(self.session_config)
+            .connect(stream).map_err(|e| io::Error::last_os_error())?;
 
         Ok(TLSDrain::<T, TLSConnected, F> {
                formatter: self.formatter,
@@ -73,6 +70,7 @@ impl<T, F> TLSDrain<T, TLSDisconnected, F>
                    stream: Arc::new(Mutex::new(stream)),
                    addr: self.connection.addr,
                },
+               session_config: self.session_config,
                _message_type: PhantomData,
            })
     }
@@ -91,6 +89,7 @@ impl<T, F> TLSDrain<T, TLSConnected, F>
         //     .and_then(|mut s| s.shutdown())?;
         Ok(TLSDrain::<T, TLSDisconnected, F> {
                formatter: self.formatter,
+               session_config: self.session_config,
                connection: TLSDisconnected { addr: self.connection.addr },
                _message_type: PhantomData,
            })

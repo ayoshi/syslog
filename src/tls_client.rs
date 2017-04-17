@@ -26,6 +26,7 @@ pub struct TlsSessionConfig {
 #[derive(Debug)]
 pub struct TlsClientDisconnected {}
 
+// TODO derive Debug properly
 pub struct TlsClientConfigured {
     connector: SslConnectorBuilder,
 }
@@ -90,7 +91,7 @@ impl TlsClient<TlsClientDisconnected> {
 }
 
 impl TlsClient<TlsClientConfigured> {
-    fn connect(self, sock: TcpStream) -> Result<TlsClient<TlsClientConnected>, ()> {
+    pub fn connect(self, sock: TcpStream) -> Result<TlsClient<TlsClientConnected>, ()> {
         // TODO convert errors
         let tls_session = self.connection.connector
             .build()
