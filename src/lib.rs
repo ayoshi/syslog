@@ -9,9 +9,7 @@ extern crate libc;
 extern crate serde;
 extern crate serde_json;
 extern crate slog_stream;
-extern crate rustls;
-extern crate webpki;
-extern crate webpki_roots;
+extern crate openssl;
 
 /// TODO
 pub mod config;
