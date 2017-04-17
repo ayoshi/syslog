@@ -7,22 +7,14 @@ use std::net::TcpStream;
 use std::str;
 use std::sync::Arc;
 
-use rustls;
-use webpki_roots;
+use native_tls;
+// use webpki_roots;
 
 /// This encapsulates the TCP-level connection, some connection
 /// state, and the underlying TLS-level session.
+#[derive(Debug)]
 pub struct TlsClient {
-    socket: TcpStream,
-    tls_session: rustls::ClientSession,
-}
-
-// TODO: FIx
-impl fmt::Debug for TlsClient {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    write!(f, "TLSCLIENT: {:?}", self.socket)
-    }
-
+    tls_session: native_tls::TlsStream<TcpStream>,
 }
 
 /// We implement `io::Write` and pass through to the TLS session
@@ -43,112 +35,65 @@ impl io::Read for TlsClient {
 }
 
 impl TlsClient {
-    pub fn new(sock: TcpStream, hostname: &str, cfg: Arc<rustls::ClientConfig>) -> TlsClient {
+    pub fn new(sock: TcpStream, hostname: &str, cfg: TLSSessionConfig) -> TlsClient {
+        let connector = native_tls::TlsConnector::builder().unwrap().build().unwrap();
+        let tls_session = connector.connect(hostname, sock).unwrap();
+
         TlsClient {
-            socket: sock,
-            tls_session: rustls::ClientSession::new(&cfg, hostname),
+            tls_session: tls_session
         }
     }
 }
 
 #[derive(Debug, Default)]
 pub struct TLSSessionConfig {
-    pub suite: Vec<String>,
-    pub proto: Vec<String>,
-    pub mtu: Option<usize>,
-    pub cafile: Option<String>,
-    pub no_tickets: bool,
-    pub auth_key: Option<String>,
-    pub auth_certs: Option<String>,
+    pub identity_file: Option<String>,
 }
 
 
-/// Find a ciphersuite with the given name
-fn find_suite(name: &str) -> Option<&'static rustls::SupportedCipherSuite> {
-    for suite in &rustls::ALL_CIPHERSUITES {
-        let sname = format!("{:?}", suite.suite).to_lowercase();
+// fn load_identity(filename: &str, password: &str) -> native_tls::Pkcs12 {
+//     let identity_file = fs::File::open(filename).expect("cannot open certificate file");
+//     let mut reader = BufReader::new(identity_file);
+//     native_tls::Pkcs12::from_der(&mut reader, password).unwrap()
+// }
 
-        if sname == name.to_string().to_lowercase() {
-            return Some(suite);
-        }
-    }
 
-    None
-}
+// Build a `ClientConfig` from our arguments
+// pub fn make_config(args: &TLSSessionConfig) -> Arc<rustls::ClientConfig> {
+//     let mut config = rustls::ClientConfig::new();
 
-/// Make a vector of ciphersuites named in `suites`
-pub fn lookup_suites(suites: &[String]) -> Vec<&'static rustls::SupportedCipherSuite> {
-    let mut out = Vec::new();
+//     if !args.suite.is_empty() {
+//         config.ciphersuites = lookup_suites(&args.suite);
+//     }
 
-    for csname in suites {
-        let scs = find_suite(csname);
-        match scs {
-            Some(s) => out.push(s),
-            None => panic!("cannot look up ciphersuite '{}'", csname),
-        }
-    }
+//     if args.cafile.is_some() {
+//         let cafile = args.cafile.as_ref().unwrap();
 
-    out
-}
+//         let certfile = fs::File::open(&cafile).expect("Cannot open CA file");
+//         let mut reader = BufReader::new(certfile);
+//         config.root_store
+//             .add_pem_file(&mut reader)
+//             .unwrap();
+//     } else {
+//         config.root_store.add_trust_anchors(&webpki_roots::ROOTS);
+//     }
 
-fn load_certs(filename: &str) -> Vec<rustls::Certificate> {
-    let certfile = fs::File::open(filename).expect("cannot open certificate file");
-    let mut reader = BufReader::new(certfile);
-    rustls::internal::pemfile::certs(&mut reader).unwrap()
-}
+//     if args.no_tickets {
+//         config.enable_tickets = false;
+//     }
 
-fn load_private_key(filename: &str) -> rustls::PrivateKey {
-    let keyfile = fs::File::open(filename).expect("cannot open private key file");
-    let mut reader = BufReader::new(keyfile);
-    let keys = rustls::internal::pemfile::rsa_private_keys(&mut reader).unwrap();
-    println!("{:?}", keys);
-    assert!(keys.len() == 1);
-    keys[0].clone()
-}
+//     config.set_protocols(&args.proto);
+//     config.set_mtu(&args.mtu);
 
-fn load_key_and_cert(config: &mut rustls::ClientConfig, keyfile: &str, certsfile: &str) {
-    let certs = load_certs(certsfile);
-    let privkey = load_private_key(keyfile);
+//     if args.auth_key.is_some() || args.auth_certs.is_some() {
+//         load_key_and_cert(&mut config,
+//                           args.auth_key
+//                               .as_ref()
+//                               .expect("must provide auth-key with auth-certs"),
+//                           args.auth_certs
+//                               .as_ref()
+//                               .expect("must provide auth-certs with auth-key"));
+//     }
 
-    config.set_single_client_cert(certs, privkey);
-}
-
-/// Build a `ClientConfig` from our arguments
-pub fn make_config(args: &TLSSessionConfig) -> Arc<rustls::ClientConfig> {
-    let mut config = rustls::ClientConfig::new();
-
-    if !args.suite.is_empty() {
-        config.ciphersuites = lookup_suites(&args.suite);
-    }
-
-    if args.cafile.is_some() {
-        let cafile = args.cafile.as_ref().unwrap();
-
-        let certfile = fs::File::open(&cafile).expect("Cannot open CA file");
-        let mut reader = BufReader::new(certfile);
-        config.root_store
-            .add_pem_file(&mut reader)
-            .unwrap();
-    } else {
-        config.root_store.add_trust_anchors(&webpki_roots::ROOTS);
-    }
-
-    if args.no_tickets {
-        config.enable_tickets = false;
-    }
-
-    config.set_protocols(&args.proto);
-    config.set_mtu(&args.mtu);
-
-    if args.auth_key.is_some() || args.auth_certs.is_some() {
-        load_key_and_cert(&mut config,
-                          args.auth_key
-                              .as_ref()
-                              .expect("must provide auth-key with auth-certs"),
-                          args.auth_certs
-                              .as_ref()
-                              .expect("must provide auth-certs with auth-key"));
-    }
-
-    Arc::new(config)
-}
+//     Arc::new(config)
+// }

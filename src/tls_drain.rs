@@ -5,7 +5,7 @@ use std::io::{Write, Cursor};
 use std::marker::PhantomData;
 use std::net::{TcpStream, SocketAddr};
 use std::sync::{Arc, Mutex};
-use tls_client::{TlsClient, TLSSessionConfig, make_config};
+use tls_client::{TlsClient, TLSSessionConfig};
 
 /// Delimited messages
 pub struct DelimitedMessages;
@@ -52,19 +52,13 @@ impl<T, F> TLSDrain<T, TLSDisconnected, F>
     pub fn connect(self) -> io::Result<TLSDrain<T, TLSConnected, F>> {
 
         let session_config = TLSSessionConfig {
-            suite: Vec::<String>::new(),
-            proto: Vec::<String>::new(),
-            mtu: None,
-            cafile: Some(String::from("/syslog-ng/cacert.pem")),
-            no_tickets: false,
-            auth_key: None,
-            auth_certs: None
+            identity_file: None,
         };
 
-        let config = make_config(&session_config);
+        // let config = make_config(&session_config);
 
         let stream = TcpStream::connect(self.connection.addr)?;
-        let stream = TlsClient::new(stream, "syslog-ng", config);
+        let stream = TlsClient::new(stream, "syslog-ng", session_config);
 
         Ok(TLSDrain::<T, TLSConnected, F> {
                formatter: self.formatter,
