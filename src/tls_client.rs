@@ -14,10 +14,10 @@ use std::path::PathBuf;
 use std::str;
 use std::sync::Arc;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct TlsSessionConfig {
     pub domain: String,
-    pub ca_file: Option<String>,
+    pub ca_file: Option<PathBuf>,
     pub private_key_file: Option<PathBuf>,
     pub certs_file: Option<PathBuf>,
     pub no_verify: bool,
@@ -52,14 +52,16 @@ impl<C> TlsClient<C> {
 }
 
 impl TlsClient<TlsClientDisconnected> {
-    pub fn configure(self, session_config: TlsSessionConfig) -> TlsClient<TlsClientConfigured> {
+    pub fn configure(self, session_config: &TlsSessionConfig) -> TlsClient<TlsClientConfigured> {
+        let session_config = session_config.clone();
         let mut connector = SslConnectorBuilder::new(SslMethod::tls()).unwrap();
         {
             let mut ctx = connector.builder_mut();
 
             // Set CA-file, or don't verify peer
-            if let Some(ca_file) = session_config.ca_file {
-                ctx.set_ca_file("/syslog-ng/cacert.pem");
+            // TODO: Fix unwrap
+            if let Some(ca_file) = session_config.ca_file.clone() {
+                ctx.set_ca_file(ca_file.as_path()).unwrap();
             }
 
             // NO_VERIFY
@@ -69,14 +71,14 @@ impl TlsClient<TlsClientDisconnected> {
             }
 
             // Set client certs file
-            if let Some(certs_file) = session_config.certs_file {
+            if let Some(certs_file) = session_config.certs_file.clone() {
                 ctx.set_certificate_file(certs_file.as_path(), X509_FILETYPE_PEM)
                     .unwrap();
             }
 
             // Set client private key file
-            if let Some(certs_file) = session_config.certs_file {
-                ctx.set_private_key_file(certs_file.as_path(), X509_FILETYPE_PEM)
+            if let Some(private_key_file) = session_config.private_key_file.clone() {
+                ctx.set_private_key_file(private_key_file.as_path(), X509_FILETYPE_PEM)
                     .unwrap();
             }
         }

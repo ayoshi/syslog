@@ -236,12 +236,32 @@ macro_rules! tls_framed_tests {
                     .expect(format!("Couldn't to connect to {}", $addr).as_str())
                     .collect::<Vec<_>>()
                     [0];
+                let tls_session_config = TlsSessionConfig {
+                    domain: String::from("syslog-ng"),
+                    ca_file: Some(PathBuf::from("/syslog-ng/cacert.pem")),
+                    private_key_file: None,
+                    certs_file: None,
+                    no_verify: false,
+                };
                 let message = format!(
                     "{} {} message to {}",
                     stringify!(TLSDrainFramed),
                     stringify!($format),
                     $addr);
-                logger_emit!(TLSDrainFramed, $format, dest, message);
+                let buffer = TestIoBuffer::new(1024);
+                let introspection_drain = TestDrain::new(buffer.io(), formatter!($format));
+
+                let test_drain = TLSDrainFramed::new(dest, tls_session_config, formatter!($format))
+                    .connect().expect("couldn't connect to socket");
+
+                let logger = Logger::root(duplicate(introspection_drain, test_drain).fuse(),
+                                          o!("lk1" => "lv1", "lk2" => "lv2"));
+
+                info!(logger, message; "mk1" => "mv1", "mk2" => "mv2");
+
+                println!("{:?}", buffer.as_vec());
+                println!("{:?}", buffer.as_string());
+                println!("{} -> {:?} -> {:?}", buffer.as_string(), buffer.as_vec(), dest);
                 verify_syslog_ng_message!(message);
             }
         )*)

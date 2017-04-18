@@ -43,7 +43,6 @@ impl<T, F> TLSDrain<T, TLSDisconnected, F>
 {
     /// TLSDrain constructor
     pub fn new(addr: SocketAddr,
-               hostname: String,
                session_config: TlsSessionConfig,
                formatter: F)
                -> TLSDrain<T, TLSDisconnected, F> {
@@ -61,7 +60,7 @@ impl<T, F> TLSDrain<T, TLSDisconnected, F>
         // TODO convert errors properly
         let stream = TcpStream::connect(self.connection.addr)?;
         let stream = TlsClient::<TlsClientDisconnected>::new()
-            .configure(self.session_config)
+            .configure(&self.session_config)
             .connect(stream).map_err(|e| io::Error::last_os_error())?;
 
         Ok(TLSDrain::<T, TLSConnected, F> {

@@ -38,6 +38,7 @@ pub use self::tls_drain::*;
 pub use self::udp_drain::*;
 pub use self::udp_drain::*;
 pub use self::uds_drain::*;
+pub use self::tls_client::TlsSessionConfig;
 
 
 /// Entry point to any further syslog configuration
