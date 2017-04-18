@@ -1,154 +1,127 @@
+
+
+use openssl::ssl::{SslConnectorBuilder, SslMethod, SslContextBuilder, SslStream, SSL_VERIFY_NONE,
+                   SSL_VERIFY_PEER};
+use openssl::x509::{X509FileType, X509_FILETYPE_PEM};
+use std::fmt;
 use std::fs;
 use std::io;
-use std::fmt;
+use openssl;
 use std::io::BufReader;
 
 use std::net::TcpStream;
+use std::path::PathBuf;
 use std::str;
 use std::sync::Arc;
 
-use rustls;
-use webpki_roots;
-
-/// This encapsulates the TCP-level connection, some connection
-/// state, and the underlying TLS-level session.
-pub struct TlsClient {
-    socket: TcpStream,
-    tls_session: rustls::ClientSession,
+#[derive(Debug, Default, Clone)]
+pub struct TlsSessionConfig {
+    pub domain: String,
+    pub ca_file: Option<PathBuf>,
+    pub private_key_file: Option<PathBuf>,
+    pub certs_file: Option<PathBuf>,
+    pub no_verify: bool,
 }
 
-// TODO: FIx
-impl fmt::Debug for TlsClient {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    write!(f, "TLSCLIENT: {:?}", self.socket)
+#[derive(Debug)]
+pub struct TlsClientDisconnected {}
+
+// TODO derive Debug properly
+pub struct TlsClientConfigured {
+    connector: SslConnectorBuilder,
+}
+
+#[derive(Debug)]
+pub struct TlsClientConnected {
+    tls_session: SslStream<TcpStream>,
+}
+
+#[derive(Debug)]
+pub struct TlsClient<C> {
+    session_config: TlsSessionConfig,
+    connection: C,
+}
+
+impl<C> TlsClient<C> {
+    pub fn new() -> TlsClient<TlsClientDisconnected> {
+        TlsClient::<TlsClientDisconnected> {
+            session_config: TlsSessionConfig::default(),
+            connection: TlsClientDisconnected {}
+        }
     }
-
 }
 
-/// We implement `io::Write` and pass through to the TLS session
-impl io::Write for TlsClient {
+impl TlsClient<TlsClientDisconnected> {
+    pub fn configure(self, session_config: &TlsSessionConfig) -> TlsClient<TlsClientConfigured> {
+        let session_config = session_config.clone();
+        let mut connector = SslConnectorBuilder::new(SslMethod::tls()).unwrap();
+        {
+            let mut ctx = connector.builder_mut();
+
+            // Set CA-file, or don't verify peer
+            // TODO: Fix unwrap
+            if let Some(ca_file) = session_config.ca_file.clone() {
+                ctx.set_ca_file(ca_file.as_path()).unwrap();
+            }
+
+            // NO_VERIFY
+            if session_config.no_verify {
+                ctx.set_verify(SSL_VERIFY_NONE);
+                ctx.set_verify_callback(SSL_VERIFY_PEER, |p, _| p);
+            }
+
+            // Set client certs file
+            if let Some(certs_file) = session_config.certs_file.clone() {
+                ctx.set_certificate_file(certs_file.as_path(), X509_FILETYPE_PEM)
+                    .unwrap();
+            }
+
+            // Set client private key file
+            if let Some(private_key_file) = session_config.private_key_file.clone() {
+                ctx.set_private_key_file(private_key_file.as_path(), X509_FILETYPE_PEM)
+                    .unwrap();
+            }
+        }
+
+        TlsClient::<TlsClientConfigured> {
+            session_config: session_config,
+            connection: TlsClientConfigured {
+                connector: connector,
+            }
+        }
+    }
+}
+
+impl TlsClient<TlsClientConfigured> {
+    pub fn connect(self, sock: TcpStream) -> Result<TlsClient<TlsClientConnected>, ()> {
+        // TODO convert errors
+        let tls_session = self.connection.connector
+            .build()
+            .connect(self.session_config.domain.as_ref(), sock).map_err(|e| ())?;
+
+        Ok(TlsClient::<TlsClientConnected> {
+            session_config: self.session_config,
+            connection: TlsClientConnected {
+                tls_session: tls_session,
+            }
+        }
+           )
+    }
+    // TODO Implement disconnect
+}
+
+impl io::Write for TlsClient<TlsClientConnected> {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
-        self.tls_session.write(bytes)
+        self.connection.tls_session.write(bytes)
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        self.tls_session.flush()
+        self.connection.tls_session.flush()
     }
 }
 
-impl io::Read for TlsClient {
+impl io::Read for TlsClient<TlsClientConnected> {
     fn read(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
-        self.tls_session.read(bytes)
+        self.connection.tls_session.read(bytes)
     }
-}
-
-impl TlsClient {
-    pub fn new(sock: TcpStream, hostname: &str, cfg: Arc<rustls::ClientConfig>) -> TlsClient {
-        TlsClient {
-            socket: sock,
-            tls_session: rustls::ClientSession::new(&cfg, hostname),
-        }
-    }
-}
-
-#[derive(Debug, Default)]
-pub struct TLSSessionConfig {
-    pub suite: Vec<String>,
-    pub proto: Vec<String>,
-    pub mtu: Option<usize>,
-    pub cafile: Option<String>,
-    pub no_tickets: bool,
-    pub auth_key: Option<String>,
-    pub auth_certs: Option<String>,
-}
-
-
-/// Find a ciphersuite with the given name
-fn find_suite(name: &str) -> Option<&'static rustls::SupportedCipherSuite> {
-    for suite in &rustls::ALL_CIPHERSUITES {
-        let sname = format!("{:?}", suite.suite).to_lowercase();
-
-        if sname == name.to_string().to_lowercase() {
-            return Some(suite);
-        }
-    }
-
-    None
-}
-
-/// Make a vector of ciphersuites named in `suites`
-pub fn lookup_suites(suites: &[String]) -> Vec<&'static rustls::SupportedCipherSuite> {
-    let mut out = Vec::new();
-
-    for csname in suites {
-        let scs = find_suite(csname);
-        match scs {
-            Some(s) => out.push(s),
-            None => panic!("cannot look up ciphersuite '{}'", csname),
-        }
-    }
-
-    out
-}
-
-fn load_certs(filename: &str) -> Vec<rustls::Certificate> {
-    let certfile = fs::File::open(filename).expect("cannot open certificate file");
-    let mut reader = BufReader::new(certfile);
-    rustls::internal::pemfile::certs(&mut reader).unwrap()
-}
-
-fn load_private_key(filename: &str) -> rustls::PrivateKey {
-    let keyfile = fs::File::open(filename).expect("cannot open private key file");
-    let mut reader = BufReader::new(keyfile);
-    let keys = rustls::internal::pemfile::rsa_private_keys(&mut reader).unwrap();
-    println!("{:?}", keys);
-    assert!(keys.len() == 1);
-    keys[0].clone()
-}
-
-fn load_key_and_cert(config: &mut rustls::ClientConfig, keyfile: &str, certsfile: &str) {
-    let certs = load_certs(certsfile);
-    let privkey = load_private_key(keyfile);
-
-    config.set_single_client_cert(certs, privkey);
-}
-
-/// Build a `ClientConfig` from our arguments
-pub fn make_config(args: &TLSSessionConfig) -> Arc<rustls::ClientConfig> {
-    let mut config = rustls::ClientConfig::new();
-
-    if !args.suite.is_empty() {
-        config.ciphersuites = lookup_suites(&args.suite);
-    }
-
-    if args.cafile.is_some() {
-        let cafile = args.cafile.as_ref().unwrap();
-
-        let certfile = fs::File::open(&cafile).expect("Cannot open CA file");
-        let mut reader = BufReader::new(certfile);
-        config.root_store
-            .add_pem_file(&mut reader)
-            .unwrap();
-    } else {
-        config.root_store.add_trust_anchors(&webpki_roots::ROOTS);
-    }
-
-    if args.no_tickets {
-        config.enable_tickets = false;
-    }
-
-    config.set_protocols(&args.proto);
-    config.set_mtu(&args.mtu);
-
-    if args.auth_key.is_some() || args.auth_certs.is_some() {
-        load_key_and_cert(&mut config,
-                          args.auth_key
-                              .as_ref()
-                              .expect("must provide auth-key with auth-certs"),
-                          args.auth_certs
-                              .as_ref()
-                              .expect("must provide auth-certs with auth-key"));
-    }
-
-    Arc::new(config)
 }
