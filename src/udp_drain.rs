@@ -2,6 +2,7 @@ use slog::{Drain, OwnedKeyValueList, Record};
 use slog_stream::Format as StreamFormat;
 use std::io;
 use std::net::{UdpSocket, SocketAddr};
+use errors::*;
 
 /// State: `UDPDisconnected` for the UDP drain
 #[derive(Debug)]
@@ -38,7 +39,7 @@ impl<F> UDPDrain<UDPDisconnected, F>
     }
 
     /// Connect UDP socket
-    pub fn connect(self) -> io::Result<UDPDrain<UDPConnected, F>> {
+    pub fn connect(self) -> Result<UDPDrain<UDPConnected, F>> {
         let socket = UdpSocket::bind("0.0.0.0:0")?;
         Ok(UDPDrain::<UDPConnected, F> {
                formatter: self.formatter,
@@ -54,7 +55,7 @@ impl<F> UDPDrain<UDPConnected, F>
     where F: StreamFormat
 {
     /// Disconnect UDP socket, completing all operations
-    pub fn disconnect(self) -> io::Result<UDPDrain<UDPDisconnected, F>> {
+    pub fn disconnect(self) -> Result<UDPDrain<UDPDisconnected, F>> {
         Ok(UDPDrain::<UDPDisconnected, F> {
                formatter: self.formatter,
                connection: UDPDisconnected { addr: self.connection.addr },

@@ -3,6 +3,9 @@
 //! TODO Syslog drain for slog
 //!
 
+// `error_chain!` can recurse deeply
+#![recursion_limit = "1024"]
+
 extern crate slog;
 extern crate chrono;
 extern crate libc;
@@ -11,12 +14,17 @@ extern crate serde_json;
 extern crate slog_stream;
 extern crate openssl;
 
+#[macro_use]
+extern crate error_chain;
+
 /// TODO
 pub mod config;
 /// TODO
 pub mod syslog;
 /// TODO
 pub mod posix;
+
+pub mod errors;
 
 mod time;
 mod format;

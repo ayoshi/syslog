@@ -4,6 +4,7 @@ use std::io;
 use std::net::Shutdown;
 use std::os::unix::net::UnixDatagram;
 use std::path::PathBuf;
+use errors::*;
 
 /// State: `UDSDisconnected`
 #[derive(Default, Debug)]
@@ -39,7 +40,7 @@ impl<F> UDSDrain<UDSDisconnected, F>
     }
 
     /// Connect UDS socket
-    pub fn connect(self) -> io::Result<UDSDrain<UDSConnected, F>> {
+    pub fn connect(self) -> Result<UDSDrain<UDSConnected, F>> {
         let socket = UnixDatagram::unbound()?;
         Ok(UDSDrain::<UDSConnected, F> {
                formatter: self.formatter,
@@ -55,7 +56,7 @@ impl<F> UDSDrain<UDSConnected, F>
     where F: StreamFormat
 {
     /// Disconnect UDS socket, completing all operations
-    pub fn disconnect(self) -> io::Result<UDSDrain<UDSDisconnected, F>> {
+    pub fn disconnect(self) -> Result<UDSDrain<UDSDisconnected, F>> {
         self.connection
             .socket
             .shutdown(Shutdown::Both)?;

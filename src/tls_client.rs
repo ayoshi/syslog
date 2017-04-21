@@ -1,18 +1,10 @@
-
-
-use openssl::ssl::{SslConnectorBuilder, SslMethod, SslContextBuilder, SslStream, SSL_VERIFY_NONE,
-                   SSL_VERIFY_PEER};
-use openssl::x509::{X509FileType, X509_FILETYPE_PEM};
-use std::fmt;
-use std::fs;
+use errors::*;
+use openssl::ssl::{SslConnectorBuilder, SslMethod, SslStream, SSL_VERIFY_NONE, SSL_VERIFY_PEER};
+use openssl::x509::X509_FILETYPE_PEM;
 use std::io;
-use openssl;
-use std::io::BufReader;
 
 use std::net::TcpStream;
 use std::path::PathBuf;
-use std::str;
-use std::sync::Arc;
 
 #[derive(Debug, Default, Clone)]
 pub struct TlsSessionConfig {
@@ -46,22 +38,23 @@ impl<C> TlsClient<C> {
     pub fn new() -> TlsClient<TlsClientDisconnected> {
         TlsClient::<TlsClientDisconnected> {
             session_config: TlsSessionConfig::default(),
-            connection: TlsClientDisconnected {}
+            connection: TlsClientDisconnected {},
         }
     }
 }
 
 impl TlsClient<TlsClientDisconnected> {
-    pub fn configure(self, session_config: &TlsSessionConfig) -> TlsClient<TlsClientConfigured> {
+    pub fn configure(self,
+                     session_config: &TlsSessionConfig)
+                     -> Result<TlsClient<TlsClientConfigured>> {
         let session_config = session_config.clone();
-        let mut connector = SslConnectorBuilder::new(SslMethod::tls()).unwrap();
+        let mut connector = SslConnectorBuilder::new(SslMethod::tls())?;
         {
             let mut ctx = connector.builder_mut();
 
             // Set CA-file, or don't verify peer
-            // TODO: Fix unwrap
             if let Some(ca_file) = session_config.ca_file.clone() {
-                ctx.set_ca_file(ca_file.as_path()).unwrap();
+                ctx.set_ca_file(ca_file.as_path())?;
             }
 
             // NO_VERIFY
@@ -72,43 +65,47 @@ impl TlsClient<TlsClientDisconnected> {
 
             // Set client certs file
             if let Some(certs_file) = session_config.certs_file.clone() {
-                ctx.set_certificate_file(certs_file.as_path(), X509_FILETYPE_PEM)
-                    .unwrap();
+                ctx.set_certificate_file(certs_file.as_path(), X509_FILETYPE_PEM)?;
             }
 
             // Set client private key file
             if let Some(private_key_file) = session_config.private_key_file.clone() {
-                ctx.set_private_key_file(private_key_file.as_path(), X509_FILETYPE_PEM)
-                    .unwrap();
+                ctx.set_private_key_file(private_key_file.as_path(), X509_FILETYPE_PEM)?;
             }
         }
 
-        TlsClient::<TlsClientConfigured> {
-            session_config: session_config,
-            connection: TlsClientConfigured {
-                connector: connector,
-            }
-        }
+        Ok(TlsClient::<TlsClientConfigured> {
+               session_config: session_config,
+               connection: TlsClientConfigured { connector: connector },
+           })
     }
 }
 
 impl TlsClient<TlsClientConfigured> {
-    pub fn connect(self, sock: TcpStream) -> Result<TlsClient<TlsClientConnected>, ()> {
-        // TODO convert errors
-        let tls_session = self.connection.connector
+    pub fn connect(self, sock: TcpStream) -> Result<TlsClient<TlsClientConnected>> {
+        let tls_session = self.connection
+            .connector
             .build()
-            .connect(self.session_config.domain.as_ref(), sock).map_err(|e| ())?;
+            .connect(self.session_config.domain.as_ref(), sock)?;
 
         Ok(TlsClient::<TlsClientConnected> {
-            session_config: self.session_config,
-            connection: TlsClientConnected {
-                tls_session: tls_session,
-            }
-        }
-           )
+               session_config: self.session_config,
+               connection: TlsClientConnected { tls_session: tls_session },
+           })
     }
-    // TODO Implement disconnect
 }
+
+impl TlsClient<TlsClientConnected> {
+    pub fn disconnect(mut self) -> Result<TlsClient<TlsClientDisconnected>> {
+        self.connection.tls_session.shutdown()?;
+
+        Ok(TlsClient::<TlsClientDisconnected> {
+               session_config: self.session_config,
+               connection: TlsClientDisconnected {},
+           })
+    }
+}
+
 
 impl io::Write for TlsClient<TlsClientConnected> {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {

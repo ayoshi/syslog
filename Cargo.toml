@@ -25,6 +25,7 @@ thread_local = "^0.3"
 libc = "*"
 hostname = "*"
 openssl = "*"
+error-chain = "*"
 
 [dev-dependencies]
 compiletest_rs = "*"

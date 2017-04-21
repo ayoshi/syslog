@@ -5,6 +5,7 @@ use std::io::{Write, Cursor};
 use std::marker::PhantomData;
 use std::net::{Shutdown, TcpStream, SocketAddr};
 use std::sync::{Arc, Mutex};
+use errors::*;
 
 
 /// Delimited messages
@@ -49,7 +50,7 @@ impl<T, F> TCPDrain<T, TCPDisconnected, F>
     }
 
     /// Connect TCP stream
-    pub fn connect(self) -> io::Result<TCPDrain<T, TCPConnected, F>> {
+    pub fn connect(self) -> Result<TCPDrain<T, TCPConnected, F>> {
         let stream = TcpStream::connect(self.connection.addr)?;
         Ok(TCPDrain::<T, TCPConnected, F> {
                formatter: self.formatter,
@@ -66,7 +67,7 @@ impl<T, F> TCPDrain<T, TCPConnected, F>
     where F: StreamFormat
 {
     /// Disconnect TCP stream, completing all operations
-    pub fn disconnect(self) -> io::Result<TCPDrain<T, TCPDisconnected, F>> {
+    pub fn disconnect(self) -> Result<TCPDrain<T, TCPDisconnected, F>> {
         self.connection
             .stream
             .lock()

@@ -1,3 +1,4 @@
+use errors::*;
 use slog::{Drain, OwnedKeyValueList, Record};
 use slog_stream::Format as StreamFormat;
 use std::io;
@@ -5,7 +6,6 @@ use std::io::{Write, Cursor};
 use std::marker::PhantomData;
 use std::net::{TcpStream, SocketAddr};
 use std::sync::{Arc, Mutex};
-// use tls_client::{TlsClient, TLSSessionConfig, make_config};
 use tls_client::{TlsClient, TlsSessionConfig, TlsClientConnected, TlsClientDisconnected};
 
 /// Delimited messages
@@ -55,13 +55,12 @@ impl<T, F> TLSDrain<T, TLSDisconnected, F>
     }
 
     /// Connect TLS stream
-    pub fn connect(self) -> io::Result<TLSDrain<T, TLSConnected, F>> {
+    pub fn connect(self) -> Result<TLSDrain<T, TLSConnected, F>> {
 
-        // TODO convert errors properly
         let stream = TcpStream::connect(self.connection.addr)?;
         let stream = TlsClient::<TlsClientDisconnected>::new()
-            .configure(&self.session_config)
-            .connect(stream).map_err(|e| io::Error::last_os_error())?;
+            .configure(&self.session_config)?
+            .connect(stream)?;
 
         Ok(TLSDrain::<T, TLSConnected, F> {
                formatter: self.formatter,
@@ -79,13 +78,13 @@ impl<T, F> TLSDrain<T, TLSConnected, F>
     where F: StreamFormat
 {
     /// Disconnect TLS stream, completing all operations
-    pub fn disconnect(self) -> io::Result<TLSDrain<T, TLSDisconnected, F>> {
+    pub fn disconnect(self) -> Result<TLSDrain<T, TLSDisconnected, F>> {
         //TODO: Fix
-        // self.connection
-        //     .stream
-        //     .lock()
-        //     .map_err(|_| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
-        //     .and_then(|mut s| s.shutdown())?;
+        self.connection
+            .stream
+            .lock()
+            // .map_err(|_| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
+            .and_then(|mut s| s.disconnect())?;
         Ok(TLSDrain::<T, TLSDisconnected, F> {
                formatter: self.formatter,
                session_config: self.session_config,
