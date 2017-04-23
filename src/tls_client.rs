@@ -96,11 +96,10 @@ impl TlsClient<TlsClientConfigured> {
 }
 
 impl TlsClient<TlsClientConnected> {
-    pub fn disconnect(mut self) -> Result<TlsClient<TlsClientDisconnected>> {
+    pub fn disconnect(&mut self) -> Result<TlsClient<TlsClientDisconnected>> {
         self.connection.tls_session.shutdown()?;
-
         Ok(TlsClient::<TlsClientDisconnected> {
-               session_config: self.session_config,
+               session_config: self.session_config.clone(),
                connection: TlsClientDisconnected {},
            })
     }

@@ -1,3 +1,4 @@
+use errors::*;
 use slog::{Drain, OwnedKeyValueList, Record};
 use slog_stream::Format as StreamFormat;
 use std::io;
@@ -5,7 +6,6 @@ use std::io::{Write, Cursor};
 use std::marker::PhantomData;
 use std::net::{Shutdown, TcpStream, SocketAddr};
 use std::sync::{Arc, Mutex};
-use errors::*;
 
 
 /// Delimited messages
@@ -71,8 +71,11 @@ impl<T, F> TCPDrain<T, TCPConnected, F>
         self.connection
             .stream
             .lock()
-            .map_err(|_| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
-            .and_then(|s| s.shutdown(Shutdown::Both))?;
+            .map_err(|_| ErrorKind::DisconnectFailure("Couldn't acquire lock"))
+            .and_then(|s| {
+                          s.shutdown(Shutdown::Both)
+                              .map_err(|_| ErrorKind::DisconnectFailure("Socket shutdown failed"))
+                      })?;
         Ok(TCPDrain::<T, TCPDisconnected, F> {
                formatter: self.formatter,
                connection: TCPDisconnected { addr: self.connection.addr },

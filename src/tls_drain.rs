@@ -79,11 +79,10 @@ impl<T, F> TLSDrain<T, TLSConnected, F>
 {
     /// Disconnect TLS stream, completing all operations
     pub fn disconnect(self) -> Result<TLSDrain<T, TLSDisconnected, F>> {
-        //TODO: Fix
         self.connection
             .stream
             .lock()
-            // .map_err(|_| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
+            .map_err(|_| ErrorKind::DisconnectFailure("Couldn't acquire lock".to_string()).into())
             .and_then(|mut s| s.disconnect())?;
         Ok(TLSDrain::<T, TLSDisconnected, F> {
                formatter: self.formatter,
