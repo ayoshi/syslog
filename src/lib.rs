@@ -13,6 +13,7 @@ extern crate serde;
 extern crate serde_json;
 extern crate slog_stream;
 extern crate openssl;
+extern crate parking_lot;
 
 #[macro_use]
 extern crate error_chain;
@@ -47,6 +48,10 @@ pub use self::udp_drain::*;
 pub use self::udp_drain::*;
 pub use self::uds_drain::*;
 pub use self::tls_client::TlsSessionConfig;
+
+/// Timeout in seconds for tyring to acquire lock on streams
+const LOCK_TRY_TIMEOUT: u64 = 3;
+
 
 
 /// Entry point to any further syslog configuration

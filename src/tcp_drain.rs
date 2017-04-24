@@ -1,11 +1,13 @@
 use errors::*;
+use parking_lot::Mutex;
 use slog::{Drain, OwnedKeyValueList, Record};
 use slog_stream::Format as StreamFormat;
 use std::io;
 use std::io::{Write, Cursor};
 use std::marker::PhantomData;
 use std::net::{Shutdown, TcpStream, SocketAddr};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use std::time::Duration;
 
 
 /// Delimited messages
@@ -41,11 +43,10 @@ pub struct TCPConnected {
 
 impl TCPConnected {
     /// Disconnect TCP stream, completing all operations
-    // TODO try to chain errors properly
     fn disconnect(self) -> Result<TCPDisconnected> {
         self.stream
-            .lock()
-            .map_err(|_| ErrorKind::DisconnectFailure("Couldn't acquire lock"))
+            .try_lock_for(Duration::from_secs(super::LOCK_TRY_TIMEOUT))
+            .ok_or_else(|| ErrorKind::DisconnectFailure("Timed out trying to acquire lock"))
             .and_then(|s| {
                           s.shutdown(Shutdown::Both)
                               .map_err(|_| ErrorKind::DisconnectFailure("Socket shutdown failed"))
@@ -114,8 +115,8 @@ impl<F> Drain for TCPDrain<DelimitedMessages, TCPConnected, F>
         self.formatter.format(&mut buf, info, logger_values)?;
         self.connection
             .stream
-            .lock()
-            .map_err(|_| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
+            .try_lock_for(Duration::from_secs(super::LOCK_TRY_TIMEOUT))
+            .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
             .and_then(|mut s| s.write(buf.as_slice()))?;
 
         Ok(())
@@ -139,8 +140,8 @@ impl<F> Drain for TCPDrain<FramedMessages, TCPConnected, F>
 
         self.connection
             .stream
-            .lock()
-            .map_err(|_| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
+            .try_lock_for(Duration::from_secs(super::LOCK_TRY_TIMEOUT))
+            .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
             .and_then(|mut s| {
                           // Space spearated frame length
                           s.write_fmt(format_args!("{} ", length))?;

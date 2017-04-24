@@ -26,6 +26,7 @@ libc = "*"
 hostname = "*"
 openssl = "*"
 error-chain = "*"
+parking_lot = "*"
 
 [dev-dependencies]
 compiletest_rs = "*"
