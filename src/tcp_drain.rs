@@ -20,11 +20,36 @@ pub struct TCPDisconnected {
     addr: SocketAddr,
 }
 
+impl TCPDisconnected {
+    /// Connect TCP stream
+    fn connect(self) -> Result<TCPConnected> {
+        let stream = TcpStream::connect(self.addr)?;
+        Ok(TCPConnected {
+               stream: Arc::new(Mutex::new(stream)),
+               addr: self.addr,
+           })
+    }
+}
+
 /// State: `TCPConnected` for the TCP drain
 #[derive(Debug)]
 pub struct TCPConnected {
     stream: Arc<Mutex<TcpStream>>,
     addr: SocketAddr,
+}
+
+impl TCPConnected {
+    /// Disconnect TCP stream, completing all operations
+    fn disconnect(self) -> Result<TCPDisconnected> {
+        self.stream
+            .lock()
+            .map_err(|_| ErrorKind::DisconnectFailure("Couldn't acquire lock"))
+            .and_then(|s| {
+                s.shutdown(Shutdown::Both)
+                    .map_err(|_| ErrorKind::DisconnectFailure("Socket shutdown failed"))
+            })?;
+        Ok(TCPDisconnected { addr: self.addr })
+    }
 }
 
 /// TCP drain
@@ -51,13 +76,9 @@ impl<T, F> TCPDrain<T, TCPDisconnected, F>
 
     /// Connect TCP stream
     pub fn connect(self) -> Result<TCPDrain<T, TCPConnected, F>> {
-        let stream = TcpStream::connect(self.connection.addr)?;
         Ok(TCPDrain::<T, TCPConnected, F> {
                formatter: self.formatter,
-               connection: TCPConnected {
-                   stream: Arc::new(Mutex::new(stream)),
-                   addr: self.connection.addr,
-               },
+               connection: self.connection.connect()?,
                _message_type: PhantomData,
            })
     }
@@ -68,17 +89,9 @@ impl<T, F> TCPDrain<T, TCPConnected, F>
 {
     /// Disconnect TCP stream, completing all operations
     pub fn disconnect(self) -> Result<TCPDrain<T, TCPDisconnected, F>> {
-        self.connection
-            .stream
-            .lock()
-            .map_err(|_| ErrorKind::DisconnectFailure("Couldn't acquire lock"))
-            .and_then(|s| {
-                          s.shutdown(Shutdown::Both)
-                              .map_err(|_| ErrorKind::DisconnectFailure("Socket shutdown failed"))
-                      })?;
         Ok(TCPDrain::<T, TCPDisconnected, F> {
                formatter: self.formatter,
-               connection: TCPDisconnected { addr: self.connection.addr },
+               connection: self.connection.disconnect()?,
                _message_type: PhantomData,
            })
     }
