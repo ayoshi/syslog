@@ -10,6 +10,10 @@ error_chain! {
     }
 
     errors {
+        ConnectionFailure (t: &'static str) {
+            description("Failed to connect to socket")
+                display("Failed to connect to socket: '{}' ", t)
+        }
         DisconnectFailure (t: &'static str) {
             description("Failed to disconnect properly")
             display("Failed to disconnect properly: '{}' ", t)

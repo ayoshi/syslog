@@ -23,7 +23,8 @@ pub struct TCPDisconnected {
 impl TCPDisconnected {
     /// Connect TCP stream
     fn connect(self) -> Result<TCPConnected> {
-        let stream = TcpStream::connect(self.addr)?;
+        let stream = TcpStream::connect(self.addr)
+            .chain_err(|| ErrorKind::ConnectionFailure("Failed to connect socket"))?;
         Ok(TCPConnected {
                stream: Arc::new(Mutex::new(stream)),
                addr: self.addr,
@@ -40,14 +41,15 @@ pub struct TCPConnected {
 
 impl TCPConnected {
     /// Disconnect TCP stream, completing all operations
+    // TODO try to chain errors properly
     fn disconnect(self) -> Result<TCPDisconnected> {
         self.stream
             .lock()
             .map_err(|_| ErrorKind::DisconnectFailure("Couldn't acquire lock"))
             .and_then(|s| {
-                s.shutdown(Shutdown::Both)
-                    .map_err(|_| ErrorKind::DisconnectFailure("Socket shutdown failed"))
-            })?;
+                          s.shutdown(Shutdown::Both)
+                              .map_err(|_| ErrorKind::DisconnectFailure("Socket shutdown failed"))
+                      })?;
         Ok(TCPDisconnected { addr: self.addr })
     }
 }
