@@ -1,10 +1,13 @@
+use errors::*;
+use parking_lot::Mutex;
 use slog::{Drain, OwnedKeyValueList, Record};
 use slog_stream::Format as StreamFormat;
 use std::io;
 use std::net::Shutdown;
 use std::os::unix::net::UnixDatagram;
 use std::path::PathBuf;
-use errors::*;
+use std::sync::Arc;
+use std::time::Duration;
 
 /// State: `UDSDisconnected`
 #[derive(Default, Debug)]
@@ -12,11 +15,37 @@ pub struct UDSDisconnected {
     path_to_socket: PathBuf,
 }
 
+impl UDSDisconnected {
+    /// Connect Unix domain socket
+    fn connect(self) -> Result<UDSConnected> {
+        let socket = UnixDatagram::unbound()
+            .chain_err(|| ErrorKind::ConnectionFailure("Failed to connect socket"))?;
+        Ok(UDSConnected {
+               socket: Arc::new(Mutex::new(socket)),
+               path_to_socket: self.path_to_socket,
+           })
+    }
+}
+
 /// State: `UDSConnected` for the UDS drain
 #[derive(Debug)]
 pub struct UDSConnected {
-    socket: UnixDatagram,
+    socket: Arc<Mutex<UnixDatagram>>,
     path_to_socket: PathBuf,
+}
+
+impl UDSConnected {
+    /// Disconnect Unix domain socket, completing all operations
+    fn disconnect(self) -> Result<UDSDisconnected> {
+        self.socket
+            .try_lock_for(Duration::from_secs(super::LOCK_TRY_TIMEOUT))
+            .ok_or_else(|| ErrorKind::DisconnectFailure("Timed out trying to acquire lock"))
+            .and_then(|s| {
+                          s.shutdown(Shutdown::Both)
+                              .map_err(|_| ErrorKind::DisconnectFailure("Socket shutdown failed"))
+                      })?;
+        Ok(UDSDisconnected { path_to_socket: self.path_to_socket })
+    }
 }
 
 /// Unix domain socket drain
@@ -41,13 +70,9 @@ impl<F> UDSDrain<UDSDisconnected, F>
 
     /// Connect UDS socket
     pub fn connect(self) -> Result<UDSDrain<UDSConnected, F>> {
-        let socket = UnixDatagram::unbound()?;
         Ok(UDSDrain::<UDSConnected, F> {
                formatter: self.formatter,
-               connection: UDSConnected {
-                   socket: socket,
-                   path_to_socket: self.connection.path_to_socket,
-               },
+               connection: self.connection.connect()?,
            })
     }
 }
@@ -57,12 +82,9 @@ impl<F> UDSDrain<UDSConnected, F>
 {
     /// Disconnect UDS socket, completing all operations
     pub fn disconnect(self) -> Result<UDSDrain<UDSDisconnected, F>> {
-        self.connection
-            .socket
-            .shutdown(Shutdown::Both)?;
         Ok(UDSDrain::<UDSDisconnected, F> {
                formatter: self.formatter,
-               connection: UDSDisconnected { path_to_socket: self.connection.path_to_socket },
+               connection: self.connection.disconnect()?,
            })
     }
 }
@@ -78,9 +100,12 @@ impl<F> Drain for UDSDrain<UDSConnected, F>
         let mut buf = Vec::<u8>::with_capacity(4096);
 
         self.formatter.format(&mut buf, info, logger_values)?;
+
         self.connection
             .socket
-            .send_to(buf.as_slice(), &self.connection.path_to_socket)?;
+            .try_lock_for(Duration::from_secs(super::LOCK_TRY_TIMEOUT))
+            .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
+            .and_then(|s| s.send_to(buf.as_slice(), &self.connection.path_to_socket))?;
 
         Ok(())
     }
