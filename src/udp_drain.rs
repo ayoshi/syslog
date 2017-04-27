@@ -39,8 +39,8 @@ impl UDPConnected {
     fn disconnect(self) -> Result<UDPDisconnected> {
         self.socket
             .try_lock_for(Duration::from_secs(super::LOCK_TRY_TIMEOUT))
-            .ok_or_else(|| ErrorKind::DisconnectFailure("Timed out trying to acquire lock"))?;
-        Ok(UDPDisconnected { addr: self.addr })
+            .map(|_| UDPDisconnected { addr: self.addr })
+            .ok_or(Error::from_kind(ErrorKind::DisconnectFailure("Timed out trying to acquire lock")))
     }
 }
 
