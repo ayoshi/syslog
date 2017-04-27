@@ -21,12 +21,45 @@ pub struct TLSDisconnected {
     session_config: TlsSessionConfig,
 }
 
+impl TLSDisconnected {
+    /// Connect TLS stream
+    pub fn connect(self) -> Result<TLSConnected> {
+
+        let stream = TcpStream::connect(self.addr)
+            .chain_err(|| ErrorKind::ConnectionFailure("Failed to connect socket"))?;
+        let stream =
+            TlsClient::<TlsClientDisconnected>::new()
+                .configure(&self.session_config)?
+                .connect(stream)
+                .chain_err(|| ErrorKind::ConnectionFailure("Failed to establish TLS session"))?;
+
+        Ok(TLSConnected {
+               stream: Arc::new(Mutex::new(stream)),
+               addr: self.addr,
+               session_config: self.session_config,
+           })
+    }
+}
+
 /// State: `TLSConnected` for the TLS drain
 #[derive(Debug)]
 pub struct TLSConnected {
     stream: Arc<Mutex<TlsClient<TlsClientConnected>>>,
     session_config: TlsSessionConfig,
     addr: SocketAddr,
+}
+
+impl TLSConnected {
+    pub fn disconnect(self) -> Result<TLSDisconnected> {
+        self.stream
+            .lock()
+            .map_err(|_| ErrorKind::DisconnectFailure("Couldn't acquire lock").into())
+            .and_then(|mut s| s.disconnect())?;
+        Ok(TLSDisconnected {
+               addr: self.addr,
+               session_config: self.session_config,
+           })
+    }
 }
 
 /// TLS drain
@@ -51,8 +84,7 @@ impl<T, F> TLSDrain<T, TLSDisconnected, F>
             formatter: formatter,
             connection: TLSDisconnected {
                 addr: addr,
-                    session_config: session_config,
-
+                session_config: session_config,
             },
             _message_type: PhantomData,
         }
@@ -60,19 +92,9 @@ impl<T, F> TLSDrain<T, TLSDisconnected, F>
 
     /// Connect TLS stream
     pub fn connect(self) -> Result<TLSDrain<T, TLSConnected, F>> {
-
-        let stream = TcpStream::connect(self.connection.addr)?;
-        let stream = TlsClient::<TlsClientDisconnected>::new()
-            .configure(&self.connection.session_config)?
-            .connect(stream)?;
-
         Ok(TLSDrain::<T, TLSConnected, F> {
                formatter: self.formatter,
-               connection: TLSConnected {
-                   stream: Arc::new(Mutex::new(stream)),
-                   addr: self.connection.addr,
-                   session_config: self.connection.session_config,
-               },
+               connection: self.connection.connect()?,
                _message_type: PhantomData,
            })
     }
@@ -83,18 +105,9 @@ impl<T, F> TLSDrain<T, TLSConnected, F>
 {
     /// Disconnect TLS stream, completing all operations
     pub fn disconnect(self) -> Result<TLSDrain<T, TLSDisconnected, F>> {
-        self.connection
-            .stream
-            .lock()
-            .map_err(|_| ErrorKind::DisconnectFailure("Couldn't acquire lock").into())
-            .and_then(|mut s| s.disconnect())?;
         Ok(TLSDrain::<T, TLSDisconnected, F> {
                formatter: self.formatter,
-            connection: TLSDisconnected {
-                addr: self.connection.addr,
-                session_config: self.connection.session_config,
-
-            },
+               connection: self.connection.disconnect()?,
                _message_type: PhantomData,
            })
     }

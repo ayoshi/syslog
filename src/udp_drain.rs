@@ -1,4 +1,3 @@
-
 use errors::*;
 use parking_lot::Mutex;
 use slog::{Drain, OwnedKeyValueList, Record};
@@ -40,7 +39,7 @@ impl UDPConnected {
         self.socket
             .try_lock_for(Duration::from_secs(super::LOCK_TRY_TIMEOUT))
             .map(|_| UDPDisconnected { addr: self.addr })
-            .ok_or(Error::from_kind(ErrorKind::DisconnectFailure("Timed out trying to acquire lock")))
+            .ok_or(ErrorKind::DisconnectFailure("Timed out trying to acquire lock").into())
     }
 }
 
