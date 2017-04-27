@@ -18,12 +18,14 @@ pub struct FramedMessages;
 #[derive(Debug)]
 pub struct TLSDisconnected {
     addr: SocketAddr,
+    session_config: TlsSessionConfig,
 }
 
 /// State: `TLSConnected` for the TLS drain
 #[derive(Debug)]
 pub struct TLSConnected {
     stream: Arc<Mutex<TlsClient<TlsClientConnected>>>,
+    session_config: TlsSessionConfig,
     addr: SocketAddr,
 }
 
@@ -34,7 +36,6 @@ pub struct TLSDrain<T, C, F>
 {
     formatter: F,
     connection: C,
-    session_config: TlsSessionConfig,
     _message_type: PhantomData<T>,
 }
 
@@ -48,8 +49,11 @@ impl<T, F> TLSDrain<T, TLSDisconnected, F>
                -> TLSDrain<T, TLSDisconnected, F> {
         TLSDrain::<T, TLSDisconnected, F> {
             formatter: formatter,
-            connection: TLSDisconnected { addr: addr },
-            session_config: session_config,
+            connection: TLSDisconnected {
+                addr: addr,
+                    session_config: session_config,
+
+            },
             _message_type: PhantomData,
         }
     }
@@ -59,7 +63,7 @@ impl<T, F> TLSDrain<T, TLSDisconnected, F>
 
         let stream = TcpStream::connect(self.connection.addr)?;
         let stream = TlsClient::<TlsClientDisconnected>::new()
-            .configure(&self.session_config)?
+            .configure(&self.connection.session_config)?
             .connect(stream)?;
 
         Ok(TLSDrain::<T, TLSConnected, F> {
@@ -67,8 +71,8 @@ impl<T, F> TLSDrain<T, TLSDisconnected, F>
                connection: TLSConnected {
                    stream: Arc::new(Mutex::new(stream)),
                    addr: self.connection.addr,
+                   session_config: self.connection.session_config,
                },
-               session_config: self.session_config,
                _message_type: PhantomData,
            })
     }
@@ -86,8 +90,11 @@ impl<T, F> TLSDrain<T, TLSConnected, F>
             .and_then(|mut s| s.disconnect())?;
         Ok(TLSDrain::<T, TLSDisconnected, F> {
                formatter: self.formatter,
-               session_config: self.session_config,
-               connection: TLSDisconnected { addr: self.connection.addr },
+            connection: TLSDisconnected {
+                addr: self.connection.addr,
+                session_config: self.connection.session_config,
+
+            },
                _message_type: PhantomData,
            })
     }
