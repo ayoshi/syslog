@@ -20,7 +20,7 @@ use self::rfc3164::{Rfc3164, Rfc3164Short, Rfc3164Full};
 use self::rfc5424::{Rfc5424, Rfc5424Short, Rfc5424Full};
 use serializers::KsvSerializerUnquoted;
 
-use slog::{Record, OwnedKeyValueList};
+use slog::{Record, OwnedKVList};
 use std::io;
 use std::marker::PhantomData;
 use syslog::Facility;
@@ -65,7 +65,7 @@ pub trait FormatHeader {
     fn format(&self,
               io: &mut io::Write,
               record: &Record,
-              logger_values: &OwnedKeyValueList)
+              logger_values: &OwnedKVList)
               -> io::Result<()>;
 }
 
@@ -82,7 +82,7 @@ pub trait FormatMessage {
     /// Format syslog message
     fn format(io: &mut io::Write,
               record: &Record,
-              logger_values: &OwnedKeyValueList)
+              logger_values: &OwnedKVList)
               -> io::Result<()>;
 }
 
@@ -90,7 +90,7 @@ impl FormatMessage for MessageOnly {
     #[allow(unused_variables)]
     fn format(io: &mut io::Write,
               record: &Record,
-              logger_values: &OwnedKeyValueList)
+              logger_values: &OwnedKVList)
               -> io::Result<()> {
 
         // MESSAGE
@@ -103,7 +103,7 @@ impl FormatMessage for MessageOnly {
 impl FormatMessage for MessageWithKsv {
     fn format(io: &mut io::Write,
               record: &Record,
-              logger_values: &OwnedKeyValueList)
+              logger_values: &OwnedKVList)
               -> io::Result<()> {
 
         // MESSAGE
@@ -144,7 +144,7 @@ pub trait SyslogFormat {
     fn format(&self,
               io: &mut io::Write,
               record: &Record,
-              logger_values: &OwnedKeyValueList)
+              logger_values: &OwnedKVList)
               -> io::Result<()>;
 }
 
@@ -180,7 +180,7 @@ impl<H, M> SyslogFormat for SyslogFormatter<H, M>
     fn format(&self,
               io: &mut io::Write,
               record: &Record,
-              logger_values: &OwnedKeyValueList)
+              logger_values: &OwnedKVList)
               -> io::Result<()> {
 
         // HEADER

@@ -1,7 +1,7 @@
 use errors::*;
 use format::SyslogFormat;
 use parking_lot::Mutex;
-use slog::{Drain, OwnedKeyValueList, Record};
+use slog::{Drain, OwnedKVList, Record};
 use std::io;
 use std::net::{UdpSocket, SocketAddr};
 use std::sync::Arc;
@@ -90,7 +90,7 @@ impl<F> Drain for UDPDrain<UDPConnected, F>
     type Err = io::Error;
     type Ok = ();
 
-    fn log(&self, info: &Record, logger_values: &OwnedKeyValueList) -> io::Result<()> {
+    fn log(&self, info: &Record, logger_values: &OwnedKVList) -> io::Result<()> {
 
         // Should be thread safe - redo the buffering
         let mut buf = Vec::<u8>::with_capacity(4096);

@@ -1,6 +1,6 @@
 use super::{HeaderFields, FormatHeader};
 use serializers::KsvSerializerQuotedValue;
-use slog::{Record, OwnedKeyValueList};
+use slog::{Record, OwnedKVList};
 use std::io;
 use std::marker::PhantomData;
 use syslog::Priority;
@@ -122,7 +122,7 @@ impl<T, F> Rfc5424<T, F>
     fn format_header(&self,
                      io: &mut io::Write,
                      record: &Record,
-                     logger_values: &OwnedKeyValueList)
+                     logger_values: &OwnedKVList)
                      -> io::Result<()> {
 
         self.format_prioriy(io, record)?; // Priority: <PRI>VERSION
@@ -157,7 +157,7 @@ impl<T> FormatHeader for Rfc5424<T, Rfc5424Short>
     fn format(&self,
               io: &mut io::Write,
               record: &Record,
-              logger_values: &OwnedKeyValueList)
+              logger_values: &OwnedKVList)
               -> io::Result<()> {
 
         self.format_header(io, record, logger_values)?; // HEADER
@@ -186,7 +186,7 @@ impl<T> FormatHeader for Rfc5424<T, Rfc5424Full>
     fn format(&self,
               io: &mut io::Write,
               record: &Record,
-              logger_values: &OwnedKeyValueList)
+              logger_values: &OwnedKVList)
               -> io::Result<()> {
 
         self.format_header(io, record, logger_values)?; // HEADER

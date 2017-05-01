@@ -47,14 +47,14 @@ impl TestIoBuffer {
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct TestDrain<F>
-    where F: SyslogFormat + panic::RefUnwindSafe
+    where F: SyslogFormat + panic::RefUnwindSafe + Send + Sync
 {
     io: SharedIoVec,
     formatter: F,
 }
 
 impl<F> TestDrain<F>
-    where F: SyslogFormat + panic::RefUnwindSafe
+    where F: SyslogFormat + panic::RefUnwindSafe + Send + Sync
 {
     pub fn new(io: SharedIoVec, formatter: F) -> TestDrain<F> {
         TestDrain {
@@ -65,7 +65,7 @@ impl<F> TestDrain<F>
 }
 
 impl<F> Drain for TestDrain<F>
-    where F: SyslogFormat + panic::RefUnwindSafe
+    where F: SyslogFormat + panic::RefUnwindSafe + Send + Sync
 {
     type Err = io::Error;
     type Ok = ();
@@ -80,7 +80,7 @@ impl<F> Drain for TestDrain<F>
 // Create test buffer for introspection, and
 // log defined message to the test drain, returning buffer
 pub fn emit_test_message_to_buffer<F>(formatter: F) -> TestIoBuffer
-    where F: SyslogFormat + panic::RefUnwindSafe
+    where F: SyslogFormat + panic::RefUnwindSafe + Send + Sync
 {
     let buffer = TestIoBuffer::new(1024);
     let test_drain = TestDrain::new(buffer.io(), formatter);

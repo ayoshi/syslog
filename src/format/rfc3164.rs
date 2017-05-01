@@ -1,5 +1,5 @@
 use super::{HeaderFields, FormatHeader};
-use slog::{Record, OwnedKeyValueList};
+use slog::{Record, OwnedKVList};
 use std::io;
 use std::marker::PhantomData;
 use syslog::Priority;
@@ -75,7 +75,7 @@ impl FormatHeader for Rfc3164<OmitTimestamp, Rfc3164Short> {
     fn format(&self,
               io: &mut io::Write,
               record: &Record,
-              logger_values: &OwnedKeyValueList)
+              logger_values: &OwnedKVList)
               -> io::Result<()> {
 
         // PRIORITY: <PRI>
@@ -109,7 +109,7 @@ impl<T> FormatHeader for Rfc3164<T, Rfc3164Full>
     fn format(&self,
               io: &mut io::Write,
               record: &Record,
-              logger_values: &OwnedKeyValueList)
+              logger_values: &OwnedKVList)
               -> io::Result<()> {
 
         // PRIORITY: <PRI>

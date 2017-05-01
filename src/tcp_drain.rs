@@ -1,7 +1,7 @@
 use errors::*;
 use format::SyslogFormat;
 use parking_lot::Mutex;
-use slog::{Drain, OwnedKeyValueList, Record};
+use slog::{Drain, OwnedKVList, Record};
 use std::io;
 use std::io::{Write, Cursor};
 use std::marker::PhantomData;
@@ -108,7 +108,7 @@ impl<F> Drain for TCPDrain<DelimitedMessages, TCPConnected, F>
     type Ok = ();
 
     #[allow(dead_code)]
-    fn log(&self, info: &Record, logger_values: &OwnedKeyValueList) -> io::Result<()> {
+    fn log(&self, info: &Record, logger_values: &OwnedKVList) -> io::Result<()> {
 
         // Should be thread safe - redo the buffering
         let mut buf = Vec::<u8>::with_capacity(4096);
@@ -132,7 +132,7 @@ impl<F> Drain for TCPDrain<FramedMessages, TCPConnected, F>
     type Err = io::Error;
     type Ok = ();
 
-    fn log(&self, info: &Record, logger_values: &OwnedKeyValueList) -> io::Result<()> {
+    fn log(&self, info: &Record, logger_values: &OwnedKVList) -> io::Result<()> {
 
         // Should be thread safe - redo the buffering
         let mut buf = Cursor::new(Vec::<u8>::with_capacity(10));
