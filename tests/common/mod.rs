@@ -2,10 +2,10 @@
 pub mod syslog_ng;
 
 pub use self::syslog_ng::{fetch_syslog_messages, filter_syslog_messages, reset_syslog_ng};
-use slog::{Logger, Record, OwnedKeyValueList, Drain};
+use slog::{Logger, Record, OwnedKVList, Drain};
 use slog_syslog_ng::SyslogFormat;
 
-use std::{io, result, panic};
+use std::{io, panic};
 use std::ops::DerefMut;
 use std::sync::{Arc, Mutex};
 
@@ -70,7 +70,7 @@ impl<F> Drain for TestDrain<F>
     type Err = io::Error;
     type Ok = ();
 
-    fn log(&self, record: &Record, values: &OwnedKeyValueList) -> io::Result<()> {
+    fn log(&self, record: &Record, values: &OwnedKVList) -> io::Result<()> {
         let mut io = self.io.lock().unwrap();
         self.formatter.format(io.deref_mut(), record, values).unwrap_or(());
         Ok(())
