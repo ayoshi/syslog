@@ -22,6 +22,7 @@ use serializers::KsvSerializerUnquoted;
 
 use slog::{Record, OwnedKVList};
 use std::io;
+use std::panic::{UnwindSafe, RefUnwindSafe};
 use std::marker::PhantomData;
 use syslog::Facility;
 use time::{FormatTimestamp, OmitTimestamp, Ts3164Local, Ts3164Utc, TsIsoLocal, TsIsoUtc};
@@ -53,7 +54,7 @@ impl HeaderFields {
 }
 
 /// Generic Syslog Header Formatter
-pub trait FormatHeader {
+pub trait FormatHeader: UnwindSafe + RefUnwindSafe + Send + Sync + 'static  {
     /// Associated `time::Timestamp`
     type Timestamp;
 
@@ -78,7 +79,7 @@ pub struct MessageOnly;
 pub struct MessageWithKsv;
 
 /// Generic Syslog Message formatter
-pub trait FormatMessage {
+pub trait FormatMessage: UnwindSafe + RefUnwindSafe + Send + Sync + 'static  {
     /// Format syslog message
     fn format(io: &mut io::Write,
               record: &Record,
@@ -139,7 +140,7 @@ pub struct SyslogFormatter<H, M>
 }
 
 /// Format syslog message
-pub trait SyslogFormat {
+pub trait SyslogFormat: UnwindSafe + RefUnwindSafe + Send + Sync + 'static {
     /// Format Syslog Message
     fn format(&self,
               io: &mut io::Write,
@@ -150,7 +151,7 @@ pub trait SyslogFormat {
 
 impl<H, M> SyslogFormatter<H, M>
     where H: FormatHeader + Send + Sync,
-          H::Timestamp: FormatTimestamp + Send + Sync,
+          H::Timestamp: FormatTimestamp,
           M: FormatMessage + Send + Sync
 {
     ///
@@ -173,7 +174,7 @@ impl<H, M> SyslogFormatter<H, M>
 
 impl<H, M> SyslogFormat for SyslogFormatter<H, M>
     where H: FormatHeader + Send + Sync,
-          H::Timestamp: FormatTimestamp + Send + Sync,
+          H::Timestamp: FormatTimestamp,
           M: FormatMessage + Send + Sync
 {
     /// Format syslog message
