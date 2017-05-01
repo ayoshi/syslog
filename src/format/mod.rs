@@ -150,9 +150,9 @@ pub trait SyslogFormat: UnwindSafe + RefUnwindSafe + Send + Sync + 'static {
 }
 
 impl<H, M> SyslogFormatter<H, M>
-    where H: FormatHeader + Send + Sync,
+    where H: FormatHeader,
           H::Timestamp: FormatTimestamp,
-          M: FormatMessage + Send + Sync
+          M: FormatMessage
 {
     ///
     pub fn new(hostname: Option<String>,
@@ -173,9 +173,9 @@ impl<H, M> SyslogFormatter<H, M>
 }
 
 impl<H, M> SyslogFormat for SyslogFormatter<H, M>
-    where H: FormatHeader + Send + Sync,
+    where H: FormatHeader,
           H::Timestamp: FormatTimestamp,
-          M: FormatMessage + Send + Sync
+          M: FormatMessage
 {
     /// Format syslog message
     fn format(&self,
