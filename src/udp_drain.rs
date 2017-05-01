@@ -1,7 +1,7 @@
 use errors::*;
+use format::SyslogFormat;
 use parking_lot::Mutex;
 use slog::{Drain, OwnedKeyValueList, Record};
-use slog_stream::Format as StreamFormat;
 use std::io;
 use std::net::{UdpSocket, SocketAddr};
 use std::sync::Arc;
@@ -46,14 +46,14 @@ impl UDPConnected {
 /// UDP drain
 #[derive(Debug)]
 pub struct UDPDrain<C, F>
-    where F: StreamFormat
+    where F: SyslogFormat
 {
     formatter: F,
     connection: C,
 }
 
 impl<F> UDPDrain<UDPDisconnected, F>
-    where F: StreamFormat
+    where F: SyslogFormat
 {
     /// UDPDrain constructor
     pub fn new(addr: SocketAddr, formatter: F) -> UDPDrain<UDPDisconnected, F> {
@@ -73,7 +73,7 @@ impl<F> UDPDrain<UDPDisconnected, F>
 }
 
 impl<F> UDPDrain<UDPConnected, F>
-    where F: StreamFormat
+    where F: SyslogFormat
 {
     /// Disconnect UDP socket, completing all operations
     pub fn disconnect(self) -> Result<UDPDrain<UDPDisconnected, F>> {
@@ -85,9 +85,10 @@ impl<F> UDPDrain<UDPConnected, F>
 }
 
 impl<F> Drain for UDPDrain<UDPConnected, F>
-    where F: StreamFormat
+    where F: SyslogFormat
 {
-    type Error = io::Error;
+    type Err = io::Error;
+    type Ok = ();
 
     fn log(&self, info: &Record, logger_values: &OwnedKeyValueList) -> io::Result<()> {
 

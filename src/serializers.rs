@@ -1,5 +1,5 @@
 // use serde;
-// use serde::ser::SerializeMap;
+// use serde::SerializeMap;
 
 use slog;
 // use slog::OwnedKeyValueList;
@@ -41,7 +41,7 @@ impl<W, Q> KsvSerializer<W, Q>
     }
 
     /// Emit k/v delimiter, in case of syslog it's always space.
-    pub fn emit_delimiter(&mut self) -> slog::ser::Result {
+    pub fn emit_delimiter(&mut self) -> slog::Result {
         write!(self.io, " ")?;
         Ok(())
     }
@@ -49,13 +49,13 @@ impl<W, Q> KsvSerializer<W, Q>
 
 macro_rules! impl_unquoted_serialize_for (
     (T $value_type:ty, $func_name:ident) => (
-        fn $func_name(&mut self, key: &str, val: $value_type) -> slog::ser::Result {
+        fn $func_name(&mut self, key: &str, val: $value_type) -> slog::Result {
             write!(self.io, "{}{}{}", key, self.separator, val)?;
             Ok(())
         }
     );
     (V $value:expr, $func_name:ident) => (
-        fn $func_name(&mut self, key: &str) -> slog::ser::Result {
+        fn $func_name(&mut self, key: &str) -> slog::Result {
             write!(self.io, "{}{}{}", key, self.separator, $value)?;
             Ok(())
         }
@@ -64,20 +64,20 @@ macro_rules! impl_unquoted_serialize_for (
 
 macro_rules! impl_quoted_value_serialize_for (
     (T $value_type:ty, $func_name:ident) => (
-        fn $func_name(&mut self, key: &str, val: $value_type) -> slog::ser::Result {
+        fn $func_name(&mut self, key: &str, val: $value_type) -> slog::Result {
             write!(self.io, "{}{}\"{}\"", key, self.separator, val)?;
             Ok(())
         }
     );
     (V $value:expr, $func_name:ident) => (
-        fn $func_name(&mut self, key: &str) -> slog::ser::Result {
+        fn $func_name(&mut self, key: &str) -> slog::Result {
             write!(self.io, "{}{}\"{}\"", key, self.separator, $value)?;
             Ok(())
         }
     );
 );
 
-impl<W: io::Write> slog::ser::Serializer for KsvSerializer<W, Unquoted> {
+impl<W: io::Write> slog::Serializer for KsvSerializer<W, Unquoted> {
     impl_unquoted_serialize_for!(V "None", emit_none);
     impl_unquoted_serialize_for!(V "()", emit_unit);
     impl_unquoted_serialize_for!(T bool, emit_bool);
@@ -98,7 +98,7 @@ impl<W: io::Write> slog::ser::Serializer for KsvSerializer<W, Unquoted> {
     impl_unquoted_serialize_for!(T & fmt::Arguments, emit_arguments);
 }
 
-impl<W: io::Write> slog::ser::Serializer for KsvSerializer<W, QuotedValue> {
+impl<W: io::Write> slog::Serializer for KsvSerializer<W, QuotedValue> {
     impl_quoted_value_serialize_for!(V "None", emit_none);
     impl_quoted_value_serialize_for!(V "()", emit_unit);
     impl_quoted_value_serialize_for!(T bool, emit_bool);

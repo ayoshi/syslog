@@ -1,6 +1,6 @@
 use errors::*;
+use format::SyslogFormat;
 use slog::{Drain, OwnedKeyValueList, Record};
-use slog_stream::Format as StreamFormat;
 use std::io;
 use std::io::{Write, Cursor};
 use std::marker::PhantomData;
@@ -65,7 +65,7 @@ impl TLSConnected {
 /// TLS drain
 #[derive(Debug)]
 pub struct TLSDrain<T, C, F>
-    where F: StreamFormat
+    where F: SyslogFormat
 {
     formatter: F,
     connection: C,
@@ -73,7 +73,7 @@ pub struct TLSDrain<T, C, F>
 }
 
 impl<T, F> TLSDrain<T, TLSDisconnected, F>
-    where F: StreamFormat
+    where F: SyslogFormat
 {
     /// TLSDrain constructor
     pub fn new(addr: SocketAddr,
@@ -101,7 +101,7 @@ impl<T, F> TLSDrain<T, TLSDisconnected, F>
 }
 
 impl<T, F> TLSDrain<T, TLSConnected, F>
-    where F: StreamFormat
+    where F: SyslogFormat
 {
     /// Disconnect TLS stream, completing all operations
     pub fn disconnect(self) -> Result<TLSDrain<T, TLSDisconnected, F>> {
@@ -115,9 +115,10 @@ impl<T, F> TLSDrain<T, TLSConnected, F>
 
 // RFC3164 messages over TLS don't require framed headers
 impl<F> Drain for TLSDrain<DelimitedMessages, TLSConnected, F>
-    where F: StreamFormat
+    where F: SyslogFormat
 {
-    type Error = io::Error;
+    type Err = io::Error;
+    type Ok = ();
 
     #[allow(dead_code)]
     fn log(&self, info: &Record, logger_values: &OwnedKeyValueList) -> io::Result<()> {
@@ -139,9 +140,10 @@ impl<F> Drain for TLSDrain<DelimitedMessages, TLSConnected, F>
 // RFC5424 messages require framed delimition, first we need to send
 // the length of the message in octets
 impl<F> Drain for TLSDrain<FramedMessages, TLSConnected, F>
-    where F: StreamFormat
+    where F: SyslogFormat
 {
-    type Error = io::Error;
+    type Err = io::Error;
+    type Ok = ();
 
     fn log(&self, info: &Record, logger_values: &OwnedKeyValueList) -> io::Result<()> {
 

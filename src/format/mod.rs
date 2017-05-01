@@ -1,4 +1,3 @@
-
 // Macros used by childred
 // Write separator
 #[macro_export]
@@ -22,7 +21,6 @@ use self::rfc5424::{Rfc5424, Rfc5424Short, Rfc5424Full};
 use serializers::KsvSerializerUnquoted;
 
 use slog::{Record, OwnedKeyValueList};
-use slog_stream::Format as StreamFormat;
 use std::io;
 use std::marker::PhantomData;
 use syslog::Facility;
@@ -114,15 +112,15 @@ impl FormatMessage for MessageWithKsv {
         // MESSAGE STRUCTURED_DATA
         let mut serializer = KsvSerializerUnquoted::new(io, "=");
 
-        for &(k, v) in record.values().iter().rev() {
-            serializer.emit_delimiter()?;
-            v.serialize(record, k, &mut serializer)?;
-        }
+        // for &(k, v) in record.values().iter().rev() {
+        //     serializer.emit_delimiter()?;
+        //     v.serialize(record, k, &mut serializer)?;
+        // }
 
-        for (k, v) in logger_values.iter() {
-            serializer.emit_delimiter()?;
-            v.serialize(record, k, &mut serializer)?;
-        }
+        // for (k, v) in logger_values.iter() {
+        //     serializer.emit_delimiter()?;
+        //     v.serialize(record, k, &mut serializer)?;
+        // }
 
         Ok(())
     }
@@ -196,22 +194,6 @@ impl<H, M> SyslogFormat for SyslogFormatter<H, M>
         // EOM
         write_eom!(io)?;
 
-        Ok(())
-    }
-}
-
-impl<H, M> StreamFormat for SyslogFormatter<H, M>
-    where H: FormatHeader + Send + Sync,
-          H::Timestamp: FormatTimestamp + Send + Sync,
-          M: FormatMessage + Send + Sync
-{
-    fn format(&self,
-              io: &mut io::Write,
-              record: &Record,
-              logger_values: &OwnedKeyValueList)
-              -> io::Result<()> {
-
-        (self as &SyslogFormat).format(io, record, logger_values)?;
         Ok(())
     }
 }

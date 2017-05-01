@@ -198,20 +198,20 @@ impl<T> FormatHeader for Rfc5424<T, Rfc5424Full>
         write!(io, "{}", "[")?;
         write!(io, "{}{}", "msg@", record.line())?;
         let mut serializer = KsvSerializerQuotedValue::new(io, "=");
-        for &(k, v) in record.values().iter().rev() {
-            serializer.emit_delimiter()?;
-            v.serialize(record, k, &mut serializer)?;
-        }
+        // for &(k, v) in record.values().iter().rev() {
+        //     serializer.emit_delimiter()?;
+        //     v.serialize(record, k, &mut serializer)?;
+        // }
         let mut io = serializer.finish();
         write!(io, "{}", "]")?;
 
         write!(io, "{}", "[")?;
         write!(io, "{}{}", "logger@", record.line())?;
         let mut serializer = KsvSerializerQuotedValue::new(io, "=");
-        for (k, v) in logger_values.iter() {
-            serializer.emit_delimiter()?;
-            v.serialize(record, k, &mut serializer)?;
-        }
+        // for (k, v) in logger_values.iter() {
+        //     serializer.emit_delimiter()?;
+        //     v.serialize(record, k, &mut serializer)?;
+        // }
         let mut io = serializer.finish();
         write!(io, "{}", "]")?;
 

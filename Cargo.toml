@@ -14,9 +14,7 @@ readme = "README.md"
 path = "src/lib.rs"
 
 [dependencies]
-slog = "^1.5.0"
-# slog = { git = "https://github.com/slog-rs/slog.git" }
-slog-stream = "^1.2"
+slog = "^2.0.0"
 serde = "^0.9"
 serde_json = "^0.9"
 chrono = "^0.3"

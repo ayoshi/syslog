@@ -2,11 +2,10 @@
 pub mod syslog_ng;
 
 pub use self::syslog_ng::{fetch_syslog_messages, filter_syslog_messages, reset_syslog_ng};
-use slog::{Logger, Record, OwnedKeyValueList, Drain, DrainExt};
-use slog_stream::Format as StreamFormat;
-// use slog_syslog_ng::*;
+use slog::{Logger, Record, OwnedKeyValueList, Drain};
+use slog_syslog_ng::SyslogFormat;
 
-use std::{io, result};
+use std::{io, result, panic};
 use std::ops::DerefMut;
 use std::sync::{Arc, Mutex};
 
@@ -48,14 +47,14 @@ impl TestIoBuffer {
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct TestDrain<F>
-    where F: StreamFormat
+    where F: SyslogFormat + panic::RefUnwindSafe
 {
     io: SharedIoVec,
     formatter: F,
 }
 
 impl<F> TestDrain<F>
-    where F: StreamFormat
+    where F: SyslogFormat + panic::RefUnwindSafe
 {
     pub fn new(io: SharedIoVec, formatter: F) -> TestDrain<F> {
         TestDrain {
@@ -66,11 +65,12 @@ impl<F> TestDrain<F>
 }
 
 impl<F> Drain for TestDrain<F>
-    where F: StreamFormat
+    where F: SyslogFormat + panic::RefUnwindSafe
 {
-    type Error = io::Error;
+    type Err = io::Error;
+    type Ok = ();
 
-    fn log(&self, record: &Record, values: &OwnedKeyValueList) -> result::Result<(), Self::Error> {
+    fn log(&self, record: &Record, values: &OwnedKeyValueList) -> io::Result<()> {
         let mut io = self.io.lock().unwrap();
         self.formatter.format(io.deref_mut(), record, values).unwrap_or(());
         Ok(())
@@ -80,7 +80,7 @@ impl<F> Drain for TestDrain<F>
 // Create test buffer for introspection, and
 // log defined message to the test drain, returning buffer
 pub fn emit_test_message_to_buffer<F>(formatter: F) -> TestIoBuffer
-    where F: StreamFormat + 'static
+    where F: SyslogFormat + panic::RefUnwindSafe
 {
     let buffer = TestIoBuffer::new(1024);
     let test_drain = TestDrain::new(buffer.io(), formatter);
