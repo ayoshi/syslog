@@ -50,13 +50,13 @@ impl<W, Q> KsvSerializer<W, Q>
 macro_rules! impl_unquoted_serialize_for (
     (T $value_type:ty, $func_name:ident) => (
         fn $func_name(&mut self, key: &str, val: $value_type) -> slog::Result {
-            write!(self.io, "{}{}{}", key, self.separator, val)?;
+            write!(self.io, " {}{}{}", key, self.separator, val)?;
             Ok(())
         }
     );
     (V $value:expr, $func_name:ident) => (
         fn $func_name(&mut self, key: &str) -> slog::Result {
-            write!(self.io, "{}{}{}", key, self.separator, $value)?;
+            write!(self.io, " {}{}{}", key, self.separator, $value)?;
             Ok(())
         }
     );
@@ -65,13 +65,13 @@ macro_rules! impl_unquoted_serialize_for (
 macro_rules! impl_quoted_value_serialize_for (
     (T $value_type:ty, $func_name:ident) => (
         fn $func_name(&mut self, key: &str, val: $value_type) -> slog::Result {
-            write!(self.io, "{}{}\"{}\"", key, self.separator, val)?;
+            write!(self.io, " {}{}\"{}\"", key, self.separator, val)?;
             Ok(())
         }
     );
     (V $value:expr, $func_name:ident) => (
         fn $func_name(&mut self, key: &str) -> slog::Result {
-            write!(self.io, "{}{}\"{}\"", key, self.separator, $value)?;
+            write!(self.io, " {}{}\"{}\"", key, self.separator, $value)?;
             Ok(())
         }
     );

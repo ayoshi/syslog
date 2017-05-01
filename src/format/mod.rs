@@ -20,7 +20,7 @@ use self::rfc3164::{Rfc3164, Rfc3164Short, Rfc3164Full};
 use self::rfc5424::{Rfc5424, Rfc5424Short, Rfc5424Full};
 use serializers::KsvSerializerUnquoted;
 
-use slog::{Record, OwnedKVList};
+use slog::{Record, OwnedKVList, KV};
 use std::io;
 use std::panic::{UnwindSafe, RefUnwindSafe};
 use std::marker::PhantomData;
@@ -112,16 +112,8 @@ impl FormatMessage for MessageWithKsv {
 
         // MESSAGE STRUCTURED_DATA
         let mut serializer = KsvSerializerUnquoted::new(io, "=");
-
-        // for &(k, v) in record.values().iter().rev() {
-        //     serializer.emit_delimiter()?;
-        //     v.serialize(record, k, &mut serializer)?;
-        // }
-
-        // for (k, v) in logger_values.iter() {
-        //     serializer.emit_delimiter()?;
-        //     v.serialize(record, k, &mut serializer)?;
-        // }
+        record.kv().serialize(record, &mut serializer)?;
+        logger_values.serialize(record, &mut serializer)?;
 
         Ok(())
     }

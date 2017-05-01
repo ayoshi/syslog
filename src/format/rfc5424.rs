@@ -1,6 +1,6 @@
 use super::{HeaderFields, FormatHeader};
 use serializers::KsvSerializerQuotedValue;
-use slog::{Record, OwnedKVList};
+use slog::{Record, OwnedKVList, KV};
 use std::io;
 use std::marker::PhantomData;
 use syslog::Priority;
@@ -198,21 +198,16 @@ impl<T> FormatHeader for Rfc5424<T, Rfc5424Full>
         write!(io, "{}", "[")?;
         write!(io, "{}{}", "msg@", record.line())?;
         let mut serializer = KsvSerializerQuotedValue::new(io, "=");
-        // for &(k, v) in record.values().iter().rev() {
-        //     serializer.emit_delimiter()?;
-        //     v.serialize(record, k, &mut serializer)?;
-        // }
+        record.kv().serialize(record, &mut serializer)?;
         let mut io = serializer.finish();
         write!(io, "{}", "]")?;
 
         write!(io, "{}", "[")?;
         write!(io, "{}{}", "logger@", record.line())?;
         let mut serializer = KsvSerializerQuotedValue::new(io, "=");
-        // for (k, v) in logger_values.iter() {
-        //     serializer.emit_delimiter()?;
-        //     v.serialize(record, k, &mut serializer)?;
-        // }
+        logger_values.serialize(record, &mut serializer)?;
         let mut io = serializer.finish();
+
         write!(io, "{}", "]")?;
 
         Ok(())
