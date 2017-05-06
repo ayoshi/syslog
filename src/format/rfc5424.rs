@@ -138,7 +138,6 @@ impl<T, F> Rfc5424<T, F>
         self.format_message_id(io, record)?; // MESSAGEID
         Ok(())
     }
-
 }
 
 impl<T> FormatHeader for Rfc5424<T, Rfc5424Short>

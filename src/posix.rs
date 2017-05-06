@@ -9,7 +9,8 @@ use syslog::SYSLOG_DEFAULT_UDS_LOCATIONS;
 
 /// Check for existence of domain sockets
 pub fn locate_default_uds_socket() -> Result<PathBuf, String> {
-    SYSLOG_DEFAULT_UDS_LOCATIONS.iter()
+    SYSLOG_DEFAULT_UDS_LOCATIONS
+        .iter()
         .map(PathBuf::from)
         .find(|p| p.exists())
         .ok_or_else(|| {

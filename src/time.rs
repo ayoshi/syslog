@@ -24,7 +24,7 @@ pub struct TimestampISO8601;
 pub struct OmitTimestamp;
 
 /// Generic timestamp formatter
-pub trait FormatTimestamp : UnwindSafe + RefUnwindSafe + Send + Sync + 'static {
+pub trait FormatTimestamp: UnwindSafe + RefUnwindSafe + Send + Sync + 'static {
     /// Format timestamp in a given format
     fn format(&mut io::Write) -> io::Result<()>;
 }

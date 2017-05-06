@@ -22,8 +22,8 @@ use serializers::KsvSerializerUnquoted;
 
 use slog::{Record, OwnedKVList, KV};
 use std::io;
-use std::panic::{UnwindSafe, RefUnwindSafe};
 use std::marker::PhantomData;
+use std::panic::{UnwindSafe, RefUnwindSafe};
 use syslog::Facility;
 use time::{FormatTimestamp, OmitTimestamp, Ts3164Local, Ts3164Utc, TsIsoLocal, TsIsoUtc};
 
@@ -54,7 +54,7 @@ impl HeaderFields {
 }
 
 /// Generic Syslog Header Formatter
-pub trait FormatHeader: UnwindSafe + RefUnwindSafe + Send + Sync + 'static  {
+pub trait FormatHeader: UnwindSafe + RefUnwindSafe + Send + Sync + 'static {
     /// Associated `time::Timestamp`
     type Timestamp;
 
@@ -79,20 +79,14 @@ pub struct MessageOnly;
 pub struct MessageWithKsv;
 
 /// Generic Syslog Message formatter
-pub trait FormatMessage: UnwindSafe + RefUnwindSafe + Send + Sync + 'static  {
+pub trait FormatMessage: UnwindSafe + RefUnwindSafe + Send + Sync + 'static {
     /// Format syslog message
-    fn format(io: &mut io::Write,
-              record: &Record,
-              logger_values: &OwnedKVList)
-              -> io::Result<()>;
+    fn format(io: &mut io::Write, record: &Record, logger_values: &OwnedKVList) -> io::Result<()>;
 }
 
 impl FormatMessage for MessageOnly {
     #[allow(unused_variables)]
-    fn format(io: &mut io::Write,
-              record: &Record,
-              logger_values: &OwnedKVList)
-              -> io::Result<()> {
+    fn format(io: &mut io::Write, record: &Record, logger_values: &OwnedKVList) -> io::Result<()> {
 
         // MESSAGE
         write!(io, "{}", record.msg())?;
@@ -102,10 +96,7 @@ impl FormatMessage for MessageOnly {
 }
 
 impl FormatMessage for MessageWithKsv {
-    fn format(io: &mut io::Write,
-              record: &Record,
-              logger_values: &OwnedKVList)
-              -> io::Result<()> {
+    fn format(io: &mut io::Write, record: &Record, logger_values: &OwnedKVList) -> io::Result<()> {
 
         // MESSAGE
         write!(io, "{}", record.msg())?;

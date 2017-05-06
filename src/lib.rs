@@ -43,11 +43,11 @@ pub use self::serializers::*;
 pub use self::syslog::*;
 pub use self::tcp_drain::*;
 pub use self::time::*;
+pub use self::tls_client::TlsSessionConfig;
 pub use self::tls_drain::*;
 pub use self::udp_drain::*;
 pub use self::udp_drain::*;
 pub use self::uds_drain::*;
-pub use self::tls_client::TlsSessionConfig;
 
 /// Timeout in seconds for tyring to acquire lock on streams
 const LOCK_TRY_TIMEOUT: u64 = 3;
