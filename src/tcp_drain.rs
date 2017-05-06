@@ -6,6 +6,7 @@ use std::io;
 use std::io::{Write, Cursor};
 use std::marker::PhantomData;
 use std::net::{Shutdown, TcpStream, SocketAddr};
+use std::panic::AssertUnwindSafe;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -28,7 +29,7 @@ impl TCPDisconnected {
         let stream = TcpStream::connect(self.addr)
             .chain_err(|| ErrorKind::ConnectionFailure("Failed to connect socket"))?;
         Ok(TCPConnected {
-               stream: Arc::new(Mutex::new(stream)),
+               stream: Arc::new(AssertUnwindSafe(Mutex::new(stream))),
                addr: self.addr,
            })
     }
@@ -37,7 +38,7 @@ impl TCPDisconnected {
 /// State: `TCPConnected` for the TCP drain
 #[derive(Debug)]
 pub struct TCPConnected {
-    stream: Arc<Mutex<TcpStream>>,
+    stream: Arc<AssertUnwindSafe<Mutex<TcpStream>>>,
     addr: SocketAddr,
 }
 

@@ -16,7 +16,7 @@ mod common;
 mod tests {
 
     use common::{TestDrain, TestIoBuffer, filter_syslog_messages, reset_syslog_ng};
-    use slog::{Logger, DrainExt, duplicate};
+    use slog::{Logger, Duplicate, Drain};
     use slog_syslog_ng::*;
 
     use std::{thread, time};

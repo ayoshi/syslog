@@ -5,6 +5,7 @@ use std::io;
 use std::io::{Write, Cursor};
 use std::marker::PhantomData;
 use std::net::{TcpStream, SocketAddr};
+use std::panic::AssertUnwindSafe;
 use std::sync::{Arc, Mutex};
 use tls_client::{TlsClient, TlsSessionConfig, TlsClientConnected, TlsClientDisconnected};
 
@@ -34,7 +35,7 @@ impl TLSDisconnected {
                 .chain_err(|| ErrorKind::ConnectionFailure("Failed to establish TLS session"))?;
 
         Ok(TLSConnected {
-               stream: Arc::new(Mutex::new(stream)),
+               stream: Arc::new(AssertUnwindSafe(Mutex::new(stream))),
                addr: self.addr,
                session_config: self.session_config,
            })
@@ -44,7 +45,7 @@ impl TLSDisconnected {
 /// State: `TLSConnected` for the TLS drain
 #[derive(Debug)]
 pub struct TLSConnected {
-    stream: Arc<Mutex<TlsClient<TlsClientConnected>>>,
+    stream: Arc<AssertUnwindSafe<Mutex<TlsClient<TlsClientConnected>>>>,
     session_config: TlsSessionConfig,
     addr: SocketAddr,
 }

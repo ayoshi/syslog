@@ -5,9 +5,11 @@ use slog::{Drain, OwnedKVList, Record};
 use std::io;
 use std::net::Shutdown;
 use std::os::unix::net::UnixDatagram;
+use std::panic::AssertUnwindSafe;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
+
 
 /// State: `UDSDisconnected`
 #[derive(Default, Debug)]
@@ -21,7 +23,7 @@ impl UDSDisconnected {
         let socket = UnixDatagram::unbound()
             .chain_err(|| ErrorKind::ConnectionFailure("Failed to connect socket"))?;
         Ok(UDSConnected {
-               socket: Arc::new(Mutex::new(socket)),
+               socket: Arc::new(AssertUnwindSafe(Mutex::new(socket))),
                path_to_socket: self.path_to_socket,
            })
     }
@@ -30,7 +32,7 @@ impl UDSDisconnected {
 /// State: `UDSConnected` for the UDS drain
 #[derive(Debug)]
 pub struct UDSConnected {
-    socket: Arc<Mutex<UnixDatagram>>,
+    socket: Arc<AssertUnwindSafe<Mutex<UnixDatagram>>>,
     path_to_socket: PathBuf,
 }
 

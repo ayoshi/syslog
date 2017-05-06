@@ -4,6 +4,7 @@ use parking_lot::Mutex;
 use slog::{Drain, OwnedKVList, Record};
 use std::io;
 use std::net::{UdpSocket, SocketAddr};
+use std::panic::AssertUnwindSafe;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -20,7 +21,7 @@ impl UDPDisconnected {
         let socket = UdpSocket::bind("0.0.0.0:0")
             .chain_err(|| ErrorKind::ConnectionFailure("Failed to connect socket"))?;
         Ok(UDPConnected {
-               socket: Arc::new(Mutex::new(socket)),
+               socket: Arc::new(AssertUnwindSafe(Mutex::new(socket))),
                addr: self.addr,
            })
     }
@@ -29,7 +30,7 @@ impl UDPDisconnected {
 /// State: `UDPConnected` for the UDP drain
 #[derive(Debug)]
 pub struct UDPConnected {
-    socket: Arc<Mutex<UdpSocket>>,
+    socket: Arc<AssertUnwindSafe<Mutex<UdpSocket>>>,
     addr: SocketAddr,
 }
 
