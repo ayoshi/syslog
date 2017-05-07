@@ -129,8 +129,8 @@ macro_rules! verify_syslog_ng_message(
         // Timing issue here - we need to wait for logger to log,
         thread::sleep(time::Duration::from_millis(500));
 
-        let message = format!("{} {} {} {:?}",
-            $event, stringify!($drain), stringify!($format), $dest);
+        let message = format!("{} {} {}",
+            $event, stringify!($drain), stringify!($format));
         let logged_messages = filter_syslog_messages(message);
 
         // Message is logged, once and only once
