@@ -42,7 +42,7 @@ tcp_framed_tests!([tcp_rfc5424_tsiso_local_ksv, Rfc5424KsvTsIsoLocal, TCP_5424_K
                   [tcp_rfc5424_tsiso_local_native, Rfc5424NativeTsIsoLocal, TCP_5424_NATIVE],
                   [tcp_rfc5424_tsiso_utc_native, Rfc5424NativeTsIsoUtc, TCP_5424_NATIVE]);
 
-// tls_framed_tests!([tls_rfc5424_tsiso_local_ksv, Rfc5424KsvTsIsoLocal, TLS_5424_KSV],
-//                   [tls_rfc5424_tsiso_utc_ksv, Rfc5424KsvTsIsoUtc, TLS_5424_KSV],
-//                   [tls_rfc5424_tsiso_local_native, Rfc5424NativeTsIsoLocal, TLS_5424_NATIVE],
-//                   [tls_rfc5424_tsiso_utc_native, Rfc5424NativeTsIsoUtc, TLS_5424_NATIVE]);
+tls_framed_tests!([tls_rfc5424_tsiso_local_ksv, Rfc5424KsvTsIsoLocal, TLS_5424_KSV],
+                  [tls_rfc5424_tsiso_utc_ksv, Rfc5424KsvTsIsoUtc, TLS_5424_KSV],
+                  [tls_rfc5424_tsiso_local_native, Rfc5424NativeTsIsoLocal, TLS_5424_NATIVE],
+                  [tls_rfc5424_tsiso_utc_native, Rfc5424NativeTsIsoUtc, TLS_5424_NATIVE]);

@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 pub mod syslog_ng;
 
-pub use self::syslog_ng::{fetch_syslog_messages, filter_syslog_messages, reset_syslog_ng};
+pub use self::syslog_ng::verify_syslog_ng_message;
 use slog::{Logger, Record, OwnedKVList, Drain};
 use slog_syslog_ng::SyslogFormat;
 
@@ -98,46 +98,25 @@ macro_rules! formatter(
 
 // Emit message Fixture
 #[macro_export]
-macro_rules! logger_emit(
-    ($drain: ident, $format: ident, $dest: expr, $event: expr) => {{
+macro_rules! emit_and_verify(
+    ($test_drain: ident, $format: ident, $dest: expr, $event: expr) => {{
 
         let buffer = TestIoBuffer::new(1024);
         let introspection_drain = TestDrain::new(buffer.io(), formatter!($format));
-        let formatter = formatter!($format);
-        let test_drain = $drain::new($dest.clone(), formatter)
-            .connect().expect("couldn't connect to socket");
+        let drain_type = format!("{:?}", $test_drain);
 
         let logger = Logger::root(
-            Duplicate::new(introspection_drain, test_drain).fuse(),
+            Duplicate::new(introspection_drain, $test_drain).fuse(),
             o!("lk1" => "lv1", "lk2" => "lv2")
         );
 
-        info!(logger,
-              "{} {} {} {:?}", $event, stringify!($drain), stringify!($format), $dest;
-              "mk1" => "mv1",
-              "mk2" => "mv2",
-        );
+        info!(logger, "{} {:?} {}", $event, drain_type, stringify!($format);
+              "mk1" => "mv1", "mk2" => "mv2");
 
-        println!("{} -> {:?} -> {:?}", buffer.as_string(), buffer.as_vec(), $dest);
-    }});
+        println!("{} \n-> {:?} \n-> {}", buffer.as_string(), buffer.as_vec(), drain_type);
 
-// Fetch and verify recieved message from syslog-ng
-#[macro_export]
-macro_rules! verify_syslog_ng_message(
-    ($drain: ident, $format: ident, $dest: expr, $event: expr) => {{
-
-        // Timing issue here - we need to wait for logger to log,
-        thread::sleep(time::Duration::from_millis(500));
-
-        let message = format!("{} {} {}",
-            $event, stringify!($drain), stringify!($format));
-        let logged_messages = filter_syslog_messages(message);
-
-        // Message is logged, once and only once
-        assert_eq!(logged_messages.len(), 1);
-
-        let ref logged_message = logged_messages[0];
-        println!("{}", logged_message);
+        // Hate it, need better way to match on unique message in syslog-ng
+        verify_syslog_ng_message(drain_type + &format!("\" {}", stringify!($format)));
     }});
 
 // Generate tests for unix socket drain
@@ -149,8 +128,10 @@ macro_rules! uds_tests {
             fn $name() {
                 let dest = PathBuf::from($path);
 
-                logger_emit!(UDSDrain, $format, dest, "Test message");
-                verify_syslog_ng_message!(UDSDrain, $format, dest, "Test message");
+                let test_drain = UDSDrain::new(dest.clone(), formatter!($format))
+                    .connect().expect("couldn't connect to socket");
+
+                emit_and_verify!(test_drain, $format, dest, "Test message");
             }
         )*)
 }
@@ -168,8 +149,10 @@ macro_rules! udp_tests {
                     .collect::<Vec<_>>()
                     [0];
 
-                logger_emit!(UDPDrain, $format, dest, "Test message");
-                verify_syslog_ng_message!(UDPDrain, $format, dest, "Test message");
+                let test_drain = UDPDrain::new(dest.clone(), formatter!($format))
+                    .connect().expect("couldn't connect to socket");
+
+                emit_and_verify!(test_drain, $format, dest, "Test message");
             }
         )*)
 }
@@ -187,8 +170,10 @@ macro_rules! tcp_delimited_tests {
                     .collect::<Vec<_>>()
                     [0];
 
-                logger_emit!(TCPDrainDelimited, $format, dest, "Test message");
-                verify_syslog_ng_message!(TCPDrainDelimited, $format, dest, "Test message");
+                let test_drain = TCPDrainDelimited::new(dest.clone(), formatter!($format))
+                    .connect().expect("couldn't connect to socket");
+
+                emit_and_verify!(test_drain, $format, dest, "Test message");
             }
         )*)
 }
@@ -205,54 +190,43 @@ macro_rules! tcp_framed_tests {
                     .expect(format!("Couldn't to connect to {}", $addr).as_str())
                     .collect::<Vec<_>>()
                     [0];
+                let test_drain = TCPDrainFramed::new(dest.clone(), formatter!($format))
+                    .connect().expect("couldn't connect to socket");
 
-                logger_emit!(TCPDrainFramed, $format, dest, "Test message");
-                verify_syslog_ng_message!(TCPDrainFramed, $format, dest, "Test message");
+                emit_and_verify!(test_drain, $format, dest, "Test message");
             }
         )*)
 }
 
 // Generate tests for TLS drain
-// #[macro_export]
-// macro_rules! tls_framed_tests {
-//     ($([$name:ident, $format:ident, $addr:expr]),*) =>
-//         ($(
-//             #[test]
-//             fn $name() {
-//                 let dest = $addr
-//                     .to_socket_addrs()
-//                     .expect(format!("Couldn't to connect to {}", $addr).as_str())
-//                     .collect::<Vec<_>>()
-//                     [0];
-//                 let tls_session_config = TlsSessionConfig {
-//                     domain: String::from("syslog-ng"),
-//                     ca_file: Some(PathBuf::from("/syslog-ng/cacert.pem")),
-//                     private_key_file: None,
-//                     certs_file: None,
-//                     no_verify: false,
-//                 };
-//                 let message = format!(
-//                     "{} {} message to {}",
-//                     stringify!(TLSDrainFramed),
-//                     stringify!($format),
-//                     $addr);
-//                 let buffer = TestIoBuffer::new(1024);
-//                 let introspection_drain = TestDrain::new(
-// buffer.io(), formatter!($format));
+#[macro_export]
+macro_rules! tls_framed_tests {
+    ($([$name:ident, $format:ident, $addr:expr]),*) =>
+        ($(
+            #[test]
+            fn $name() {
+                let dest = $addr
+                    .to_socket_addrs()
+                    .expect(format!("Couldn't to connect to {}", $addr).as_str())
+                    .collect::<Vec<_>>()
+                    [0];
+                let tls_session_config = TlsSessionConfig {
+                    domain: String::from("syslog-ng"),
+                    ca_file: Some(PathBuf::from("/syslog-ng/cacert.pem")),
+                    private_key_file: None,
+                    certs_file: None,
+                    no_verify: false,
+                };
+                let message = format!(
+                    "{} {} message to {}",
+                    stringify!(TLSDrainFramed),
+                    stringify!($format),
+                    $addr);
+                let test_drain = TLSDrainFramed::new(
+                    dest, tls_session_config, formatter!($format))
+                    .connect().expect("couldn't connect to socket");
 
-//                 let test_drain = TLSDrainFramed::new(
-// dest, tls_session_config, formatter!($format))
-//                     .connect().expect("couldn't connect to socket");
-
-//                 let logger = Logger::root(duplicate(introspection_drain, test_drain).fuse(),
-//                                           o!("lk1" => "lv1", "lk2" => "lv2"));
-
-//                 info!(logger, message; "mk1" => "mv1", "mk2" => "mv2");
-
-//                 println!("{:?}", buffer.as_vec());
-//                 println!("{:?}", buffer.as_string());
-//                 println!("{} -> {:?} -> {:?}", buffer.as_string(), buffer.as_vec(), dest);
-//                 verify_syslog_ng_message!(message);
-//             }
-//         )*)
-// }
+                emit_and_verify!(test_drain, $format, dest, "Test message");
+            }
+        )*)
+}
