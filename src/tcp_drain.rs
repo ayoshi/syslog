@@ -12,9 +12,11 @@ use std::time::Duration;
 
 
 /// Delimited messages
+#[derive(Debug)]
 pub struct DelimitedMessages;
 
 /// Framed messages
+#[derive(Debug)]
 pub struct FramedMessages;
 
 /// State: `TCPDisconnected`` for the TCP drain

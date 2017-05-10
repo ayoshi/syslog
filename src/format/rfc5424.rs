@@ -65,9 +65,11 @@ pub struct Rfc5424<T, F> {
 impl<T, F> Rfc5424<T, F> {}
 
 /// RFC5424 header without structured data section
+#[derive(Debug)]
 pub struct Rfc5424Short;
 
 /// RFC5424 header with structured data
+#[derive(Debug)]
 pub struct Rfc5424Full;
 
 pub trait Rfc5424Header {}

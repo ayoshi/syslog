@@ -10,9 +10,11 @@ use std::sync::{Arc, Mutex};
 use tls_client::{TlsClient, TlsSessionConfig, TlsClientConnected, TlsClientDisconnected};
 
 /// Delimited messages
+#[derive(Debug)]
 pub struct DelimitedMessages;
 
 /// Framed messages
+#[derive(Debug)]
 pub struct FramedMessages;
 
 /// State: `TLSDisconnected`` for the TLS drain

@@ -6,9 +6,11 @@ use syslog::Priority;
 use time::{FormatTimestamp, OmitTimestamp};
 
 /// RFC3164 `RFC3164Short` header (PRIORITY HOSTNAME TAG)
+#[derive(Debug)]
 pub struct Rfc3164Short;
 
 /// RFC3164 `RFC3164Full` header (PRIORITY TIMESTAMP TAG)
+#[derive(Debug)]
 pub struct Rfc3164Full;
 
 /// RFC3164 Header Format
