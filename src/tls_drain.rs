@@ -1,17 +1,20 @@
 use errors::*;
-use slog::{Drain, OwnedKeyValueList, Record};
-use slog_stream::Format as StreamFormat;
+use format::SyslogFormat;
+use slog::{Drain, OwnedKVList, Record};
 use std::io;
 use std::io::{Write, Cursor};
 use std::marker::PhantomData;
 use std::net::{TcpStream, SocketAddr};
+use std::panic::AssertUnwindSafe;
 use std::sync::{Arc, Mutex};
 use tls_client::{TlsClient, TlsSessionConfig, TlsClientConnected, TlsClientDisconnected};
 
 /// Delimited messages
+#[derive(Debug)]
 pub struct DelimitedMessages;
 
 /// Framed messages
+#[derive(Debug)]
 pub struct FramedMessages;
 
 /// State: `TLSDisconnected`` for the TLS drain
@@ -34,7 +37,7 @@ impl TLSDisconnected {
                 .chain_err(|| ErrorKind::ConnectionFailure("Failed to establish TLS session"))?;
 
         Ok(TLSConnected {
-               stream: Arc::new(Mutex::new(stream)),
+               stream: Arc::new(AssertUnwindSafe(Mutex::new(stream))),
                addr: self.addr,
                session_config: self.session_config,
            })
@@ -44,7 +47,7 @@ impl TLSDisconnected {
 /// State: `TLSConnected` for the TLS drain
 #[derive(Debug)]
 pub struct TLSConnected {
-    stream: Arc<Mutex<TlsClient<TlsClientConnected>>>,
+    stream: Arc<AssertUnwindSafe<Mutex<TlsClient<TlsClientConnected>>>>,
     session_config: TlsSessionConfig,
     addr: SocketAddr,
 }
@@ -65,7 +68,7 @@ impl TLSConnected {
 /// TLS drain
 #[derive(Debug)]
 pub struct TLSDrain<T, C, F>
-    where F: StreamFormat
+    where F: SyslogFormat
 {
     formatter: F,
     connection: C,
@@ -73,7 +76,7 @@ pub struct TLSDrain<T, C, F>
 }
 
 impl<T, F> TLSDrain<T, TLSDisconnected, F>
-    where F: StreamFormat
+    where F: SyslogFormat
 {
     /// TLSDrain constructor
     pub fn new(addr: SocketAddr,
@@ -101,7 +104,7 @@ impl<T, F> TLSDrain<T, TLSDisconnected, F>
 }
 
 impl<T, F> TLSDrain<T, TLSConnected, F>
-    where F: StreamFormat
+    where F: SyslogFormat
 {
     /// Disconnect TLS stream, completing all operations
     pub fn disconnect(self) -> Result<TLSDrain<T, TLSDisconnected, F>> {
@@ -115,12 +118,13 @@ impl<T, F> TLSDrain<T, TLSConnected, F>
 
 // RFC3164 messages over TLS don't require framed headers
 impl<F> Drain for TLSDrain<DelimitedMessages, TLSConnected, F>
-    where F: StreamFormat
+    where F: SyslogFormat
 {
-    type Error = io::Error;
+    type Err = io::Error;
+    type Ok = ();
 
     #[allow(dead_code)]
-    fn log(&self, info: &Record, logger_values: &OwnedKeyValueList) -> io::Result<()> {
+    fn log(&self, info: &Record, logger_values: &OwnedKVList) -> io::Result<()> {
 
         // Should be thread safe - redo the buffering
         let mut buf = Vec::<u8>::with_capacity(4096);
@@ -139,11 +143,12 @@ impl<F> Drain for TLSDrain<DelimitedMessages, TLSConnected, F>
 // RFC5424 messages require framed delimition, first we need to send
 // the length of the message in octets
 impl<F> Drain for TLSDrain<FramedMessages, TLSConnected, F>
-    where F: StreamFormat
+    where F: SyslogFormat
 {
-    type Error = io::Error;
+    type Err = io::Error;
+    type Ok = ();
 
-    fn log(&self, info: &Record, logger_values: &OwnedKeyValueList) -> io::Result<()> {
+    fn log(&self, info: &Record, logger_values: &OwnedKVList) -> io::Result<()> {
 
         // Should be thread safe - redo the buffering
         let mut buf = Cursor::new(Vec::<u8>::with_capacity(10));

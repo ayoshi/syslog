@@ -1,12 +1,11 @@
 #![allow(dead_code)]
 pub mod syslog_ng;
 
-pub use self::syslog_ng::{fetch_syslog_messages, filter_syslog_messages, reset_syslog_ng};
-use slog::{Logger, Record, OwnedKeyValueList, Drain, DrainExt};
-use slog_stream::Format as StreamFormat;
-// use slog_syslog_ng::*;
+pub use self::syslog_ng::verify_syslog_ng_message;
+use slog::{Logger, Record, OwnedKVList, Drain};
+use slog_syslog_ng::SyslogFormat;
 
-use std::{io, result};
+use std::{io, panic};
 use std::ops::DerefMut;
 use std::sync::{Arc, Mutex};
 
@@ -32,10 +31,7 @@ impl TestIoBuffer {
 
     #[allow(dead_code)]
     pub fn as_vec(&self) -> Vec<u8> {
-        self.io
-            .lock()
-            .unwrap()
-            .clone()
+        self.io.lock().unwrap().clone()
     }
 
     #[allow(dead_code)]
@@ -48,14 +44,14 @@ impl TestIoBuffer {
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct TestDrain<F>
-    where F: StreamFormat
+    where F: SyslogFormat + panic::RefUnwindSafe + Send + Sync
 {
     io: SharedIoVec,
     formatter: F,
 }
 
 impl<F> TestDrain<F>
-    where F: StreamFormat
+    where F: SyslogFormat + panic::RefUnwindSafe + Send + Sync
 {
     pub fn new(io: SharedIoVec, formatter: F) -> TestDrain<F> {
         TestDrain {
@@ -66,13 +62,16 @@ impl<F> TestDrain<F>
 }
 
 impl<F> Drain for TestDrain<F>
-    where F: StreamFormat
+    where F: SyslogFormat + panic::RefUnwindSafe + Send + Sync
 {
-    type Error = io::Error;
+    type Err = io::Error;
+    type Ok = ();
 
-    fn log(&self, record: &Record, values: &OwnedKeyValueList) -> result::Result<(), Self::Error> {
+    fn log(&self, record: &Record, values: &OwnedKVList) -> io::Result<()> {
         let mut io = self.io.lock().unwrap();
-        self.formatter.format(io.deref_mut(), record, values).unwrap_or(());
+        self.formatter
+            .format(io.deref_mut(), record, values)
+            .unwrap_or(());
         Ok(())
     }
 }
@@ -80,7 +79,7 @@ impl<F> Drain for TestDrain<F>
 // Create test buffer for introspection, and
 // log defined message to the test drain, returning buffer
 pub fn emit_test_message_to_buffer<F>(formatter: F) -> TestIoBuffer
-    where F: StreamFormat + 'static
+    where F: SyslogFormat + panic::RefUnwindSafe + Send + Sync
 {
     let buffer = TestIoBuffer::new(1024);
     let test_drain = TestDrain::new(buffer.io(), formatter);
@@ -99,42 +98,26 @@ macro_rules! formatter(
 
 // Emit message Fixture
 #[macro_export]
-macro_rules! logger_emit(
-    ($drain: ident, $format: ident, $dest: expr, $event: expr) => {{
+macro_rules! emit_and_verify(
+    ($test_drain: ident, $format: ident, $dest: expr, $event: expr) => {{
 
         let buffer = TestIoBuffer::new(1024);
         let introspection_drain = TestDrain::new(buffer.io(), formatter!($format));
+        let drain_type = format!("{:?}", $test_drain);
 
-        let test_drain = $drain::new($dest.clone(), formatter!($format))
-            .connect().expect("couldn't connect to socket");
+        let logger = Logger::root(
+            Duplicate::new(introspection_drain, $test_drain).fuse(),
+            o!("lk1" => "lv1", "lk2" => "lv2")
+        );
 
-        let logger = Logger::root(duplicate(introspection_drain, test_drain).fuse(),
-                                  o!("lk1" => "lv1", "lk2" => "lv2"));
+        info!(logger, "{} {:?} {}", $event, drain_type, stringify!($format);
+              "mk1" => "mv1", "mk2" => "mv2");
 
-        info!(logger, $event; "mk1" => "mv1", "mk2" => "mv2");
+        println!("{} \n-> {:?} \n-> {}", buffer.as_string(), buffer.as_vec(), drain_type);
 
-        println!("{:?}", buffer.as_vec());
-        println!("{:?}", buffer.as_string());
-        println!("{} -> {:?} -> {:?}", buffer.as_string(), buffer.as_vec(), $dest);
+        // Hate it, need better way to match on unique message in syslog-ng
+        verify_syslog_ng_message(drain_type + &format!("\" {}", stringify!($format)));
     }});
-
-// Fetch and verify recieved message from syslog-ng
-#[macro_export]
-macro_rules! verify_syslog_ng_message {
-    ($message: ident) =>
-        (
-            // Timing issue here - we need to wait for logger to log,
-            thread::sleep(time::Duration::from_millis(500));
-
-            let logged_messages = filter_syslog_messages($message);
-
-            // Message is logged, once and only once
-            assert_eq!(logged_messages.len(), 1);
-
-            let ref logged_message = logged_messages[0];
-            println!("{}", logged_message);
-        )
-}
 
 // Generate tests for unix socket drain
 #[macro_export]
@@ -144,13 +127,11 @@ macro_rules! uds_tests {
             #[test]
             fn $name() {
                 let dest = PathBuf::from($path);
-                let message = format!(
-                    "{} {} message to {}",
-                    stringify!(UDSDrain),
-                    stringify!($format),
-                    $path);
-                logger_emit!(UDSDrain, $format, dest, message);
-                verify_syslog_ng_message!(message);
+
+                let test_drain = UDSDrain::new(dest.clone(), formatter!($format))
+                    .connect().expect("couldn't connect to socket");
+
+                emit_and_verify!(test_drain, $format, dest, "Test message");
             }
         )*)
 }
@@ -166,14 +147,12 @@ macro_rules! udp_tests {
                     .to_socket_addrs()
                     .expect(format!("Couldn't to connect to {}", $addr).as_str())
                     .collect::<Vec<_>>()
-                                [0];
-                let message = format!(
-                    "{} {} message to {}",
-                    stringify!(UDPDrain),
-                    stringify!($format),
-                    $addr);
-                logger_emit!(UDPDrain, $format, dest, message);
-                verify_syslog_ng_message!(message);
+                    [0];
+
+                let test_drain = UDPDrain::new(dest.clone(), formatter!($format))
+                    .connect().expect("couldn't connect to socket");
+
+                emit_and_verify!(test_drain, $format, dest, "Test message");
             }
         )*)
 }
@@ -190,13 +169,11 @@ macro_rules! tcp_delimited_tests {
                     .expect(format!("Couldn't to connect to {}", $addr).as_str())
                     .collect::<Vec<_>>()
                     [0];
-                let message = format!(
-                    "{} {} message to {}",
-                    stringify!(TCPDrainDelimited),
-                    stringify!($format),
-                    $addr);
-                logger_emit!(TCPDrainDelimited, $format, dest, message);
-                verify_syslog_ng_message!(message);
+
+                let test_drain = TCPDrainDelimited::new(dest.clone(), formatter!($format))
+                    .connect().expect("couldn't connect to socket");
+
+                emit_and_verify!(test_drain, $format, dest, "Test message");
             }
         )*)
 }
@@ -213,18 +190,15 @@ macro_rules! tcp_framed_tests {
                     .expect(format!("Couldn't to connect to {}", $addr).as_str())
                     .collect::<Vec<_>>()
                     [0];
-                let message = format!(
-                    "{} {} message to {}",
-                    stringify!(TCPDrainFramed),
-                    stringify!($format),
-                    $addr);
-                logger_emit!(TCPDrainFramed, $format, dest, message);
-                verify_syslog_ng_message!(message);
+                let test_drain = TCPDrainFramed::new(dest.clone(), formatter!($format))
+                    .connect().expect("couldn't connect to socket");
+
+                emit_and_verify!(test_drain, $format, dest, "Test message");
             }
         )*)
 }
 
-// Generate tests for TCP drain
+// Generate tests for TLS drain
 #[macro_export]
 macro_rules! tls_framed_tests {
     ($([$name:ident, $format:ident, $addr:expr]),*) =>
@@ -248,21 +222,11 @@ macro_rules! tls_framed_tests {
                     stringify!(TLSDrainFramed),
                     stringify!($format),
                     $addr);
-                let buffer = TestIoBuffer::new(1024);
-                let introspection_drain = TestDrain::new(buffer.io(), formatter!($format));
-
-                let test_drain = TLSDrainFramed::new(dest, tls_session_config, formatter!($format))
+                let test_drain = TLSDrainFramed::new(
+                    dest, tls_session_config, formatter!($format))
                     .connect().expect("couldn't connect to socket");
 
-                let logger = Logger::root(duplicate(introspection_drain, test_drain).fuse(),
-                                          o!("lk1" => "lv1", "lk2" => "lv2"));
-
-                info!(logger, message; "mk1" => "mv1", "mk2" => "mv2");
-
-                println!("{:?}", buffer.as_vec());
-                println!("{:?}", buffer.as_string());
-                println!("{} -> {:?} -> {:?}", buffer.as_string(), buffer.as_vec(), dest);
-                verify_syslog_ng_message!(message);
+                emit_and_verify!(test_drain, $format, dest, "Test message");
             }
         )*)
 }

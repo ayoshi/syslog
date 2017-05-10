@@ -1,6 +1,6 @@
 use super::{HeaderFields, FormatHeader};
 use serializers::KsvSerializerQuotedValue;
-use slog::{Record, OwnedKeyValueList};
+use slog::{Record, OwnedKVList, KV};
 use std::io;
 use std::marker::PhantomData;
 use syslog::Priority;
@@ -65,9 +65,11 @@ pub struct Rfc5424<T, F> {
 impl<T, F> Rfc5424<T, F> {}
 
 /// RFC5424 header without structured data section
+#[derive(Debug)]
 pub struct Rfc5424Short;
 
 /// RFC5424 header with structured data
+#[derive(Debug)]
 pub struct Rfc5424Full;
 
 pub trait Rfc5424Header {}
@@ -122,7 +124,7 @@ impl<T, F> Rfc5424<T, F>
     fn format_header(&self,
                      io: &mut io::Write,
                      record: &Record,
-                     logger_values: &OwnedKeyValueList)
+                     logger_values: &OwnedKVList)
                      -> io::Result<()> {
 
         self.format_prioriy(io, record)?; // Priority: <PRI>VERSION
@@ -138,7 +140,6 @@ impl<T, F> Rfc5424<T, F>
         self.format_message_id(io, record)?; // MESSAGEID
         Ok(())
     }
-
 }
 
 impl<T> FormatHeader for Rfc5424<T, Rfc5424Short>
@@ -157,7 +158,7 @@ impl<T> FormatHeader for Rfc5424<T, Rfc5424Short>
     fn format(&self,
               io: &mut io::Write,
               record: &Record,
-              logger_values: &OwnedKeyValueList)
+              logger_values: &OwnedKVList)
               -> io::Result<()> {
 
         self.format_header(io, record, logger_values)?; // HEADER
@@ -186,7 +187,7 @@ impl<T> FormatHeader for Rfc5424<T, Rfc5424Full>
     fn format(&self,
               io: &mut io::Write,
               record: &Record,
-              logger_values: &OwnedKeyValueList)
+              logger_values: &OwnedKVList)
               -> io::Result<()> {
 
         self.format_header(io, record, logger_values)?; // HEADER
@@ -198,21 +199,16 @@ impl<T> FormatHeader for Rfc5424<T, Rfc5424Full>
         write!(io, "{}", "[")?;
         write!(io, "{}{}", "msg@", record.line())?;
         let mut serializer = KsvSerializerQuotedValue::new(io, "=");
-        for &(k, v) in record.values().iter().rev() {
-            serializer.emit_delimiter()?;
-            v.serialize(record, k, &mut serializer)?;
-        }
+        record.kv().serialize(record, &mut serializer)?;
         let mut io = serializer.finish();
         write!(io, "{}", "]")?;
 
         write!(io, "{}", "[")?;
         write!(io, "{}{}", "logger@", record.line())?;
         let mut serializer = KsvSerializerQuotedValue::new(io, "=");
-        for (k, v) in logger_values.iter() {
-            serializer.emit_delimiter()?;
-            v.serialize(record, k, &mut serializer)?;
-        }
+        logger_values.serialize(record, &mut serializer)?;
         let mut io = serializer.finish();
+
         write!(io, "{}", "]")?;
 
         Ok(())

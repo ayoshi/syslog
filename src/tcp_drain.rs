@@ -1,19 +1,22 @@
 use errors::*;
+use format::SyslogFormat;
 use parking_lot::Mutex;
-use slog::{Drain, OwnedKeyValueList, Record};
-use slog_stream::Format as StreamFormat;
+use slog::{Drain, OwnedKVList, Record};
 use std::io;
 use std::io::{Write, Cursor};
 use std::marker::PhantomData;
 use std::net::{Shutdown, TcpStream, SocketAddr};
+use std::panic::AssertUnwindSafe;
 use std::sync::Arc;
 use std::time::Duration;
 
 
 /// Delimited messages
+#[derive(Debug)]
 pub struct DelimitedMessages;
 
 /// Framed messages
+#[derive(Debug)]
 pub struct FramedMessages;
 
 /// State: `TCPDisconnected`` for the TCP drain
@@ -28,7 +31,7 @@ impl TCPDisconnected {
         let stream = TcpStream::connect(self.addr)
             .chain_err(|| ErrorKind::ConnectionFailure("Failed to connect socket"))?;
         Ok(TCPConnected {
-               stream: Arc::new(Mutex::new(stream)),
+               stream: Arc::new(AssertUnwindSafe(Mutex::new(stream))),
                addr: self.addr,
            })
     }
@@ -37,7 +40,7 @@ impl TCPDisconnected {
 /// State: `TCPConnected` for the TCP drain
 #[derive(Debug)]
 pub struct TCPConnected {
-    stream: Arc<Mutex<TcpStream>>,
+    stream: Arc<AssertUnwindSafe<Mutex<TcpStream>>>,
     addr: SocketAddr,
 }
 
@@ -58,7 +61,7 @@ impl TCPConnected {
 /// TCP drain
 #[derive(Debug)]
 pub struct TCPDrain<T, C, F>
-    where F: StreamFormat
+    where F: SyslogFormat
 {
     formatter: F,
     connection: C,
@@ -66,7 +69,7 @@ pub struct TCPDrain<T, C, F>
 }
 
 impl<T, F> TCPDrain<T, TCPDisconnected, F>
-    where F: StreamFormat
+    where F: SyslogFormat
 {
     /// TCPDrain constructor
     pub fn new(addr: SocketAddr, formatter: F) -> TCPDrain<T, TCPDisconnected, F> {
@@ -88,7 +91,7 @@ impl<T, F> TCPDrain<T, TCPDisconnected, F>
 }
 
 impl<T, F> TCPDrain<T, TCPConnected, F>
-    where F: StreamFormat
+    where F: SyslogFormat
 {
     /// Disconnect TCP stream, completing all operations
     pub fn disconnect(self) -> Result<TCPDrain<T, TCPDisconnected, F>> {
@@ -102,12 +105,13 @@ impl<T, F> TCPDrain<T, TCPConnected, F>
 
 // RFC3164 messages over TCP don't require framed headers
 impl<F> Drain for TCPDrain<DelimitedMessages, TCPConnected, F>
-    where F: StreamFormat
+    where F: SyslogFormat
 {
-    type Error = io::Error;
+    type Err = io::Error;
+    type Ok = ();
 
     #[allow(dead_code)]
-    fn log(&self, info: &Record, logger_values: &OwnedKeyValueList) -> io::Result<()> {
+    fn log(&self, info: &Record, logger_values: &OwnedKVList) -> io::Result<()> {
 
         // Should be thread safe - redo the buffering
         let mut buf = Vec::<u8>::with_capacity(4096);
@@ -126,11 +130,12 @@ impl<F> Drain for TCPDrain<DelimitedMessages, TCPConnected, F>
 // RFC5424 messages require framed delimition, first we need to send
 // the length of the message in octets
 impl<F> Drain for TCPDrain<FramedMessages, TCPConnected, F>
-    where F: StreamFormat
+    where F: SyslogFormat
 {
-    type Error = io::Error;
+    type Err = io::Error;
+    type Ok = ();
 
-    fn log(&self, info: &Record, logger_values: &OwnedKeyValueList) -> io::Result<()> {
+    fn log(&self, info: &Record, logger_values: &OwnedKVList) -> io::Result<()> {
 
         // Should be thread safe - redo the buffering
         let mut buf = Cursor::new(Vec::<u8>::with_capacity(10));

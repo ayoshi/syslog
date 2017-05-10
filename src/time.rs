@@ -1,6 +1,7 @@
 use chrono;
 use std::io;
 use std::marker::PhantomData;
+use std::panic::{UnwindSafe, RefUnwindSafe};
 
 /// Timestamp in local TZ
 #[derive(Debug)]
@@ -23,7 +24,7 @@ pub struct TimestampISO8601;
 pub struct OmitTimestamp;
 
 /// Generic timestamp formatter
-pub trait FormatTimestamp {
+pub trait FormatTimestamp: UnwindSafe + RefUnwindSafe + Send + Sync + 'static {
     /// Format timestamp in a given format
     fn format(&mut io::Write) -> io::Result<()>;
 }

@@ -1,14 +1,16 @@
 use super::{HeaderFields, FormatHeader};
-use slog::{Record, OwnedKeyValueList};
+use slog::{Record, OwnedKVList};
 use std::io;
 use std::marker::PhantomData;
 use syslog::Priority;
 use time::{FormatTimestamp, OmitTimestamp};
 
 /// RFC3164 `RFC3164Short` header (PRIORITY HOSTNAME TAG)
+#[derive(Debug)]
 pub struct Rfc3164Short;
 
 /// RFC3164 `RFC3164Full` header (PRIORITY TIMESTAMP TAG)
+#[derive(Debug)]
 pub struct Rfc3164Full;
 
 /// RFC3164 Header Format
@@ -75,7 +77,7 @@ impl FormatHeader for Rfc3164<OmitTimestamp, Rfc3164Short> {
     fn format(&self,
               io: &mut io::Write,
               record: &Record,
-              logger_values: &OwnedKeyValueList)
+              logger_values: &OwnedKVList)
               -> io::Result<()> {
 
         // PRIORITY: <PRI>
@@ -109,7 +111,7 @@ impl<T> FormatHeader for Rfc3164<T, Rfc3164Full>
     fn format(&self,
               io: &mut io::Write,
               record: &Record,
-              logger_values: &OwnedKeyValueList)
+              logger_values: &OwnedKVList)
               -> io::Result<()> {
 
         // PRIORITY: <PRI>

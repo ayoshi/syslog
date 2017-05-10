@@ -5,7 +5,6 @@ extern crate pretty_assertions;
 
 #[macro_use]
 extern crate slog;
-extern crate slog_stream;
 extern crate slog_syslog_ng;
 extern crate serde_json;
 
@@ -16,11 +15,9 @@ mod common;
 #[cfg(feature="full-integration-env")]
 mod tests {
 
-    use common::{TestDrain, TestIoBuffer, filter_syslog_messages, reset_syslog_ng};
-    use slog::{Logger, DrainExt, duplicate};
+    use common::{TestDrain, TestIoBuffer, verify_syslog_ng_message};
+    use slog::{Logger, Duplicate, Drain};
     use slog_syslog_ng::*;
-
-    use std::{thread, time};
 
     use std::net::ToSocketAddrs;
     use std::path::PathBuf;

@@ -6,7 +6,6 @@ extern crate slog_syslog_ng;
 
 #[macro_use]
 extern crate slog;
-extern crate slog_stream;
 extern crate serde_json;
 
 #[macro_use]

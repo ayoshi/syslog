@@ -1,4 +1,3 @@
-
 // Macros used by childred
 // Write separator
 #[macro_export]
@@ -21,10 +20,10 @@ use self::rfc3164::{Rfc3164, Rfc3164Short, Rfc3164Full};
 use self::rfc5424::{Rfc5424, Rfc5424Short, Rfc5424Full};
 use serializers::KsvSerializerUnquoted;
 
-use slog::{Record, OwnedKeyValueList};
-use slog_stream::Format as StreamFormat;
+use slog::{Record, OwnedKVList, KV};
 use std::io;
 use std::marker::PhantomData;
+use std::panic::{UnwindSafe, RefUnwindSafe};
 use syslog::Facility;
 use time::{FormatTimestamp, OmitTimestamp, Ts3164Local, Ts3164Utc, TsIsoLocal, TsIsoUtc};
 
@@ -55,7 +54,7 @@ impl HeaderFields {
 }
 
 /// Generic Syslog Header Formatter
-pub trait FormatHeader {
+pub trait FormatHeader: UnwindSafe + RefUnwindSafe + Send + Sync + 'static {
     /// Associated `time::Timestamp`
     type Timestamp;
 
@@ -67,7 +66,7 @@ pub trait FormatHeader {
     fn format(&self,
               io: &mut io::Write,
               record: &Record,
-              logger_values: &OwnedKeyValueList)
+              logger_values: &OwnedKVList)
               -> io::Result<()>;
 }
 
@@ -80,20 +79,14 @@ pub struct MessageOnly;
 pub struct MessageWithKsv;
 
 /// Generic Syslog Message formatter
-pub trait FormatMessage {
+pub trait FormatMessage: UnwindSafe + RefUnwindSafe + Send + Sync + 'static {
     /// Format syslog message
-    fn format(io: &mut io::Write,
-              record: &Record,
-              logger_values: &OwnedKeyValueList)
-              -> io::Result<()>;
+    fn format(io: &mut io::Write, record: &Record, logger_values: &OwnedKVList) -> io::Result<()>;
 }
 
 impl FormatMessage for MessageOnly {
     #[allow(unused_variables)]
-    fn format(io: &mut io::Write,
-              record: &Record,
-              logger_values: &OwnedKeyValueList)
-              -> io::Result<()> {
+    fn format(io: &mut io::Write, record: &Record, logger_values: &OwnedKVList) -> io::Result<()> {
 
         // MESSAGE
         write!(io, "{}", record.msg())?;
@@ -103,26 +96,15 @@ impl FormatMessage for MessageOnly {
 }
 
 impl FormatMessage for MessageWithKsv {
-    fn format(io: &mut io::Write,
-              record: &Record,
-              logger_values: &OwnedKeyValueList)
-              -> io::Result<()> {
+    fn format(io: &mut io::Write, record: &Record, logger_values: &OwnedKVList) -> io::Result<()> {
 
         // MESSAGE
         write!(io, "{}", record.msg())?;
 
         // MESSAGE STRUCTURED_DATA
         let mut serializer = KsvSerializerUnquoted::new(io, "=");
-
-        for &(k, v) in record.values().iter().rev() {
-            serializer.emit_delimiter()?;
-            v.serialize(record, k, &mut serializer)?;
-        }
-
-        for (k, v) in logger_values.iter() {
-            serializer.emit_delimiter()?;
-            v.serialize(record, k, &mut serializer)?;
-        }
+        record.kv().serialize(record, &mut serializer)?;
+        logger_values.serialize(record, &mut serializer)?;
 
         Ok(())
     }
@@ -141,19 +123,19 @@ pub struct SyslogFormatter<H, M>
 }
 
 /// Format syslog message
-pub trait SyslogFormat {
+pub trait SyslogFormat: UnwindSafe + RefUnwindSafe + Send + Sync + 'static {
     /// Format Syslog Message
     fn format(&self,
               io: &mut io::Write,
               record: &Record,
-              logger_values: &OwnedKeyValueList)
+              logger_values: &OwnedKVList)
               -> io::Result<()>;
 }
 
 impl<H, M> SyslogFormatter<H, M>
-    where H: FormatHeader + Send + Sync,
-          H::Timestamp: FormatTimestamp + Send + Sync,
-          M: FormatMessage + Send + Sync
+    where H: FormatHeader,
+          H::Timestamp: FormatTimestamp,
+          M: FormatMessage
 {
     ///
     pub fn new(hostname: Option<String>,
@@ -174,15 +156,15 @@ impl<H, M> SyslogFormatter<H, M>
 }
 
 impl<H, M> SyslogFormat for SyslogFormatter<H, M>
-    where H: FormatHeader + Send + Sync,
-          H::Timestamp: FormatTimestamp + Send + Sync,
-          M: FormatMessage + Send + Sync
+    where H: FormatHeader,
+          H::Timestamp: FormatTimestamp,
+          M: FormatMessage
 {
     /// Format syslog message
     fn format(&self,
               io: &mut io::Write,
               record: &Record,
-              logger_values: &OwnedKeyValueList)
+              logger_values: &OwnedKVList)
               -> io::Result<()> {
 
         // HEADER
@@ -196,22 +178,6 @@ impl<H, M> SyslogFormat for SyslogFormatter<H, M>
         // EOM
         write_eom!(io)?;
 
-        Ok(())
-    }
-}
-
-impl<H, M> StreamFormat for SyslogFormatter<H, M>
-    where H: FormatHeader + Send + Sync,
-          H::Timestamp: FormatTimestamp + Send + Sync,
-          M: FormatMessage + Send + Sync
-{
-    fn format(&self,
-              io: &mut io::Write,
-              record: &Record,
-              logger_values: &OwnedKeyValueList)
-              -> io::Result<()> {
-
-        (self as &SyslogFormat).format(io, record, logger_values)?;
         Ok(())
     }
 }

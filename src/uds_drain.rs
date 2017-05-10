@@ -1,13 +1,15 @@
 use errors::*;
+use format::SyslogFormat;
 use parking_lot::Mutex;
-use slog::{Drain, OwnedKeyValueList, Record};
-use slog_stream::Format as StreamFormat;
+use slog::{Drain, OwnedKVList, Record};
 use std::io;
 use std::net::Shutdown;
 use std::os::unix::net::UnixDatagram;
+use std::panic::AssertUnwindSafe;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
+
 
 /// State: `UDSDisconnected`
 #[derive(Default, Debug)]
@@ -21,7 +23,7 @@ impl UDSDisconnected {
         let socket = UnixDatagram::unbound()
             .chain_err(|| ErrorKind::ConnectionFailure("Failed to connect socket"))?;
         Ok(UDSConnected {
-               socket: Arc::new(Mutex::new(socket)),
+               socket: Arc::new(AssertUnwindSafe(Mutex::new(socket))),
                path_to_socket: self.path_to_socket,
            })
     }
@@ -30,7 +32,7 @@ impl UDSDisconnected {
 /// State: `UDSConnected` for the UDS drain
 #[derive(Debug)]
 pub struct UDSConnected {
-    socket: Arc<Mutex<UnixDatagram>>,
+    socket: Arc<AssertUnwindSafe<Mutex<UnixDatagram>>>,
     path_to_socket: PathBuf,
 }
 
@@ -51,14 +53,14 @@ impl UDSConnected {
 /// Unix domain socket drain
 #[derive(Debug)]
 pub struct UDSDrain<C, F>
-    where F: StreamFormat
+    where F: SyslogFormat
 {
     formatter: F,
     connection: C,
 }
 
 impl<F> UDSDrain<UDSDisconnected, F>
-    where F: StreamFormat
+    where F: SyslogFormat
 {
     /// UDSDrain constructor
     pub fn new(path_to_socket: PathBuf, formatter: F) -> UDSDrain<UDSDisconnected, F> {
@@ -78,7 +80,7 @@ impl<F> UDSDrain<UDSDisconnected, F>
 }
 
 impl<F> UDSDrain<UDSConnected, F>
-    where F: StreamFormat
+    where F: SyslogFormat
 {
     /// Disconnect UDS socket, completing all operations
     pub fn disconnect(self) -> Result<UDSDrain<UDSDisconnected, F>> {
@@ -90,11 +92,12 @@ impl<F> UDSDrain<UDSConnected, F>
 }
 
 impl<F> Drain for UDSDrain<UDSConnected, F>
-    where F: StreamFormat
+    where F: SyslogFormat
 {
-    type Error = io::Error;
+    type Err = io::Error;
+    type Ok = ();
 
-    fn log(&self, info: &Record, logger_values: &OwnedKeyValueList) -> io::Result<()> {
+    fn log(&self, info: &Record, logger_values: &OwnedKVList) -> io::Result<()> {
 
         // Should be thread safe - redo the buffering
         let mut buf = Vec::<u8>::with_capacity(4096);
