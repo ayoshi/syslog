@@ -1,4 +1,5 @@
 use errors::*;
+use errors::ErrorKind::{ConnectionFailure, DisconnectFailure};
 use format::SyslogFormat;
 use parking_lot::Mutex;
 use slog::{Drain, OwnedKVList, Record};
@@ -19,7 +20,7 @@ impl UDPDisconnected {
     /// Connect UDP stream
     fn connect(self) -> Result<UDPConnected> {
         let socket = UdpSocket::bind("0.0.0.0:0")
-            .chain_err(|| ErrorKind::ConnectionFailure("Failed to connect socket"))?;
+            .chain_err(|| ConnectionFailure("Failed to connect socket"))?;
         Ok(UDPConnected {
                socket: Arc::new(AssertUnwindSafe(Mutex::new(socket))),
                addr: self.addr,
@@ -40,7 +41,7 @@ impl UDPConnected {
         self.socket
             .try_lock_for(Duration::from_secs(super::LOCK_TRY_TIMEOUT))
             .map(|_| UDPDisconnected { addr: self.addr })
-            .ok_or(ErrorKind::DisconnectFailure("Timed out trying to acquire lock").into())
+            .ok_or(DisconnectFailure("Timed out trying to acquire lock").into())
     }
 }
 

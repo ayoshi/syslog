@@ -1,4 +1,5 @@
 use errors::*;
+use errors::ErrorKind::{ConnectionFailure, DisconnectFailure};
 use format::SyslogFormat;
 use parking_lot::Mutex;
 use slog::{Drain, OwnedKVList, Record};
@@ -29,7 +30,7 @@ impl TCPDisconnected {
     /// Connect TCP stream
     fn connect(self) -> Result<TCPConnected> {
         let stream = TcpStream::connect(self.addr)
-            .chain_err(|| ErrorKind::ConnectionFailure("Failed to connect socket"))?;
+            .chain_err(|| ConnectionFailure("Failed to connect socket"))?;
         Ok(TCPConnected {
                stream: Arc::new(AssertUnwindSafe(Mutex::new(stream))),
                addr: self.addr,
@@ -49,10 +50,10 @@ impl TCPConnected {
     fn disconnect(self) -> Result<TCPDisconnected> {
         self.stream
             .try_lock_for(Duration::from_secs(super::LOCK_TRY_TIMEOUT))
-            .ok_or_else(|| ErrorKind::DisconnectFailure("Timed out trying to acquire lock"))
+            .ok_or_else(|| DisconnectFailure("Timed out trying to acquire lock"))
             .and_then(|s| {
                           s.shutdown(Shutdown::Both)
-                              .map_err(|_| ErrorKind::DisconnectFailure("Socket shutdown failed"))
+                              .map_err(|_| DisconnectFailure("Socket shutdown failed"))
                       })?;
         Ok(TCPDisconnected { addr: self.addr })
     }

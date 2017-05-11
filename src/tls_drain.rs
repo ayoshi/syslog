@@ -1,4 +1,5 @@
 use errors::*;
+use errors::ErrorKind::{ConnectionFailure, DisconnectFailure};
 use format::SyslogFormat;
 use parking_lot::Mutex;
 use slog::{Drain, OwnedKVList, Record};
@@ -31,12 +32,11 @@ impl TLSDisconnected {
     pub fn connect(self) -> Result<TLSConnected> {
 
         let stream = TcpStream::connect(self.addr)
-            .chain_err(|| ErrorKind::ConnectionFailure("Failed to connect socket"))?;
-        let stream =
-            TlsClient::<TlsClientDisconnected>::new()
-                .configure(&self.session_config)?
-                .connect(stream)
-                .chain_err(|| ErrorKind::ConnectionFailure("Failed to establish TLS session"))?;
+            .chain_err(|| ConnectionFailure("Failed to connect socket"))?;
+        let stream = TlsClient::<TlsClientDisconnected>::new()
+            .configure(&self.session_config)?
+            .connect(stream)
+            .chain_err(|| ConnectionFailure("Failed to establish TLS session"))?;
 
         Ok(TLSConnected {
                stream: Arc::new(AssertUnwindSafe(Mutex::new(stream))),
@@ -58,10 +58,10 @@ impl TLSConnected {
     pub fn disconnect(self) -> Result<TLSDisconnected> {
         self.stream
             .try_lock_for(Duration::from_secs(super::LOCK_TRY_TIMEOUT))
-            .ok_or_else(|| ErrorKind::DisconnectFailure("Timed out trying to acquire lock"))
+            .ok_or_else(|| DisconnectFailure("Timed out trying to acquire lock"))
             .and_then(|mut s| {
                           s.disconnect()
-                              .map_err(|_| ErrorKind::DisconnectFailure("Socket shutdown failed"))
+                              .map_err(|_| DisconnectFailure("Socket shutdown failed"))
                       })?;
         Ok(TLSDisconnected {
                addr: self.addr,
