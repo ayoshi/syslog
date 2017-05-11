@@ -1,12 +1,14 @@
 use errors::*;
 use format::SyslogFormat;
+use parking_lot::Mutex;
 use slog::{Drain, OwnedKVList, Record};
 use std::io;
 use std::io::{Write, Cursor};
 use std::marker::PhantomData;
 use std::net::{TcpStream, SocketAddr};
 use std::panic::AssertUnwindSafe;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use std::time::Duration;
 use tls_client::{TlsClient, TlsSessionConfig, TlsClientConnected, TlsClientDisconnected};
 
 /// Delimited messages
@@ -55,9 +57,12 @@ pub struct TLSConnected {
 impl TLSConnected {
     pub fn disconnect(self) -> Result<TLSDisconnected> {
         self.stream
-            .lock()
-            .map_err(|_| ErrorKind::DisconnectFailure("Couldn't acquire lock").into())
-            .and_then(|mut s| s.disconnect())?;
+            .try_lock_for(Duration::from_secs(super::LOCK_TRY_TIMEOUT))
+            .ok_or_else(|| ErrorKind::DisconnectFailure("Timed out trying to acquire lock"))
+            .and_then(|mut s| {
+                          s.disconnect()
+                              .map_err(|_| ErrorKind::DisconnectFailure("Socket shutdown failed"))
+                      })?;
         Ok(TLSDisconnected {
                addr: self.addr,
                session_config: self.session_config,
@@ -132,8 +137,8 @@ impl<F> Drain for TLSDrain<DelimitedMessages, TLSConnected, F>
         self.formatter.format(&mut buf, info, logger_values)?;
         self.connection
             .stream
-            .lock()
-            .map_err(|_| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
+            .try_lock_for(Duration::from_secs(super::LOCK_TRY_TIMEOUT))
+            .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
             .and_then(|mut s| s.write(buf.as_slice()))?;
 
         Ok(())
@@ -158,8 +163,8 @@ impl<F> Drain for TLSDrain<FramedMessages, TLSConnected, F>
 
         self.connection
             .stream
-            .lock()
-            .map_err(|_| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
+            .try_lock_for(Duration::from_secs(super::LOCK_TRY_TIMEOUT))
+            .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
             .and_then(|mut s| {
                           // Space spearated frame length
                           s.write_fmt(format_args!("{} ", length))?;
