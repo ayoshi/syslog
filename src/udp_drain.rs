@@ -1,5 +1,4 @@
 use errors::*;
-use errors::ErrorKind::{ConnectionFailure, DisconnectFailure};
 use format::SyslogFormat;
 use parking_lot::Mutex;
 use slog::{Drain, OwnedKVList, Record};
@@ -20,7 +19,7 @@ impl UDPDisconnected {
     /// Connect UDP stream
     fn connect(self) -> Result<UDPConnected> {
         let socket = UdpSocket::bind("0.0.0.0:0")
-            .chain_err(|| ConnectionFailure("Failed to connect socket"))?;
+            .chain_err(|| ErrorKind::ConnectionFailure("Failed to connect socket"))?;
         Ok(UDPConnected {
                socket: Arc::new(AssertUnwindSafe(Mutex::new(socket))),
                addr: self.addr,
@@ -41,7 +40,14 @@ impl UDPConnected {
         self.socket
             .try_lock_for(Duration::from_secs(super::LOCK_TRY_TIMEOUT))
             .map(|_| UDPDisconnected { addr: self.addr })
-            .ok_or(DisconnectFailure("Timed out trying to acquire lock").into())
+            .ok_or(ErrorKind::DisconnectFailure("Timed out trying to acquire lock").into())
+    }
+
+    fn send(&self, bytes: &[u8]) -> io::Result<usize> {
+        self.socket
+            .try_lock_for(Duration::from_secs(super::LOCK_TRY_TIMEOUT))
+            .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
+            .and_then(|s| s.send_to(bytes, &self.addr))
     }
 }
 
@@ -98,11 +104,7 @@ impl<F> Drain for UDPDrain<UDPConnected, F>
         let mut buf = Vec::<u8>::with_capacity(4096);
 
         self.formatter.format(&mut buf, info, logger_values)?;
-        self.connection
-            .socket
-            .try_lock_for(Duration::from_secs(super::LOCK_TRY_TIMEOUT))
-            .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
-            .and_then(|s| s.send_to(buf.as_slice(), &self.connection.addr))?;
+        self.connection.send(buf.as_slice())?;
 
         Ok(())
     }

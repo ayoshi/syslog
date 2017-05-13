@@ -1,5 +1,4 @@
 use errors::*;
-use errors::ErrorKind::{ConnectionFailure, DisconnectFailure};
 use format::SyslogFormat;
 use parking_lot::Mutex;
 use slog::{Drain, OwnedKVList, Record};
@@ -22,7 +21,7 @@ impl UDSDisconnected {
     /// Connect Unix domain socket
     fn connect(self) -> Result<UDSConnected> {
         let socket = UnixDatagram::unbound()
-            .chain_err(|| ConnectionFailure("Failed to connect socket"))?;
+            .chain_err(|| ErrorKind::ConnectionFailure("Failed to connect socket"))?;
         Ok(UDSConnected {
                socket: Arc::new(AssertUnwindSafe(Mutex::new(socket))),
                path_to_socket: self.path_to_socket,
@@ -42,12 +41,19 @@ impl UDSConnected {
     fn disconnect(self) -> Result<UDSDisconnected> {
         self.socket
             .try_lock_for(Duration::from_secs(super::LOCK_TRY_TIMEOUT))
-            .ok_or_else(|| DisconnectFailure("Timed out trying to acquire lock"))
+            .ok_or_else(|| ErrorKind::DisconnectFailure("Timed out trying to acquire lock"))
             .and_then(|s| {
                           s.shutdown(Shutdown::Both)
-                              .map_err(|_| DisconnectFailure("Socket shutdown failed"))
+                              .map_err(|_| ErrorKind::DisconnectFailure("Socket shutdown failed"))
                       })?;
         Ok(UDSDisconnected { path_to_socket: self.path_to_socket })
+    }
+
+    fn send(&self, bytes: &[u8]) -> io::Result<usize> {
+        self.socket
+            .try_lock_for(Duration::from_secs(super::LOCK_TRY_TIMEOUT))
+            .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
+            .and_then(|s| s.send_to(bytes, &self.path_to_socket))
     }
 }
 
@@ -104,12 +110,7 @@ impl<F> Drain for UDSDrain<UDSConnected, F>
         let mut buf = Vec::<u8>::with_capacity(4096);
 
         self.formatter.format(&mut buf, info, logger_values)?;
-
-        self.connection
-            .socket
-            .try_lock_for(Duration::from_secs(super::LOCK_TRY_TIMEOUT))
-            .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
-            .and_then(|s| s.send_to(buf.as_slice(), &self.connection.path_to_socket))?;
+        self.connection.send(buf.as_slice())?;
 
         Ok(())
     }

@@ -217,11 +217,6 @@ macro_rules! tls_framed_tests {
                     certs_file: None,
                     no_verify: false,
                 };
-                let message = format!(
-                    "{} {} message to {}",
-                    stringify!(TLSDrainFramed),
-                    stringify!($format),
-                    $addr);
                 let test_drain = TLSDrainFramed::new(
                     dest, tls_session_config, formatter!($format))
                     .connect().expect("couldn't connect to socket");

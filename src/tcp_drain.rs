@@ -1,5 +1,4 @@
 use errors::*;
-use errors::ErrorKind::{ConnectionFailure, DisconnectFailure};
 use format::SyslogFormat;
 use parking_lot::Mutex;
 use slog::{Drain, OwnedKVList, Record};
@@ -30,7 +29,7 @@ impl TCPDisconnected {
     /// Connect TCP stream
     fn connect(self) -> Result<TCPConnected> {
         let stream = TcpStream::connect(self.addr)
-            .chain_err(|| ConnectionFailure("Failed to connect socket"))?;
+            .chain_err(|| ErrorKind::ConnectionFailure("Failed to connect socket"))?;
         Ok(TCPConnected {
                stream: Arc::new(AssertUnwindSafe(Mutex::new(stream))),
                addr: self.addr,
@@ -50,12 +49,26 @@ impl TCPConnected {
     fn disconnect(self) -> Result<TCPDisconnected> {
         self.stream
             .try_lock_for(Duration::from_secs(super::LOCK_TRY_TIMEOUT))
-            .ok_or_else(|| DisconnectFailure("Timed out trying to acquire lock"))
+            .ok_or_else(|| ErrorKind::DisconnectFailure("Timed out trying to acquire lock"))
             .and_then(|s| {
                           s.shutdown(Shutdown::Both)
-                              .map_err(|_| DisconnectFailure("Socket shutdown failed"))
+                              .map_err(|_| ErrorKind::DisconnectFailure("Socket shutdown failed"))
                       })?;
         Ok(TCPDisconnected { addr: self.addr })
+    }
+
+    fn send(&self, bytes: &[u8]) -> io::Result<usize> {
+        self.stream
+            .try_lock_for(Duration::from_secs(super::LOCK_TRY_TIMEOUT))
+            .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
+            .and_then(|mut s| s.write(bytes))
+    }
+
+    fn flush(&self) -> io::Result<()> {
+        self.stream
+            .try_lock_for(Duration::from_secs(super::LOCK_TRY_TIMEOUT))
+            .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
+            .and_then(|mut s| s.flush())
     }
 }
 
@@ -118,11 +131,7 @@ impl<F> Drain for TCPDrain<DelimitedMessages, TCPConnected, F>
         let mut buf = Vec::<u8>::with_capacity(4096);
 
         self.formatter.format(&mut buf, info, logger_values)?;
-        self.connection
-            .stream
-            .try_lock_for(Duration::from_secs(super::LOCK_TRY_TIMEOUT))
-            .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
-            .and_then(|mut s| s.write(buf.as_slice()))?;
+        self.connection.send(buf.as_slice())?;
 
         Ok(())
     }
@@ -139,20 +148,15 @@ impl<F> Drain for TCPDrain<FramedMessages, TCPConnected, F>
     fn log(&self, info: &Record, logger_values: &OwnedKVList) -> io::Result<()> {
 
         // Should be thread safe - redo the buffering
+        // 1. Could we use simply Vec.len()?
+        // 2. format! is slow, there was another way of doing it
         let mut buf = Cursor::new(Vec::<u8>::with_capacity(10));
 
         self.formatter.format(&mut buf, info, logger_values)?;
         let length = buf.position();
 
-        self.connection
-            .stream
-            .try_lock_for(Duration::from_secs(super::LOCK_TRY_TIMEOUT))
-            .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "Couldn't acquire lock"))
-            .and_then(|mut s| {
-                          // Space spearated frame length
-                          s.write_fmt(format_args!("{} ", length))?;
-                          s.write(buf.into_inner().as_slice())
-                      })?;
+        self.connection.send(format!("{} ", length).as_bytes())?;
+        self.connection.send(buf.into_inner().as_slice())?;
 
         Ok(())
     }
