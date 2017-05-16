@@ -1,7 +1,7 @@
 use errors::*;
 use openssl::ssl::{SslConnectorBuilder, SslMethod, SslStream, SSL_VERIFY_NONE, SSL_VERIFY_PEER};
 use openssl::x509::X509_FILETYPE_PEM;
-use std::io;
+use std::{io, fmt};
 
 use std::net::TcpStream;
 use std::path::PathBuf;
@@ -16,29 +16,38 @@ pub struct TlsSessionConfig {
 }
 
 #[derive(Debug)]
-pub struct TlsClientDisconnected {}
+pub struct TlsClientDisconnected {
+    session_config: TlsSessionConfig,
+}
 
-// TODO derive Debug properly
 pub struct TlsClientConfigured {
+    session_config: TlsSessionConfig,
     connector: SslConnectorBuilder,
+}
+
+impl fmt::Debug for TlsClientConfigured {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,
+               "TlsClientConfigured {{ session_config: {:?} }}",
+               self.session_config)
+    }
 }
 
 #[derive(Debug)]
 pub struct TlsClientConnected {
+    session_config: TlsSessionConfig,
     tls_session: SslStream<TcpStream>,
 }
 
 #[derive(Debug)]
 pub struct TlsClient<C> {
-    session_config: TlsSessionConfig,
     connection: C,
 }
 
 impl<C> TlsClient<C> {
     pub fn new() -> TlsClient<TlsClientDisconnected> {
         TlsClient::<TlsClientDisconnected> {
-            session_config: TlsSessionConfig::default(),
-            connection: TlsClientDisconnected {},
+            connection: TlsClientDisconnected { session_config: TlsSessionConfig::default() },
         }
     }
 }
@@ -75,8 +84,10 @@ impl TlsClient<TlsClientDisconnected> {
         }
 
         Ok(TlsClient::<TlsClientConfigured> {
-               session_config: session_config,
-               connection: TlsClientConfigured { connector: connector },
+               connection: TlsClientConfigured {
+                   session_config: session_config,
+                   connector: connector,
+               },
            })
     }
 }
@@ -86,11 +97,13 @@ impl TlsClient<TlsClientConfigured> {
         let tls_session = self.connection
             .connector
             .build()
-            .connect(self.session_config.domain.as_ref(), sock)?;
+            .connect(self.connection.session_config.domain.as_ref(), sock)?;
 
         Ok(TlsClient::<TlsClientConnected> {
-               session_config: self.session_config,
-               connection: TlsClientConnected { tls_session: tls_session },
+               connection: TlsClientConnected {
+                   session_config: self.connection.session_config,
+                   tls_session: tls_session,
+               },
            })
     }
 }
@@ -99,8 +112,9 @@ impl TlsClient<TlsClientConnected> {
     pub fn disconnect(&mut self) -> Result<TlsClient<TlsClientDisconnected>> {
         self.connection.tls_session.shutdown()?;
         Ok(TlsClient::<TlsClientDisconnected> {
-               session_config: self.session_config.clone(),
-               connection: TlsClientDisconnected {},
+               connection: TlsClientDisconnected {
+                   session_config: self.connection.session_config.clone(),
+               },
            })
     }
 }
