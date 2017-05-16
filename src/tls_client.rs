@@ -20,43 +20,8 @@ pub struct TlsClientDisconnected {
     session_config: TlsSessionConfig,
 }
 
-pub struct TlsClientConfigured {
-    session_config: TlsSessionConfig,
-    connector: SslConnectorBuilder,
-}
-
-impl fmt::Debug for TlsClientConfigured {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,
-               "TlsClientConfigured {{ session_config: {:?} }}",
-               self.session_config)
-    }
-}
-
-#[derive(Debug)]
-pub struct TlsClientConnected {
-    session_config: TlsSessionConfig,
-    tls_session: SslStream<TcpStream>,
-}
-
-#[derive(Debug)]
-pub struct TlsClient<C> {
-    connection: C,
-}
-
-impl<C> TlsClient<C> {
-    pub fn new() -> TlsClient<TlsClientDisconnected> {
-        TlsClient::<TlsClientDisconnected> {
-            connection: TlsClientDisconnected { session_config: TlsSessionConfig::default() },
-        }
-    }
-}
-
-impl TlsClient<TlsClientDisconnected> {
-    pub fn configure(self,
-                     session_config: &TlsSessionConfig)
-                     -> Result<TlsClient<TlsClientConfigured>> {
-        let session_config = session_config.clone();
+impl TlsClientDisconnected {
+    pub fn configure(self, session_config: &TlsSessionConfig) -> Result<TlsClientConfigured> {
         let mut connector = SslConnectorBuilder::new(SslMethod::tls())?;
         {
             let mut ctx = connector.builder_mut();
@@ -83,42 +48,88 @@ impl TlsClient<TlsClientDisconnected> {
             }
         }
 
+        Ok(TlsClientConfigured {
+               session_config: session_config.clone(),
+               connector: connector,
+           })
+    }
+}
+
+pub struct TlsClientConfigured {
+    session_config: TlsSessionConfig,
+    connector: SslConnectorBuilder,
+}
+
+impl TlsClientConfigured {
+    pub fn connect(self, sock: TcpStream) -> Result<TlsClientConnected> {
+        let tls_session = self.connector
+            .build()
+            .connect(self.session_config.domain.as_ref(), sock)?;
+
+        Ok(TlsClientConnected {
+               session_config: self.session_config,
+               tls_session: tls_session,
+           })
+    }
+}
+
+impl fmt::Debug for TlsClientConfigured {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,
+               "TlsClientConfigured {{ session_config: {:?} }}",
+               self.session_config)
+    }
+}
+
+#[derive(Debug)]
+pub struct TlsClientConnected {
+    session_config: TlsSessionConfig,
+    tls_session: SslStream<TcpStream>,
+}
+
+impl TlsClientConnected {
+    pub fn disconnect(&mut self) -> Result<TlsClientDisconnected> {
+        self.tls_session.shutdown()?;
+        Ok(TlsClientDisconnected { session_config: self.session_config.clone() })
+    }
+}
+
+
+#[derive(Debug)]
+pub struct TlsClient<C> {
+    connection: C,
+}
+
+impl<C> TlsClient<C> {
+    pub fn new() -> TlsClient<TlsClientDisconnected> {
+        TlsClient::<TlsClientDisconnected> {
+            connection: TlsClientDisconnected { session_config: TlsSessionConfig::default() },
+        }
+    }
+}
+
+impl TlsClient<TlsClientDisconnected> {
+    pub fn configure(self,
+                     session_config: &TlsSessionConfig)
+                     -> Result<TlsClient<TlsClientConfigured>> {
+
         Ok(TlsClient::<TlsClientConfigured> {
-               connection: TlsClientConfigured {
-                   session_config: session_config,
-                   connector: connector,
-               },
+               connection: self.connection.configure(session_config)?,
            })
     }
 }
 
 impl TlsClient<TlsClientConfigured> {
     pub fn connect(self, sock: TcpStream) -> Result<TlsClient<TlsClientConnected>> {
-        let tls_session = self.connection
-            .connector
-            .build()
-            .connect(self.connection.session_config.domain.as_ref(), sock)?;
-
-        Ok(TlsClient::<TlsClientConnected> {
-               connection: TlsClientConnected {
-                   session_config: self.connection.session_config,
-                   tls_session: tls_session,
-               },
-           })
+        Ok(TlsClient::<TlsClientConnected> { connection: self.connection.connect(sock)? })
     }
 }
 
 impl TlsClient<TlsClientConnected> {
     pub fn disconnect(&mut self) -> Result<TlsClient<TlsClientDisconnected>> {
-        self.connection.tls_session.shutdown()?;
-        Ok(TlsClient::<TlsClientDisconnected> {
-               connection: TlsClientDisconnected {
-                   session_config: self.connection.session_config.clone(),
-               },
-           })
+        Ok(TlsClient::<TlsClientDisconnected> { connection: self.connection.disconnect()? })
     }
 }
-
 
 impl io::Write for TlsClient<TlsClientConnected> {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
